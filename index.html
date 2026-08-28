@@ -4,10 +4,34 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <!-- Tints the browser's own chrome (Safari's address bar, Android's status
-         bar) to match the app. Kept in step with the theme by ThemeController;
-         the value here is only what shows before the script runs. -->
+    <!-- Tints the browser's own chrome: Safari's address bar, Android's status
+         bar. ThemeController keeps it in step with the theme; the value here is
+         only what shows for the first frame. -->
     <meta name="theme-color" content="#FFFFFF" />
+    <script>
+      /*
+       * Runs before the first paint. The module that owns the theme is
+       * deferred, so without this the page paints light for a frame and then
+       * flips, and Safari has already sampled that first frame for its address
+       * bar. Sets only the attribute, never a colour: the colours stay in the
+       * token layer, and the module fills the meta in once the stylesheet has
+       * been parsed and --header-bg actually resolves.
+       *
+       * The key matches KEY in src/theme.ts.
+       */
+      (function () {
+        var t = 'light';
+        try {
+          if (localStorage.getItem('plejekort.theme') === 'dark') t = 'dark';
+        } catch (e) {
+          /* private mode: the default stands */
+        }
+        document.documentElement.setAttribute('data-theme', t);
+        document
+          .querySelector('meta[name="color-scheme"]')
+          .setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');
+      })();
+    </script>
     <title>Plejecentre i Hovedstaden: kort over plejehjem i Greater Copenhagen</title>
     <meta
       name="description"

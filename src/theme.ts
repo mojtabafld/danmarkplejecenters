@@ -47,8 +47,17 @@ export class ThemeController {
     const header = getComputedStyle(document.documentElement)
       .getPropertyValue('--header-bg')
       .trim();
-    if (header) {
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', header);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (header && meta) {
+      // Replaced, not edited. Safari does not reliably re-sample a theme-color
+      // whose content attribute was changed in place: the address bar and the
+      // status bar keep the colour they were given at load, so the app goes
+      // dark and the chrome above it stays white. Swapping the element makes it
+      // read the new value.
+      const next = document.createElement('meta');
+      next.setAttribute('name', 'theme-color');
+      next.setAttribute('content', header);
+      meta.replaceWith(next);
     }
   }
 
