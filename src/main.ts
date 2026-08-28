@@ -13,6 +13,22 @@ import { MUNICIPALITIES, Store, resortForLocale } from './store';
 import { ThemeController, token } from './theme';
 import type { OwnershipGroup, Plejecenter } from './types';
 
+/**
+ * If the script dies before the interface exists, say so.
+ *
+ * Everything visible here is built by this file, so a throw during start-up
+ * leaves the markup standing with no text, no icons and no map: a page that
+ * looks broken without saying anything. This turns that into a sentence and a
+ * reload button. It is armed only until start-up finishes.
+ */
+let booted = false;
+window.addEventListener('error', () => {
+  if (booted) return;
+  const el = document.getElementById('bootFail');
+  if (el) el.hidden = false;
+});
+document.getElementById('bootFailReload')?.addEventListener('click', () => location.reload());
+
 const $ = <T extends HTMLElement>(sel: string): T => {
   const el = document.querySelector<T>(sel);
   if (!el) throw new Error(`missing element: ${sel}`);
@@ -519,3 +535,5 @@ map.setData(store.visible);
 if (import.meta.env.DEV) {
   (window as unknown as Record<string, unknown>).__kort = map;
 }
+
+booted = true;

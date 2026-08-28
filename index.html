@@ -17,6 +17,24 @@
   <body>
     <a class="skip-link" href="#results" data-i18n="app.skipToList"></a>
 
+    <!--
+      Shown only if the script fails before the interface is built. Its text is
+      static and trilingual on purpose: the thing that renders the translations
+      is exactly what has just failed, so it cannot depend on it.
+    -->
+    <div class="bootfail" id="bootFail" hidden role="alert">
+      <div class="bootfail__card">
+        <p lang="da" dir="ltr">Siden kunne ikke indlæses færdig. Genindlæs siden.</p>
+        <p lang="en" dir="ltr">The page did not finish loading. Reload to try again.</p>
+        <p lang="fa" dir="rtl">بارگذاری صفحه کامل نشد. صفحه را دوباره بارگذاری کنید.</p>
+        <button type="button" class="btn btn--primary" id="bootFailReload" dir="ltr">
+          Reload <span aria-hidden="true">&middot;</span> Genindlæs
+          <span aria-hidden="true">&middot;</span>
+          <span lang="fa" dir="rtl">بارگذاری دوباره</span>
+        </button>
+      </div>
+    </div>
+
     <div class="app">
       <header class="masthead">
         <span class="masthead__mark" id="brandMark" aria-hidden="true"></span>

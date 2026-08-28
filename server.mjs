@@ -83,11 +83,15 @@ const server = createServer(async (req, res) => {
   const file = (await fileFor(req.url ?? '/')) ?? join(ROOT, 'index.html');
   const type = TYPES.get(extname(file).toLowerCase()) ?? 'application/octet-stream';
 
-  // Filenames are not content-hashed, so the document must revalidate or a
-  // deploy would keep serving the previous one from cache.
-  const cache = file.endsWith('.html')
-    ? 'no-cache'
-    : 'public, max-age=3600, must-revalidate';
+  // The document must always revalidate: it is the thing that names which
+  // build to load. Everything under assets/ carries a content hash, so its
+  // name changes whenever its bytes do and it can be cached indefinitely.
+  // Anything else unhashed is treated like the document, cautiously.
+  const rel = file.slice(ROOT.length + 1);
+  const cache =
+    rel.startsWith('assets' + sep) && /-[A-Za-z0-9_-]{8,}\./.test(rel)
+      ? 'public, max-age=31536000, immutable'
+      : 'no-cache';
 
   try {
     const { size } = await stat(file);

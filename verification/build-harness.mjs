@@ -415,6 +415,22 @@ const states = `<!doctype html>
   </section>
 
   <section class="stack">
+    <h2>Start fejlede</h2>
+    <div class="bootfail" style="position: static; padding: 0" role="alert">
+      <div class="bootfail__card">
+        <p lang="da" dir="ltr">Siden kunne ikke indlæses færdig. Genindlæs siden.</p>
+        <p lang="en" dir="ltr">The page did not finish loading. Reload to try again.</p>
+        <p lang="fa" dir="rtl">بارگذاری صفحه کامل نشد. صفحه را دوباره بارگذاری کنید.</p>
+        <button type="button" class="btn btn--primary" dir="ltr">
+          Reload <span aria-hidden="true">&middot;</span> Genindlæs
+          <span aria-hidden="true">&middot;</span>
+          <span lang="fa" dir="rtl">بارگذاری دوباره</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
     <h2>Sprogvælger</h2>
     <div class="langpick" style="position: static">
       <button type="button" class="langpick__button" aria-expanded="true"

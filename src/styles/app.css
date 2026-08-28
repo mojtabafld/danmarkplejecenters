@@ -83,6 +83,35 @@ a { color: var(--text-link); }
 }
 .skip-link:focus-visible { transform: translateY(0); }
 
+/* --------------------------------------------------------- boot failure --- */
+.bootfail {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast);
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: var(--surface-page);
+}
+.bootfail[hidden] { display: none; }
+
+.bootfail__card {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  text-align: center;
+  max-inline-size: 32rem;
+  padding: var(--space-6);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow-wrap: anywhere;
+}
+.bootfail__card p { margin: 0; }
+
 /* ========================================================================== *
    SHELL
  * ========================================================================== */
