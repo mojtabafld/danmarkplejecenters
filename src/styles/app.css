@@ -236,6 +236,24 @@ a.btn { text-decoration: none; }
   border-block-end: var(--border-hairline) solid var(--border-subtle);
 }
 
+/*
+ * The count and the control that opens the list share one row. The toggle used
+ * to own a row of its own below the filters, which on a phone cost 41px of map
+ * to say one word.
+ */
+.rail__leadrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+.rail__leadrow .tally { min-inline-size: 0; }
+
+/* The operator filters now sit with the count rather than under the search
+   fields: they describe what is being counted, so they belong to it. */
+.rail__lead .chips { margin-block-start: var(--space-3); }
+
 .tally {
   display: flex;
   align-items: baseline;
@@ -891,6 +909,19 @@ a.btn { text-decoration: none; }
   transition: background-color var(--duration-fast) var(--ease-out),
               color var(--duration-fast) var(--ease-out);
 }
+/* Kept to one line and out of the flex free-space fight, so the count's label
+   gets the width it needs instead of the button breaking across two lines and
+   making the whole row taller. Bounded, because an unbounded nowrap control is
+   the classic thing that overflows a 280px screen. */
+.rail__toggle {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  max-inline-size: min(11rem, 45%);
+}
+.rail__toggle > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .rail__toggle:hover { background: var(--interactive-hover-bg); color: var(--text-primary); }
 .rail__toggle:active { background: var(--interactive-active-bg); }
 .rail__toggle svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); }
@@ -940,19 +971,24 @@ a.btn { text-decoration: none; }
     visibility: hidden;
   }
 
-  .rail__lead { padding-block-start: var(--space-4); padding-block-end: var(--space-3); }
-
-  /* The sheet is: count, filters, then the control that reveals the list. */
-  .rail { grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
-  .filters { padding-block-end: var(--space-3); border-block-end: 0; }
-  .rail__handle {
-    display: flex;
-    justify-content: center;
-    padding: 0 var(--space-5) var(--space-3);
-    border-block-end: var(--border-hairline) solid var(--border-subtle);
+  .rail__lead {
+    padding-block-start: var(--space-4);
+    padding-block-end: var(--space-3);
   }
 
+  /* The sheet is: count + types, then the search fields. */
+  .rail { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+  .filters { padding-block-end: var(--space-3); }
+  .rail__lead .chips { margin-block-start: var(--space-2); }
+
   .rail__toggle { display: inline-flex; }
+
+  /* The noun runs on into the phrase after it instead of owning a line, which
+     keeps the row short. It still wraps when it has to: clipping it with an
+     ellipsis saved a few pixels and cost the reader the number of
+     municipalities, which is half of what the line says. */
+  .tally__label b { display: inline; }
+  .tally__label { text-wrap: balance; }
 
   .tally { align-items: center; }
   .tally__count { font-size: var(--text-2xl); }

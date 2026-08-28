@@ -38,6 +38,18 @@ export class ThemeController {
     document
       .querySelector('meta[name="color-scheme"]')
       ?.setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');
+
+    // The browser paints its own surfaces -- Safari's address bar, Android's
+    // status bar -- from theme-color, and it does not follow data-theme. Left
+    // alone it stays white while the app goes dark, and the seam is obvious on
+    // a phone. Read from the live theme rather than restated here, so it can
+    // never drift from the header it is continuous with.
+    const header = getComputedStyle(document.documentElement)
+      .getPropertyValue('--header-bg')
+      .trim();
+    if (header) {
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', header);
+    }
   }
 
   private notify(): void {

@@ -232,7 +232,7 @@ const NARROW = window.matchMedia('(max-width: 60rem)');
  * the sheet always closes on a clean edge instead of clipping a field in half
  * at some font size or in some language.
  */
-const PEEK_PARTS = ['.rail__lead', '.filters', '.rail__handle'] as const;
+const PEEK_PARTS = ['.rail__lead', '.filters'] as const;
 
 function syncPeek(): void {
   // getBoundingClientRect, not offsetHeight: three separately rounded integers
@@ -371,7 +371,9 @@ function renderTally(items: Plejecenter[]): void {
   // "0 plejecentre i 0 kommuner" counts something that is not there. When the
   // filters match nothing, say that instead.
   if (items.length === 0) {
-    tallyLabel.innerHTML = `<b>${noun}</b>${t('tally.noMatch')}`;
+    // The space is explicit: the noun and the phrase after it used to be
+    // separated by the <b> being a block, and they run together without it.
+    tallyLabel.innerHTML = `<b>${noun}</b> ${t('tally.noMatch')}`;
     return;
   }
 
@@ -379,7 +381,8 @@ function renderTally(items: Plejecenter[]): void {
   const where = store.filters.municipality
     ? t('tally.inMunicipality', { name: store.filters.municipality })
     : t('tally.inMunicipalities', { n: munis });
-  tallyLabel.innerHTML = `<b>${noun}</b>${store.isFiltered ? `${t('tally.found')} ` : ''}${where}`;
+  tallyLabel.innerHTML =
+    `<b>${noun}</b> ${store.isFiltered ? `${t('tally.found')} ` : ''}${where}`;
 }
 
 let announceTimer: number | undefined;

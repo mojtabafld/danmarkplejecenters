@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <!-- Tints the browser's own chrome (Safari's address bar, Android's status
+         bar) to match the app. Kept in step with the theme by ThemeController;
+         the value here is only what shows before the script runs. -->
+    <meta name="theme-color" content="#FFFFFF" />
     <title>Plejecentre i Hovedstaden: kort over plejehjem i Greater Copenhagen</title>
     <meta
       name="description"
@@ -45,10 +49,31 @@
         <!-- ---------------------------------------------------------- rail -->
         <aside class="rail" id="rail" data-i18n-aria="results.label">
           <div class="rail__lead">
-            <p class="tally">
-              <span class="tally__count" id="tallyCount">148</span>
-              <span class="tally__label" id="tallyLabel"></span>
-            </p>
+            <div class="rail__leadrow">
+              <p class="tally">
+                <span class="tally__count" id="tallyCount">148</span>
+                <span class="tally__label" id="tallyLabel"></span>
+              </p>
+              <button
+                type="button"
+                class="rail__toggle"
+                id="railToggle"
+                aria-expanded="true"
+                aria-controls="results"
+              ></button>
+            </div>
+
+            <div class="chips" role="group" data-i18n-aria="filter.ownership">
+              <button type="button" class="chip" data-own="Kommunal" data-group="Kommunal" aria-pressed="true">
+                <span class="chip__mark"></span><span data-i18n="ownership.Kommunal"></span>
+              </button>
+              <button type="button" class="chip" data-own="Selvejende" data-group="Selvejende" aria-pressed="true">
+                <span class="chip__mark"></span><span data-i18n="ownership.Selvejende"></span>
+              </button>
+              <button type="button" class="chip" data-own="Privat" data-group="Privat" aria-pressed="true">
+                <span class="chip__mark"></span><span data-i18n="ownership.Privat"></span>
+              </button>
+            </div>
           </div>
 
           <div class="filters">
@@ -75,27 +100,6 @@
               </select>
             </label>
 
-            <div class="chips" role="group" data-i18n-aria="filter.ownership">
-              <button type="button" class="chip" data-own="Kommunal" data-group="Kommunal" aria-pressed="true">
-                <span class="chip__mark"></span><span data-i18n="ownership.Kommunal"></span>
-              </button>
-              <button type="button" class="chip" data-own="Selvejende" data-group="Selvejende" aria-pressed="true">
-                <span class="chip__mark"></span><span data-i18n="ownership.Selvejende"></span>
-              </button>
-              <button type="button" class="chip" data-own="Privat" data-group="Privat" aria-pressed="true">
-                <span class="chip__mark"></span><span data-i18n="ownership.Privat"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="rail__handle">
-            <button
-              type="button"
-              class="rail__toggle"
-              id="railToggle"
-              aria-expanded="true"
-              aria-controls="results"
-            ></button>
           </div>
 
           <nav class="results" id="results" data-i18n-aria="results.label"></nav>

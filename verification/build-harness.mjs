@@ -143,7 +143,7 @@ writeFileSync(R('verification/harness-page.css'), `/* Harness only: the map is a
   body { overflow: auto; }
   .app { position: static; block-size: auto; }
   .workspace { grid-template-rows: auto auto; }
-  .rail { grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
+  .rail { grid-template-rows: auto auto minmax(0, 1fr) auto; }
   .rail { grid-area: 2 / 1; position: static; max-block-size: none; translate: none; box-shadow: none; }
   .stage { grid-area: 1 / 1; min-block-size: 60vh; }
   .results { overflow: visible; }
@@ -181,10 +181,21 @@ const html = `<!doctype html>
   <div class="workspace">
     <aside class="rail" aria-label="Søg og filtrér plejecentre">
       <div class="rail__lead">
-        <p class="tally">
-          <span class="tally__count">148</span>
-          <span class="tally__label"><b>plejecentre</b> i 23 kommuner</span>
-        </p>
+        <div class="rail__leadrow">
+          <p class="tally">
+            <span class="tally__count">148</span>
+            <span class="tally__label"><b>plejecentre</b> i 23 kommuner</span>
+          </p>
+          <button type="button" class="rail__toggle" aria-expanded="true" aria-controls="results">
+            <span>Skjul liste</span>${I.chevronDown}
+          </button>
+        </div>
+
+        <div class="chips" role="group" aria-label="Filtrér på driftsform">
+          <button type="button" class="chip" data-own="Kommunal" aria-pressed="true"><span class="chip__mark"></span>Kommunal</button>
+          <button type="button" class="chip" data-own="Selvejende" aria-pressed="true"><span class="chip__mark"></span>Selvejende</button>
+          <button type="button" class="chip" data-own="Privat" aria-pressed="false"><span class="chip__mark"></span>Privat</button>
+        </div>
       </div>
 
       <div class="filters">
@@ -204,17 +215,6 @@ const html = `<!doctype html>
           </select>
         </label>
 
-        <div class="chips" role="group" aria-label="Filtrér på driftsform">
-          <button type="button" class="chip" data-own="Kommunal" aria-pressed="true"><span class="chip__mark"></span>Kommunal</button>
-          <button type="button" class="chip" data-own="Selvejende" aria-pressed="true"><span class="chip__mark"></span>Selvejende</button>
-          <button type="button" class="chip" data-own="Privat" aria-pressed="false"><span class="chip__mark"></span>Privat</button>
-        </div>
-      </div>
-
-      <div class="rail__handle">
-        <button type="button" class="rail__toggle" aria-expanded="true" aria-controls="results">
-          <span>Skjul liste</span>${I.chevronDown}
-        </button>
       </div>
 
       <nav class="results" aria-label="Resultater">
