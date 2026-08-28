@@ -1,8 +1,9 @@
 # DigitalOcean App Platform spec.
 #
-# This is a static site: `npm run build` type-checks, then Vite writes `dist/`,
-# which App Platform serves directly. There is no server-side component and no
-# database, so nothing here needs a secret or an environment variable.
+# A web service, not a static site: accounts and the visited list need a process
+# and a database. The map, the search and the cards do not -- without a database
+# the API answers 503 and the site works exactly as it did before, so a missing
+# binding degrades the feature rather than the app.
 #
 # Create it from this file with:
 #   doctl apps create --spec .do/app.yaml
@@ -11,7 +12,7 @@
 name: danmarkplejecenters
 region: fra
 
-static_sites:
+services:
   - name: web
     environment_slug: node-js
 
@@ -21,9 +22,20 @@ static_sites:
       deploy_on_push: true
 
     build_command: npm run build
-    output_dir: dist
+    run_command: npm start
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
 
-    index_document: index.html
-    # One page, no client-side router, but a catchall means a stray deep link
-    # or a refresh on any path still lands on the app instead of a 404.
-    catchall_document: index.html
+    envs:
+      # The binding that makes accounts work. `plejedb` must match the database
+      # component's name below. Without this the app still runs; the account
+      # button simply does not appear.
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${plejedb.DATABASE_URL}
+
+databases:
+  - name: plejedb
+    engine: PG
+    production: false

@@ -37,7 +37,14 @@ export class Store {
     query: '',
     municipality: null,
     ownership: new Set(ALL_OWNERSHIP),
+    visitedOnly: false,
   };
+
+  /**
+   * Which ids the reader has marked. Held as a predicate rather than a copy so
+   * the store never has to be told again when the account changes.
+   */
+  isVisited: (id: string) => boolean = () => false;
 
   selectedId: string | null = null;
   visible: Plejecenter[] = ALL;
@@ -58,9 +65,10 @@ export class Store {
   }
 
   private compute(): Plejecenter[] {
-    const { query, municipality, ownership } = this.filters;
+    const { query, municipality, ownership, visitedOnly } = this.filters;
     const terms = fold(query).split(/\s+/).filter(Boolean);
     return ALL.filter((p) => {
+      if (visitedOnly && !this.isVisited(p.id)) return false;
       if (municipality && p.municipality !== municipality) return false;
       if (!ownership.has(ownershipGroup(p))) return false;
       if (terms.length === 0) return true;
@@ -76,6 +84,15 @@ export class Store {
   setQuery(q: string): void {
     this.filters.query = q;
     this.emit();
+  }
+
+  setVisitedOnly(on: boolean): void {
+    this.filters.visitedOnly = on;
+    this.emit();
+  }
+
+  byId(id: string): Plejecenter | undefined {
+    return ALL.find((p) => p.id === id);
   }
 
   setMunicipality(m: string | null): void {
@@ -98,13 +115,23 @@ export class Store {
   }
 
   reset(): void {
-    this.filters = { query: '', municipality: null, ownership: new Set(ALL_OWNERSHIP) };
+    this.filters = {
+      query: '',
+      municipality: null,
+      ownership: new Set(ALL_OWNERSHIP),
+      visitedOnly: false,
+    };
     this.selectedId = null;
     this.emit();
   }
 
   get isFiltered(): boolean {
     const f = this.filters;
-    return f.query !== '' || f.municipality !== null || f.ownership.size !== ALL_OWNERSHIP.length;
+    return (
+      f.query !== '' ||
+      f.municipality !== null ||
+      f.visitedOnly ||
+      f.ownership.size !== ALL_OWNERSHIP.length
+    );
   }
 }

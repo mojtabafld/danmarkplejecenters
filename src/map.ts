@@ -60,14 +60,22 @@ type Handlers = {
   onBasemapError(): void;
 };
 
-function toFeatureCollection(items: Plejecenter[]): GeoJSON.FeatureCollection {
+function toFeatureCollection(
+  items: Plejecenter[],
+  isVisited: (id: string) => boolean,
+): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: items.map((p) => ({
       type: 'Feature',
       id: p.id,
       geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
-      properties: { id: p.id, name: p.name, group: ownershipGroup(p) },
+      properties: {
+        id: p.id,
+        name: p.name,
+        group: ownershipGroup(p),
+        visited: isVisited(p.id),
+      },
     })),
   };
 }
@@ -100,6 +108,7 @@ export class PlejecenterMap {
   private basemapFailed = false;
   private userMarker: maplibregl.Marker | null = null;
   private lastUserFix: { lat: number; lon: number; accuracy: number; label: string } | null = null;
+  private lastVisited: (id: string) => boolean = () => false;
 
   /** Calls made before the map exists, replayed in order once it does. */
   private queued: Array<(m: MLMap) => void> = [];
@@ -143,7 +152,7 @@ export class PlejecenterMap {
       this.install();
       this.ready = true;
       if (this.pending) {
-        this.setData(this.pending);
+        this.setData(this.pending, this.lastVisited);
         this.pending = null;
       }
       for (const fn of this.queued) fn(map);
@@ -195,7 +204,7 @@ export class PlejecenterMap {
     const map = this.map!;
     map.addSource(SRC, {
       type: 'geojson',
-      data: toFeatureCollection([]),
+      data: toFeatureCollection([], () => false),
       cluster: true,
       clusterRadius: 46,
       clusterMaxZoom: 13,
@@ -253,6 +262,22 @@ export class PlejecenterMap {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 5, 12, 7, 15, 9],
         'circle-stroke-width': 2,
         'circle-stroke-color': token('--map-pin-ring'),
+      },
+    });
+
+    // Marked plejecentre get an outer ring. Deliberately a shape rather than a
+    // fourth colour: the three operator hues already mean something, and the
+    // ring reads as "one of yours" without arguing with them.
+    map.addLayer({
+      id: 'pin-visited',
+      type: 'circle',
+      source: SRC,
+      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'visited'], true]],
+      paint: {
+        'circle-color': 'rgba(0,0,0,0)',
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 9, 12, 11, 15, 14],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': token('--map-visited-ring'),
       },
     });
 
@@ -314,10 +339,11 @@ export class PlejecenterMap {
     });
   }
 
-  setData(items: Plejecenter[]): void {
+  setData(items: Plejecenter[], isVisited: (id: string) => boolean = () => false): void {
     this.pending = items;
+    this.lastVisited = isVisited;
     this.run((m) => {
-      (m.getSource(SRC) as GeoJSONSource).setData(toFeatureCollection(items));
+      (m.getSource(SRC) as GeoJSONSource).setData(toFeatureCollection(items, isVisited));
     });
   }
 

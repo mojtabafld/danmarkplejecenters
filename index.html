@@ -68,6 +68,20 @@
         </span>
         <span class="masthead__spacer"></span>
 
+        <div class="langpick" id="account" hidden>
+          <button
+            type="button"
+            class="langpick__button"
+            id="accountButton"
+            aria-expanded="false"
+            aria-controls="accountPanel"
+          >
+            <span class="sr-only" data-i18n="account.open"></span>
+            <span class="langpick__code" id="accountCode"></span>
+          </button>
+          <div class="langpick__menu account__panel" id="accountPanel" hidden></div>
+        </div>
+
         <div class="langpick" id="langpick">
           <button
             type="button"
@@ -97,6 +111,9 @@
             </p>
 
             <div class="chips" role="group" data-i18n-aria="filter.ownership">
+              <button type="button" class="chip chip--visited" id="visitedFilter" aria-pressed="false" hidden>
+                <span class="chip__mark" id="visitedFilterMark"></span><span data-i18n="visit.filter"></span>
+              </button>
               <button type="button" class="chip" data-own="Kommunal" data-group="Kommunal" aria-pressed="true">
                 <span class="chip__mark"></span><span data-i18n="ownership.Kommunal"></span>
               </button>

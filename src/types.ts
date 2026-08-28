@@ -28,4 +28,6 @@ export interface Filters {
   query: string;
   municipality: string | null;
   ownership: Set<OwnershipGroup>;
+  /** Show only what the signed-in reader has marked visited. */
+  visitedOnly: boolean;
 }

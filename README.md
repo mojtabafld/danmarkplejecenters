@@ -164,6 +164,83 @@ bundle locally, exactly as it will be served.
 
 ---
 
+## Accounts and the visited list
+
+Signed in, every plejecenter card gains a button that marks it visited, and a
+"visited only" filter narrows the map to what you have marked. Marked
+plejecentre carry an extra ring on the map -- a shape rather than a fourth
+colour, because the three operator hues already mean something.
+
+**The whole feature is optional.** Without a database the API answers 503, the
+account button never appears, and the map, the search, the filters and the
+cards behave exactly as they did before. A missing binding costs you accounts,
+not the site.
+
+### Wiring the database
+
+App Platform does not pass the connection string to the component on its own.
+The component needs the binding:
+
+```yaml
+envs:
+  - key: DATABASE_URL
+    scope: RUN_TIME
+    value: ${plejedb.DATABASE_URL}
+```
+
+where `plejedb` is the database component's name. `.do/app.yaml` has this
+already. The schema (three tables) is created on start-up if it is not there,
+so there is no migration step.
+
+### How the accounts work
+
+Email and password, and nothing else: no email is ever sent, so there is no
+mail provider to configure and no delivery to fail.
+
+- **Passwords** are hashed with scrypt -- memory-hard, so a stolen table is
+  expensive to attack offline -- using Node's own crypto. A password hash is
+  not somewhere to take on a dependency. Each has its own salt, and comparison
+  is constant-time.
+- **Sessions** are a random 32-byte token in an `HttpOnly`, `SameSite=Lax`,
+  `Secure` cookie. The table stores only the token's SHA-256, so reading the
+  database does not let you mint a cookie. `SameSite=Lax` is also what makes a
+  CSRF token unnecessary for the same-origin fetches this app makes.
+- **Sign-in is deliberately slow to distinguish**: an unknown address is
+  verified against a hash that cannot match, so response time does not reveal
+  who has an account.
+- **Credential endpoints are throttled** to 12 attempts per address per quarter
+  hour. It is per-instance and resets on deploy, which is the honest limit of
+  doing this without another table.
+- **Every value reaching SQL is a bound parameter.** A test marks a
+  plejecenter whose id is `x'; DROP TABLE visits; --` and asserts the row is
+  stored rather than executed.
+- **Deleting the account** removes the user, their sessions and their visits in
+  one statement, through `ON DELETE CASCADE`.
+
+Which care homes someone is looking at is personal information about a family
+member's care, so it is worth being deliberate: it is never logged, never
+leaves the database, and the delete button really deletes.
+
+### Testing it
+
+```bash
+npm test
+```
+
+28 checks against an in-memory Postgres, covering sign-up validation,
+duplicate addresses, case-insensitive sign-in, session forgery, one account
+being unable to see another's visits, cascade deletion, malformed JSON and the
+SQL-injection case.
+
+```bash
+npm run serve:memdb
+```
+
+Runs the real server against that same in-memory database on port 8150, which
+is how the browser flow was exercised without a Postgres server anywhere.
+
+---
+
 ## The data
 
 **148 plejecentre across 23 municipalities.** Every record comes from a public

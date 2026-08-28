@@ -1,6 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './styles/app.css';
 
+import { Account, type AuthError } from './account';
 import { DetailPanel } from './detail';
 import { Geolocator, type GeoStatus } from './geolocate';
 import { I18n, LOCALES, LOCALE_META, type Locale, type TranslationKey } from './i18n';
@@ -44,6 +45,10 @@ i18n.applyDocument();
 const store = new Store();
 const theme = new ThemeController();
 const geo = new Geolocator();
+const account = new Account();
+
+// The store filters on visits without holding a copy of them.
+store.isVisited = (id) => account.isVisited(id);
 
 const searchInput = $<HTMLInputElement>('#search');
 const searchClear = $<HTMLButtonElement>('#searchClear');
@@ -65,9 +70,16 @@ const live = $('#live');
 const langButton = $<HTMLButtonElement>('#langButton');
 const langMenu = $('#langMenu');
 const langCode = $('#langCode');
+const accountEl = $('#account');
+const accountButton = $<HTMLButtonElement>('#accountButton');
+const accountPanel = $('#accountPanel');
+const accountCode = $('#accountCode');
+const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
 
 const t = (key: TranslationKey, params?: Record<string, string | number>): string =>
   i18n.t(key, params);
+
+const esc = (v: string): string => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /* Static icon slots. Every glyph in this app is a lucide path — never an emoji. */
 $('#brandMark').innerHTML = icon('pin');
@@ -77,6 +89,8 @@ resetViewBtn.insertAdjacentHTML('beforeend', icon('frame'));
 $('#zoomIn').insertAdjacentHTML('beforeend', icon('plus'));
 $('#zoomOut').insertAdjacentHTML('beforeend', icon('minus'));
 $('#locateIcon').innerHTML = icon('crosshair');
+accountButton.insertAdjacentHTML('afterbegin', icon('user'));
+$('#visitedFilterMark').innerHTML = icon('bookmarkCheck');
 $('#geoNoteClose').insertAdjacentHTML('beforeend', icon('x'));
 $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
@@ -190,6 +204,162 @@ document.addEventListener('click', (e) => {
   if (!langMenu.hidden && !$('#langpick').contains(e.target as Node)) setLangMenuOpen(false);
 });
 
+/* --------------------------------------------------------------- account */
+
+/** True while a request is in flight, so the form cannot be submitted twice. */
+let accountBusy = false;
+
+function setAccountOpen(open: boolean): void {
+  accountPanel.hidden = !open;
+  accountButton.setAttribute('aria-expanded', String(open));
+  if (open) accountPanel.querySelector<HTMLElement>('input, button')?.focus();
+}
+
+function renderAccount(): void {
+  // No database bound on the server: leave the feature out rather than offer a
+  // button that can only fail.
+  accountEl.hidden = !account.available;
+  if (!account.available) return;
+
+  accountCode.textContent = account.user ? account.user.email.slice(0, 1).toUpperCase() : '';
+  accountButton.setAttribute(
+    'aria-label',
+    account.user ? t('account.signedInAs', { email: account.user.email }) : t('account.open'),
+  );
+  accountButton.dataset.state = account.user ? 'in' : 'out';
+
+  accountPanel.innerHTML = account.user ? signedInMarkup() : signedOutMarkup();
+
+  // The visited filter only means anything to someone with visits.
+  visitedFilter.hidden = !account.user;
+  if (!account.user && store.filters.visitedOnly) store.setVisitedOnly(false);
+}
+
+function signedInMarkup(): string {
+  return (
+    `<p class="account__who">${esc(t('account.signedInAs', { email: account.user!.email }))}</p>` +
+    `<div class="account__actions">` +
+    `<button type="button" class="btn btn--secondary" data-act="signout">${esc(t('account.signOut'))}</button>` +
+    `<button type="button" class="btn btn--danger" data-act="delete">${esc(t('account.deleteAccount'))}</button>` +
+    `</div>`
+  );
+}
+
+function signedOutMarkup(): string {
+  return (
+    `<p class="account__why">${esc(t('account.why'))}</p>` +
+    `<form class="account__form" id="accountForm" novalidate>` +
+    `<label class="account__field"><span>${esc(t('account.email'))}</span>` +
+    `<input class="field__input" type="email" name="email" autocomplete="email" required></label>` +
+    `<label class="account__field"><span>${esc(t('account.password'))}</span>` +
+    `<input class="field__input" type="password" name="password" autocomplete="current-password" required>` +
+    `<span class="account__hint">${esc(t('account.passwordHint', { n: 10 }))}</span></label>` +
+    `<p class="account__error" id="accountError" role="alert" hidden></p>` +
+    `<div class="account__actions">` +
+    `<button type="submit" class="btn btn--primary" data-act="signin">${esc(t('account.signIn'))}</button>` +
+    `<button type="button" class="btn btn--secondary" data-act="signup">${esc(t('account.signUp'))}</button>` +
+    `</div></form>`
+  );
+}
+
+function showAuthError(err: AuthError): void {
+  const box = accountPanel.querySelector<HTMLElement>('#accountError');
+  if (!box) return;
+  box.textContent = t(`error.${err}` as TranslationKey, { n: 10 });
+  box.hidden = false;
+}
+
+async function submitCredentials(kind: 'signin' | 'signup'): Promise<void> {
+  if (accountBusy) return;
+  const form = accountPanel.querySelector<HTMLFormElement>('#accountForm');
+  if (!form) return;
+  const data = new FormData(form);
+  const email = String(data.get('email') ?? '');
+  const password = String(data.get('password') ?? '');
+
+  accountBusy = true;
+  accountPanel.dataset.busy = 'true';
+  const err = kind === 'signin' ? await account.signIn(email, password) : await account.signUp(email, password);
+  accountBusy = false;
+  delete accountPanel.dataset.busy;
+
+  if (err) showAuthError(err);
+  else setAccountOpen(false);
+}
+
+accountButton.addEventListener('click', () => setAccountOpen(accountPanel.hidden));
+
+accountPanel.addEventListener('submit', (e) => {
+  e.preventDefault();
+  void submitCredentials('signin');
+});
+
+accountPanel.addEventListener('click', (e) => {
+  const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
+  if (act === 'signup') void submitCredentials('signup');
+  else if (act === 'signout') void account.signOut().then(() => setAccountOpen(false));
+  else if (act === 'delete') {
+    // A destructive, irreversible action gets an explicit confirmation.
+    if (confirm(t('account.deleteConfirm'))) void account.deleteAccount().then(() => setAccountOpen(false));
+  }
+});
+
+accountPanel.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.stopPropagation();
+    setAccountOpen(false);
+    accountButton.focus();
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!accountPanel.hidden && !accountEl.contains(e.target as Node)) setAccountOpen(false);
+});
+
+visitedFilter.addEventListener('click', () => {
+  store.setVisitedOnly(!store.filters.visitedOnly);
+  visitedFilter.setAttribute('aria-pressed', String(store.filters.visitedOnly));
+});
+
+/** Marking a plejecenter visited, from the detail card. */
+async function toggleVisited(id: string): Promise<void> {
+  if (!account.user) {
+    setAccountOpen(true);
+    return;
+  }
+  const p = store.byId(id);
+  const wasVisited = account.isVisited(id);
+  const ok = await account.toggleVisited(id);
+  if (!ok) {
+    live.textContent = t('visit.failed');
+    return;
+  }
+  live.textContent = t(wasVisited ? 'live.visitRemoved' : 'live.visitAdded', { name: p?.name ?? '' });
+}
+
+// The button lives in the card's foot, which is re-rendered on every open, so
+// the listener sits on the container that survives.
+$('#panelFoot').addEventListener('click', (e) => {
+  const id = (e.target as HTMLElement).closest<HTMLElement>('[data-visit]')?.dataset.visit;
+  if (id) void toggleVisited(id);
+});
+
+account.onChange(() => {
+  renderAccount();
+  // The map and the card both show visited state, so both are rebuilt.
+  map.setData(store.visible, (id) => account.isVisited(id));
+  const selected = store.selected;
+  if (selected) {
+    detail.show(selected, {
+      userAt: userPoint(),
+      visited: account.isVisited(selected.id),
+      canVisit: account.available,
+    });
+  }
+  lastVisibleKey = '';
+  render();
+});
+
 /* ------------------------------------------------------------------- map */
 
 const map = new PlejecenterMap($('#map'), theme.current, {
@@ -277,7 +447,12 @@ function render(): void {
     const p = store.selected;
     if (p) {
       detail.renderHead(p, panelHead);
-      detail.show(p, { restoreFocusTo: lastTrigger, userAt: userPoint() });
+      detail.show(p, {
+        restoreFocusTo: lastTrigger,
+        userAt: userPoint(),
+        visited: account.isVisited(p.id),
+        canVisit: account.available,
+      });
       // On a phone the panel is the answer to the tap. Leaving the list sheet
       // open behind it puts two overlays on the same screen competing for the
       // same thumb. Remember what it was so closing can put it back; only on
@@ -440,7 +615,13 @@ function renderGeo(status: GeoStatus): void {
 
       // The panel gains a distance line once we know where the reader is.
       const selected = store.selected;
-      if (selected) detail.show(selected, { userAt: { lat: status.lat, lon: status.lon } });
+      if (selected) {
+        detail.show(selected, {
+          userAt: { lat: status.lat, lon: status.lon },
+          visited: account.isVisited(selected.id),
+          canVisit: account.available,
+        });
+      }
       break;
     }
 
@@ -525,7 +706,9 @@ renderLangMenu();
 paintThemeToggle();
 paintCaret();
 renderGeo(geo.status);
+renderAccount();
 render();
+void account.load();
 map.setData(store.visible);
 
 // Dev-only handle, so the map can be inspected from the console during

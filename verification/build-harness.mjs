@@ -98,6 +98,9 @@ const I = {
   ),
   slash: icon('<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'),
   chevronDown: icon('<path d="m6 9 6 6 6-6"/>'),
+  user: icon('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+  bookmark: icon('<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>'),
+  bookmarkCheck: icon('<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="m9 10 2 2 4-4"/>'),
   check: icon('<path d="M20 6 9 17l-5-5"/>'),
   crosshair: icon(
     '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>' +
@@ -406,6 +409,63 @@ const states = `<!doctype html>
       <h3 class="empty__title">Ingen resultater</h3>
       <p class="empty__body">Ingen plejecentre matcher "zzz" i Dragør. Prøv et kortere søgeord, en anden kommune, eller slå driftsformerne til igen. Søgningen dækker navn, vej, postnummer og by.</p>
       <button type="button" class="btn btn--secondary">Nulstil filtre</button>
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2>Konto: ikke logget ind</h2>
+    <div class="langpick" style="position: static">
+      <button type="button" class="langpick__button" aria-expanded="true" aria-controls="acctOut" aria-label="Konto">
+        ${I.user}<span class="langpick__code"></span>
+      </button>
+      <div class="langpick__menu account__panel" id="acctOut" style="position: static; margin-block-start: var(--space-2)">
+        <p class="account__why">Opret en konto for at markere plejecentre som besøgt og finde dem igen senere.</p>
+        <form class="account__form">
+          <label class="account__field"><span>E-mail</span>
+            <input class="field__input" type="email" name="email" autocomplete="email"></label>
+          <label class="account__field"><span>Adgangskode</span>
+            <input class="field__input" type="password" name="password" autocomplete="current-password">
+            <span class="account__hint">Mindst 10 tegn.</span></label>
+          <p class="account__error" role="alert">E-mail eller adgangskode passer ikke.</p>
+          <div class="account__actions">
+            <button type="submit" class="btn btn--primary">Log ind</button>
+            <button type="button" class="btn btn--secondary">Opret konto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2>Konto: logget ind</h2>
+    <div class="langpick" style="position: static">
+      <div class="langpick__menu account__panel" style="position: static">
+        <p class="account__who">Logget ind som anna@example.dk</p>
+        <div class="account__actions">
+          <button type="button" class="btn btn--secondary">Log ud</button>
+          <button type="button" class="btn btn--danger">Slet konto</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2>Besøgt</h2>
+    <div class="row">
+      <button type="button" class="chip chip--visited" aria-pressed="false">
+        <span class="chip__mark">${I.bookmarkCheck}</span><span>Kun besøgte</span>
+      </button>
+      <button type="button" class="chip chip--visited" aria-pressed="true">
+        <span class="chip__mark">${I.bookmarkCheck}</span><span>Kun besøgte</span>
+      </button>
+    </div>
+    <div style="max-inline-size: 22rem; display: grid; gap: var(--space-2)">
+      <button type="button" class="btn btn--primary btn--visit" aria-pressed="false">
+        ${I.bookmark}Markér som besøgt
+      </button>
+      <button type="button" class="btn btn--secondary btn--visit" aria-pressed="true">
+        ${I.bookmarkCheck}Fjern fra besøgte
+      </button>
     </div>
   </section>
 

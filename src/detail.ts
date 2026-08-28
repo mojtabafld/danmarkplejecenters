@@ -47,11 +47,16 @@ export class DetailPanel {
 
   show(
     p: Plejecenter,
-    opts: { restoreFocusTo?: HTMLElement | null; userAt?: { lat: number; lon: number } | null } = {},
+    opts: {
+      restoreFocusTo?: HTMLElement | null;
+      userAt?: { lat: number; lon: number } | null;
+      visited?: boolean;
+      canVisit?: boolean;
+    } = {},
   ): void {
     this.lastFocus = opts.restoreFocusTo ?? null;
     this.body.innerHTML = this.markup(p, opts.userAt ?? null);
-    this.foot.innerHTML = this.actions(p);
+    this.foot.innerHTML = this.actions(p, opts.visited ?? false, opts.canVisit ?? false);
     this.root.hidden = false;
 
     // Entrance: set the "before" state, then release it on the next frame so
@@ -142,9 +147,20 @@ export class DetailPanel {
    * place is the most common reason this card is open, and burying it under
    * the register's small print made it something you had to go looking for.
    */
-  private actions(p: Plejecenter): string {
+  private actions(p: Plejecenter, visited: boolean, canVisit: boolean): string {
     const t = this.i18n.t.bind(this.i18n);
     const parts: string[] = ['<div class="panel__actions">'];
+
+    // The mark sits with the other actions rather than in the scrolling body:
+    // it is a thing you do to this plejecenter, not a fact about it.
+    if (canVisit) {
+      parts.push(
+        `<button type="button" class="btn ${visited ? 'btn--secondary' : 'btn--primary'} btn--visit"` +
+          ` data-visit="${esc(p.id)}" aria-pressed="${visited}">` +
+          `${icon(visited ? 'bookmarkCheck' : 'bookmark')}` +
+          `${esc(t(visited ? 'visit.unmark' : 'visit.mark'))}</button>`,
+      );
+    }
 
     if (p.web) {
       parts.push(

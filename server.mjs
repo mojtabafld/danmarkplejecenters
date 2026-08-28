@@ -16,6 +16,9 @@ import { stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import * as api from './server/api.mjs';
+import * as db from './server/db.mjs';
+
 const ROOT = resolve(fileURLToPath(new URL('./dist', import.meta.url)));
 const PORT = Number(process.env.PORT) || 8080;
 // 0.0.0.0, not localhost: a container's health check reaches it from outside.
@@ -72,7 +75,18 @@ async function fileFor(urlPath) {
   return null;
 }
 
+/*
+ * Behind App Platform the process speaks plain http and the platform terminates
+ * TLS, so req.socket.encrypted is false even though the visitor is on https.
+ * The session cookie still has to be marked Secure in that case, and must NOT
+ * be on a plain-http localhost or the browser drops it silently.
+ */
+const secureCookies = (req) =>
+  req.headers['x-forwarded-proto'] === 'https' || process.env.FORCE_SECURE_COOKIES === '1';
+
 const server = createServer(async (req, res) => {
+  if (await api.handle(req, res, { secure: secureCookies(req) })) return;
+
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { allow: 'GET, HEAD' }).end('Method Not Allowed');
     return;
@@ -111,6 +125,23 @@ const server = createServer(async (req, res) => {
     res.end('The build output is missing. Run `npm run build` first.');
   }
 });
+
+/*
+ * The database is optional on purpose. Without it the map, the search and the
+ * detail cards all still work; only accounts and the visited list are
+ * unavailable, and the API says so with a 503 rather than the whole site
+ * failing to start because an environment variable is missing.
+ */
+if (db.connectionString()) {
+  try {
+    await db.init();
+    console.log('database ready');
+  } catch (err) {
+    console.error('database unavailable, accounts disabled:', err.message);
+  }
+} else {
+  console.log('no DATABASE_URL, accounts disabled');
+}
 
 server.listen(PORT, HOST, () => {
   console.log(`serving ${ROOT} on http://${HOST}:${PORT}`);

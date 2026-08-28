@@ -201,6 +201,13 @@
   --feedback-error-fg: var(--p-clay-700);
   --feedback-error-bg: var(--p-clay-100);
 
+  /* Destructive is its own role, never action.primary wearing a different hue.
+     Measured: white on clay-700 is 7.05:1. */
+  --action-destructive: var(--p-clay-700);
+  --action-destructive-hover: var(--p-clay-900);
+  --action-destructive-active: var(--p-clay-900);
+  --text-on-destructive: var(--p-neutral-0);
+
   /* Ownership categories. Colour is never the sole carrier — the word is
      always printed next to the swatch, in the list and in the panel. */
   --cat-kommunal-fg: var(--p-brand-700);
@@ -219,6 +226,7 @@
   --map-cluster-ring: rgb(255 255 255 / 0.9);
   --map-pin-ring: var(--p-neutral-0);
   --map-pin-selected-halo: var(--p-brand-500);
+  --map-visited-ring: var(--p-brand-700);
   --map-user-dot: var(--p-live-600);
   --map-user-ring: var(--p-live-500);
   --map-user-accuracy: var(--p-live-600);
@@ -280,6 +288,11 @@
   --button-secondary-border: var(--action-secondary-border);
   --button-secondary-bg-hover: var(--action-secondary-hover-bg);
   --button-secondary-bg-active: var(--action-secondary-active-bg);
+  --button-destructive-bg: var(--action-destructive);
+  --button-destructive-bg-hover: var(--action-destructive-hover);
+  --button-destructive-bg-active: var(--action-destructive-active);
+  --button-destructive-fg: var(--text-on-destructive);
+
   --button-radius: var(--radius-md);
 
   --menu-bg: var(--surface-overlay);
@@ -345,6 +358,13 @@
   --feedback-error-fg: var(--p-clay-300);
   --feedback-error-bg: #3A1C18;
 
+  /* Dark: the fill lightens and the label darkens, so the pair keeps its
+     contrast instead of inheriting a light-theme fill. 9.83:1. */
+  --action-destructive: var(--p-clay-300);
+  --action-destructive-hover: var(--p-clay-100);
+  --action-destructive-active: var(--p-clay-100);
+  --text-on-destructive: var(--p-neutral-1000);
+
   --cat-kommunal-fg: var(--p-brand-300);
   --cat-kommunal-bg: #0B2926;
   --cat-kommunal-mark: var(--p-brand-400);
@@ -360,6 +380,7 @@
   --map-cluster-ring: rgb(18 22 22 / 0.85);
   --map-pin-ring: var(--p-neutral-1000);
   --map-pin-selected-halo: var(--p-brand-300);
+  --map-visited-ring: var(--p-brand-300);
   --map-user-dot: var(--p-live-400);
   --map-user-ring: var(--p-live-300);
   --map-user-accuracy: var(--p-live-300);
