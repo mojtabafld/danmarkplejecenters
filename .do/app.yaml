@@ -1,0 +1,29 @@
+# DigitalOcean App Platform spec.
+#
+# This is a static site: `npm run build` type-checks, then Vite writes `dist/`,
+# which App Platform serves directly. There is no server-side component and no
+# database, so nothing here needs a secret or an environment variable.
+#
+# Create it from this file with:
+#   doctl apps create --spec .do/app.yaml
+#
+# Or connect the repo in the App Platform UI, which detects the same settings.
+name: danmarkplejecenters
+region: fra
+
+static_sites:
+  - name: web
+    environment_slug: node-js
+
+    github:
+      repo: mojtabafld/danmarkplejecenters
+      branch: main
+      deploy_on_push: true
+
+    build_command: npm run build
+    output_dir: dist
+
+    index_document: index.html
+    # One page, no client-side router, but a catchall means a stray deep link
+    # or a refresh on any path still lands on the app instead of a 404.
+    catchall_document: index.html

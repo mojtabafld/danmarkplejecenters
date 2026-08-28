@@ -59,6 +59,56 @@ addresses, phone numbers and route links keep working.
 
 ---
 
+## Deploy
+
+The output is a plain static folder, so any static host serves it. The repo
+ships a DigitalOcean App Platform spec at `.do/app.yaml`.
+
+**From the App Platform UI:** create an app, pick this GitHub repo and the
+`main` branch. It detects a Node static site; confirm the settings match the
+spec:
+
+| Setting | Value |
+|---|---|
+| Type | Static Site |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| HTTP routes | `/` |
+
+**From the command line**, using the spec as-is:
+
+```bash
+doctl apps create --spec .do/app.yaml
+```
+
+`deploy_on_push` is on, so every push to `main` redeploys.
+
+Some notes that matter for this app specifically:
+
+- **The build needs devDependencies.** `npm run build` runs `tsc --noEmit`
+  before Vite, and TypeScript is a devDependency. App Platform installs them at
+  build time by default; do not set `NPM_CONFIG_PRODUCTION=true`.
+- **Node 20 or newer**, declared in `engines`. Vite 6 needs it.
+- **HTTPS is what makes "show my location" work.** Geolocation is refused
+  outside a secure context, and the app checks `isSecureContext` and says so
+  rather than failing silently. App Platform terminates TLS for you, so the
+  feature that cannot work on a plain-http local server does work once deployed.
+- **Outbound network access to the tile CDN** is required at runtime, from the
+  visitor's browser rather than from the server. If it is blocked the app says
+  so on screen and the list, addresses, phone numbers and routes keep working.
+- **No environment variables, no secrets, no database.** The register data is
+  compiled into the bundle at build time, and the basemap needs no API key.
+- **A catchall to `index.html`** is set in the spec. There is no client-side
+  router, but it means a stray deep link or a refresh lands on the app rather
+  than a 404.
+
+Verified before publishing: a clean `npm ci && npm run build` from a fresh
+clone, then the built `dist/` served by a plain static server and loaded in a
+browser -- no console errors, no failed requests, tiles rendering, all 148
+records listed, and the detail card opening with its three action buttons.
+
+---
+
 ## The data
 
 **148 plejecentre across 23 municipalities.** Every record comes from a public
