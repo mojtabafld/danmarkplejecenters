@@ -8,10 +8,18 @@ by how the home is run. Show where you are, and see how far each home is from
 there. Danish, English or Persian; light or dark; keyboard-operable, and usable
 down to a 280px-wide screen.
 
-On a phone the map leads, with the count, the search field and the municipality
-picker always on screen beneath it: those are how you narrow 148 homes down, and
-putting them behind a drawer would have put a step in front of the primary task.
-Only the result list itself is behind "Vis liste".
+On a phone the map leads, with the count, the operator filters, the search field
+and the municipality picker on screen beneath it: those are how you narrow 148
+homes down, and putting them behind a drawer would have put a step in front of
+the primary task.
+
+There is no visible list of centres. The map is the interface; you find a home
+by looking, searching or filtering, and you open it by tapping its dot. The
+list still exists in the page, though, because the dots are drawn into a WebGL
+canvas and cannot be tabbed to or announced: it is clipped out of sight the way
+a skip link is, and lays itself out only when keyboard focus enters it. A
+pointer user never sees it. A keyboard or screen-reader user still reaches all
+148 and opens any of them with Enter.
 
 The basemap is OpenStreetMap data, rendered as free vector tiles. There is no
 API key anywhere in this project, and no account to sign up for.

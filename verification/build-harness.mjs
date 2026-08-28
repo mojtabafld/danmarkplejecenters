@@ -134,6 +134,21 @@ writeFileSync(R('verification/harness-page.css'), `/* Harness only: the map is a
 .map { display: grid; place-items: center; color: var(--text-tertiary); font-size: var(--text-sm); }
 .map > * { max-inline-size: var(--measure); text-align: center; }
 
+/* Harness only: in the app the result list is clipped out of the pointer
+   interface and only laid out once keyboard focus enters it. The gates measure
+   that laid-out state, because it is the one with visual design to check --
+   and because a clipped, absolutely positioned list puts its buttons' boxes on
+   top of the filters, which reads as overlapping controls. */
+.results:not(:focus-within) {
+  position: static;
+  inline-size: auto;
+  block-size: auto;
+  margin: 0;
+  overflow-y: auto;
+  clip-path: none;
+  white-space: normal;
+}
+
 /* Harness only: below the sheet breakpoint the running app slides the rail down
    and scrolls the list inside itself. A gate that measures bounding boxes reads
    every scrolled-out row as overlapping whatever sits below the scroller, so the
@@ -181,15 +196,10 @@ const html = `<!doctype html>
   <div class="workspace">
     <aside class="rail" aria-label="Søg og filtrér plejecentre">
       <div class="rail__lead">
-        <div class="rail__leadrow">
-          <p class="tally">
-            <span class="tally__count">148</span>
-            <span class="tally__label"><b>plejecentre</b> i 23 kommuner</span>
-          </p>
-          <button type="button" class="rail__toggle" aria-expanded="true" aria-controls="results">
-            <span>Skjul liste</span>${I.chevronDown}
-          </button>
-        </div>
+        <p class="tally">
+          <span class="tally__count">148</span>
+          <span class="tally__label"><b>plejecentre</b> i 23 kommuner</span>
+        </p>
 
         <div class="chips" role="group" aria-label="Filtrér på driftsform">
           <button type="button" class="chip" data-own="Kommunal" aria-pressed="true"><span class="chip__mark"></span>Kommunal</button>

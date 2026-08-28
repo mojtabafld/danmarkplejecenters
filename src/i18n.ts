@@ -76,8 +76,6 @@ const DA = {
     'Prøv et kortere søgeord, en anden kommune, eller slå driftsformerne til igen. Søgningen dækker navn, vej, postnummer og by.',
   'empty.reset': 'Nulstil filtre',
 
-  'rail.showList': 'Vis liste',
-  'rail.hideList': 'Skjul liste',
 
   'map.label': 'Kort over plejecentre i hovedstadsområdet',
   'map.zoomIn': 'Zoom ind på kortet',
@@ -184,8 +182,6 @@ const EN: Record<Key, Entry> = {
     'Try a shorter search term, another municipality, or switch the operator filters back on. Search covers name, street, postcode and town.',
   'empty.reset': 'Reset filters',
 
-  'rail.showList': 'Show list',
-  'rail.hideList': 'Hide list',
 
   'map.label': 'Map of care homes across Greater Copenhagen',
   'map.zoomIn': 'Zoom in',
@@ -290,8 +286,6 @@ const FA: Record<Key, Entry> = {
     'واژهٔ کوتاه‌تری بنویسید، شهرداری دیگری برگزینید، یا پالایه‌های نوع اداره را دوباره روشن کنید. جست‌وجو نام، خیابان، کد پستی و شهر را در بر می‌گیرد.',
   'empty.reset': 'بازنشانی پالایه‌ها',
 
-  'rail.showList': 'نمایش فهرست',
-  'rail.hideList': 'پنهان کردن فهرست',
 
   'map.label': 'نقشهٔ مراکز مراقبت در منطقهٔ کپنهاگ',
   'map.zoomIn': 'بزرگ‌نمایی نقشه',

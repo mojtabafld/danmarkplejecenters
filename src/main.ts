@@ -46,7 +46,6 @@ const locateBtn = $<HTMLButtonElement>('#locate');
 const geoNote = $('#geoNote');
 const geoNoteText = $('#geoNoteText');
 const railEl = $('#rail');
-const railToggle = $<HTMLButtonElement>('#railToggle');
 const live = $('#live');
 const langButton = $<HTMLButtonElement>('#langButton');
 const langMenu = $('#langMenu');
@@ -221,78 +220,15 @@ const list = new ResultList(resultsEl, store, i18n, (p) => {
 
 const NARROW = window.matchMedia('(max-width: 60rem)');
 
-/**
- * How much of the sheet stays on screen when collapsed. Measured from the lead
- * block rather than guessed in CSS, so the sheet always closes on a clean edge
- * instead of clipping the search field in half at some font size.
- */
-/**
- * How much of the sheet stays on screen when collapsed: the count, the filters
- * and the control that opens the list. Measured rather than guessed in CSS, so
- * the sheet always closes on a clean edge instead of clipping a field in half
- * at some font size or in some language.
- */
-const PEEK_PARTS = ['.rail__lead', '.filters'] as const;
-
-function syncPeek(): void {
-  // getBoundingClientRect, not offsetHeight: three separately rounded integers
-  // summed ten pixels short of the real total, which cropped the bottom of the
-  // control that opens the list.
-  const rows = PEEK_PARTS.map(
-    (sel) => railEl.querySelector<HTMLElement>(sel)?.getBoundingClientRect().height ?? 0,
-  ).reduce((a, b) => a + b, 0);
-  if (rows > 0) railEl.style.setProperty('--collapsed-peek', `${Math.ceil(rows)}px`);
-}
-
-/**
- * Keep the peek honest for the life of the page.
- *
- * Measuring once at startup was wrong in both directions. The tally is still
- * empty at that point, so the first reading was short and the sheet closed
- * across the bottom of its own button. And the reading was taken before
- * Vazirmatn arrived, so once the Persian text reflowed into the real font the
- * blocks got shorter while the stale, larger peek stayed put, leaving a band of
- * empty sheet below the last control. Anything that changes those three blocks
- * -- the count landing, the font swapping, a language change, a rotation, the
- * reader's text size -- now re-measures them.
- */
-function watchPeek(): void {
-  const ro = new ResizeObserver(() => syncPeek());
-  for (const sel of PEEK_PARTS) {
-    const el = railEl.querySelector<HTMLElement>(sel);
-    if (el) ro.observe(el);
-  }
-  // A font swap changes metrics without resizing the observed boxes in every
-  // engine, so wait on it explicitly too.
-  document.fonts?.ready.then(() => syncPeek()).catch(() => {});
-}
-
-/** Slide the list sheet fully away, so nothing frames the detail card. */
+/** Slide the filter sheet fully away, so nothing frames the detail card. */
 function setRailOffscreen(off: boolean): void {
   if (off) railEl.dataset.offscreen = 'true';
   else delete railEl.dataset.offscreen;
 }
 
-function setRailCollapsed(collapsed: boolean): void {
-  railEl.dataset.collapsed = String(collapsed);
-  railToggle.setAttribute('aria-expanded', String(!collapsed));
-  railToggle.innerHTML =
-    `<span>${t(collapsed ? 'rail.showList' : 'rail.hideList')}</span>` +
-    icon(collapsed ? 'chevronUp' : 'chevronDown');
-  // After the label is written: the peek has to include the control at its
-  // final height, or the sheet closes across the middle of it.
-  syncPeek();
-}
-
-railToggle.addEventListener('click', () => {
-  setRailCollapsed(railEl.dataset.collapsed !== 'true');
-});
-
-/** On a phone the map should lead; the list opens on demand. */
+// Above the breakpoint the sheet is a column, not an overlay, so it must never
+// stay slid away just because a card happened to be open.
 NARROW.addEventListener('change', (e) => {
-  setRailCollapsed(e.matches);
-  // Above the breakpoint the rail is a column, not an overlay, so it must
-  // never stay slid away just because a card happened to be open.
   setRailOffscreen(e.matches && !panelEl.hidden);
 });
 
@@ -301,13 +237,6 @@ NARROW.addEventListener('change', (e) => {
 let lastVisibleKey = '';
 let lastSelected: string | null = null;
 
-/**
- * Whether the list sheet was open before the detail panel took the screen.
- * Opening a plejecenter on a phone collapses the sheet, and closing the panel
- * has to give back what was there: otherwise you tap a home from an open list,
- * close it, and the list is gone with no sign of where it went.
- */
-let railOpenBeforePanel: boolean | null = null;
 
 function userPoint(): { lat: number; lon: number } | null {
   return geo.status.kind === 'found'
@@ -339,20 +268,10 @@ function render(): void {
       // open behind it puts two overlays on the same screen competing for the
       // same thumb. Remember what it was so closing can put it back; only on
       // the first open, so moving between homes does not overwrite it.
-      if (NARROW.matches) {
-        if (railOpenBeforePanel === null) {
-          railOpenBeforePanel = railEl.dataset.collapsed !== 'true';
-        }
-        setRailCollapsed(true);
-        setRailOffscreen(true);
-      }
+      if (NARROW.matches) setRailOffscreen(true);
     } else {
       detail.hide();
       setRailOffscreen(false);
-      if (railOpenBeforePanel !== null) {
-        if (NARROW.matches) setRailCollapsed(!railOpenBeforePanel);
-        railOpenBeforePanel = null;
-      }
       // The map deliberately stays where it is. Closing a card is not a
       // request to go somewhere else, and snapping back to the whole region
       // threw away the position someone had just navigated to. The reset
@@ -572,7 +491,6 @@ i18n.onChange((locale) => {
   renderMunicipalityOptions();
   renderLangMenu();
   paintThemeToggle();
-  setRailCollapsed(railEl.dataset.collapsed === 'true');
   renderGeo(geo.status);
 
   // Force the data-driven views to rebuild: the records are unchanged, but
@@ -592,8 +510,6 @@ renderMunicipalityOptions();
 renderLangMenu();
 paintThemeToggle();
 paintCaret();
-setRailCollapsed(NARROW.matches);
-watchPeek();
 renderGeo(geo.status);
 render();
 map.setData(store.visible);
