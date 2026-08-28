@@ -158,7 +158,7 @@ writeFileSync(R('verification/harness-page.css'), `/* Harness only: the map is a
   body { overflow: auto; }
   .app { position: static; block-size: auto; }
   .workspace { grid-template-rows: auto auto; }
-  .rail { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+  .rail { grid-template-rows: auto auto minmax(0, 1fr); }
   .rail { grid-area: 2 / 1; position: static; max-block-size: none; translate: none; box-shadow: none; }
   .stage { grid-area: 1 / 1; min-block-size: 60vh; }
   .results { overflow: visible; }
@@ -235,11 +235,6 @@ const html = `<!doctype html>
         </ul>
       </nav>
 
-      <footer class="rail__foot">
-        Data: <a href="https://plejehjemsoversigten.dk">Plejehjemsoversigten</a>
-        (Sundhedsdatastyrelsen), udtræk 2026-08-22. Adresser verificeret mod
-        <a href="https://dawadocs.dataforsyningen.dk">Danmarks Adresseregister</a>.
-      </footer>
     </aside>
 
     <main class="stage">

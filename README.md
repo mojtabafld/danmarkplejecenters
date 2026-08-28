@@ -184,9 +184,10 @@ cannot resolve and refuses to write it.
 All 148 rows resolve to a distinct coordinate. Coverage of the optional fields:
 **145/148 phone**, **98/148 e-mail**, **143/148 website**.
 
-The register is only as current as the operators keep it. The app says which
-extract it is showing, in the footer, and the detail panel tells people to phone
-the plejecenter for waiting times and vacancies rather than trusting a map.
+The register is only as current as the operators keep it. The extract date is
+recorded in `EXTRACT_DATE` and at the top of the generated data file, and the
+detail card tells people to phone the plejecenter for waiting times and
+vacancies rather than trusting a map.
 
 ### Three things the register gets wrong, and what the pipeline does
 
@@ -227,7 +228,7 @@ npm run build:data -- --allow-expired-cert
 
 That re-downloads the current extract, re-geocodes every row against DAWA,
 re-reads the Copenhagen contact pages, and rewrites `src/data/plejecentre.ts`
-(including the extract date shown in the footer). It exits non-zero and names
+(including `EXTRACT_DATE`). It exits non-zero and names
 the rows if anything fails to geocode, and writes nothing it could not resolve.
 The `--allow-expired-cert` flag is needed for as long as the government host's
 certificate stays expired; see below.
@@ -345,9 +346,12 @@ The card has three regions, and which region a thing lives in is the whole
 design: a head that never moves, a body that scrolls, and a **pinned foot**.
 
 The card carries the record and nothing else. The provenance note that used to
-sit under the facts is gone from it: attribution belongs once, in the rail
-footer, not repeated on all 148 records, and in the card it was pushing the
-contact rows out of view. The "(opens in a new tab)" announcements are gone
+sit under the facts is gone from it: it was pushing the contact rows out of
+view, and repeating the same paragraph on all 148 records earned none of that
+space. The data-source line that used to sit at the foot of the filter sheet is
+gone too, so the sheet ends on the municipality picker and the map keeps the
+height. Only the map's own credit remains, because the OpenStreetMap and CARTO
+attribution is a condition of using the tiles. The "(opens in a new tab)" announcements are gone
 with it, in all three languages. The external-link icon on the button remains
 as the visual cue; a screen reader no longer hears the phrase.
 

@@ -2,7 +2,6 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './styles/app.css';
 
 import { DetailPanel } from './detail';
-import { EXTRACT_DATE } from './data/plejecentre';
 import { Geolocator, type GeoStatus } from './geolocate';
 import { I18n, LOCALES, LOCALE_META, type Locale, type TranslationKey } from './i18n';
 import { icon, iconDataUri } from './icons';
@@ -81,7 +80,6 @@ $('#locateIcon').innerHTML = icon('crosshair');
 $('#geoNoteClose').insertAdjacentHTML('beforeend', icon('x'));
 $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
-$('#extractDate').textContent = EXTRACT_DATE;
 
 /* --------------------------------------------------------------- language */
 

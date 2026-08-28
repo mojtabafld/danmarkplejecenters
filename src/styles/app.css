@@ -253,7 +253,7 @@ a.btn { text-decoration: none; }
   position: relative;
   z-index: var(--z-rail);
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-inline-size: 0;
   min-block-size: 0;
   background: var(--rail-bg);
@@ -576,16 +576,6 @@ a.btn { text-decoration: none; }
 }
 
 /* --------------------------------------------------------------- footer -- */
-.rail__foot {
-  padding: var(--space-3) var(--space-5);
-  font-size: var(--text-2xs);
-  line-height: var(--leading-snug);
-  color: var(--text-tertiary);
-  background: var(--surface-sunken);
-  border-block-start: var(--border-hairline) solid var(--border-subtle);
-  overflow-wrap: anywhere;
-}
-.rail__foot a { color: var(--text-link); text-underline-offset: 0.15em; }
 
 /* ============================================================== map ====== */
 .stage { position: relative; min-inline-size: 0; min-block-size: 0; }
@@ -933,7 +923,7 @@ a.btn { text-decoration: none; }
     align-self: end;
     inline-size: 100%;
     max-block-size: min(62%, 34rem);
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr);
     border-inline-end: 0;
     border-block-start: var(--border-hairline) solid var(--border-default);
     border-start-start-radius: var(--radius-xl);
@@ -964,23 +954,9 @@ a.btn { text-decoration: none; }
   }
 
   /* The sheet is: count + types, then the search fields. */
-  .rail { grid-template-rows: auto auto minmax(0, 1fr) auto; }
   .filters { padding-block-end: var(--space-3); }
   .rail__lead .chips { margin-block-start: var(--space-2); }
 
-  /*
-   * The sheet is only filters now, so every row it keeps is map the reader
-   * does not get. The source line stays -- the numbers on this map came from
-   * somewhere and it should say where -- but it collapses to one clipped line
-   * rather than the three it wraps to at this width. The full text is still
-   * there for a screen reader, and the wide layout shows it in full.
-   */
-  .rail__foot {
-    padding-block: var(--space-2);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
 
   /* The noun runs on into the phrase after it instead of owning a line, which
@@ -1050,7 +1026,7 @@ a.btn { text-decoration: none; }
 }
 
 @media (max-width: 26rem) {
-  .rail__lead, .filters, .rail__foot { padding-inline: var(--space-4); }
+  .rail__lead, .filters { padding-inline: var(--space-4); }
   .result { padding-inline: var(--space-4); }
   .results__group { padding-inline: var(--space-4); }
   .masthead { padding-inline: var(--space-3); gap: var(--space-2); }
@@ -1275,8 +1251,7 @@ a.btn { text-decoration: none; }
    an RTL page. Without this a Danish street number lands on the wrong end. */
 :root[dir='rtl'] .result__meta,
 :root[dir='rtl'] .fact__value,
-:root[dir='rtl'] .map__credit,
-:root[dir='rtl'] .rail__foot {
+:root[dir='rtl'] .map__credit {
   /* `plaintext` lets each line pick its own direction from its first strong
      character: Danish addresses read LTR, Persian labels read RTL. */
   unicode-bidi: plaintext;
@@ -1292,7 +1267,6 @@ a.btn { text-decoration: none; }
  * Without the second, 2026-08-22 came out as "2026-08-" at the end of one line
  * and "22." at the start of the next, which reads as two different numbers.
  */
-#extractDate,
 .fact__value a[dir='ltr'] {
   unicode-bidi: isolate;
   white-space: nowrap;

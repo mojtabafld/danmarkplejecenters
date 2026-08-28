@@ -119,11 +119,6 @@ const DA = {
   'panel.routeTo': ', rute til {name}',
   'panel.distance': '{n} km herfra',
 
-  'footer.data': 'Data:',
-  'footer.source': 'Plejehjemsoversigten',
-  'footer.agency': '(Sundhedsdatastyrelsen), udtræk',
-  'footer.verified': 'Adresser verificeret mod',
-  'footer.dawa': 'Danmarks Adresseregister',
 
   'live.results': { one: '{n} plejecenter vist på kortet.', other: '{n} plejecentre vist på kortet.' },
   'live.noResults': 'Ingen plejecentre matcher. Justér søgning eller filtre.',
@@ -225,11 +220,6 @@ const EN: Record<Key, Entry> = {
   'panel.routeTo': ', route to {name}',
   'panel.distance': '{n} km from you',
 
-  'footer.data': 'Data:',
-  'footer.source': 'Plejehjemsoversigten',
-  'footer.agency': '(Danish Health Data Authority), extract',
-  'footer.verified': 'Addresses verified against',
-  'footer.dawa': 'the Danish address register',
 
   'live.results': { one: '{n} care home shown on the map.', other: '{n} care homes shown on the map.' },
   'live.noResults': 'No care homes match. Adjust the search or the filters.',
@@ -329,11 +319,6 @@ const FA: Record<Key, Entry> = {
   'panel.routeTo': '، مسیر تا {name}',
   'panel.distance': '{n} کیلومتر تا شما',
 
-  'footer.data': 'داده:',
-  'footer.source': 'Plejehjemsoversigten',
-  'footer.agency': '(سازمان دادهٔ سلامت دانمارک)، برداشت',
-  'footer.verified': 'نشانی‌ها راستی‌آزمایی شده با',
-  'footer.dawa': 'سامانهٔ نشانی دانمارک',
 
   'live.results': { one: '{n} مرکز روی نقشه نشان داده شد.', other: '{n} مرکز روی نقشه نشان داده شد.' },
   'live.noResults': 'هیچ مرکزی همخوانی ندارد. جست‌وجو یا پالایه‌ها را تغییر دهید.',
