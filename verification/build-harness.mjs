@@ -178,7 +178,7 @@ const html = `<!doctype html>
     <span class="masthead__mark" aria-hidden="true">${I.pin}</span>
     <span class="masthead__titles">
       <h1 class="masthead__title">Plejecentre i Hovedstaden</h1>
-      <p class="masthead__sub">Officielle plejehjem, plejecentre og friplejeboliger i Greater Copenhagen</p>
+      <p class="masthead__sub">Officielle plejehjem, plejecentre og friplejeboliger</p>
     </span>
     <span class="masthead__spacer"></span>
     <div class="langpick">

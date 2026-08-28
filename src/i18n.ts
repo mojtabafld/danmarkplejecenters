@@ -30,7 +30,7 @@ type Entry = string | Plural;
 /* eslint-disable @typescript-eslint/naming-convention */
 const DA = {
   'app.title': 'Plejecentre i Hovedstaden',
-  'app.subtitle': 'Officielle plejehjem, plejecentre og friplejeboliger i Greater Copenhagen',
+  'app.subtitle': 'Officielle plejehjem, plejecentre og friplejeboliger',
   'app.skipToList': 'Spring til listen over plejecentre',
 
   'header.toDark': 'Skift til mørkt tema',
@@ -136,7 +136,7 @@ type Key = keyof typeof DA;
 
 const EN: Record<Key, Entry> = {
   'app.title': 'Care Homes in Greater Copenhagen',
-  'app.subtitle': 'Official plejehjem, plejecentre and friplejeboliger across Greater Copenhagen',
+  'app.subtitle': 'Official plejehjem, plejecentre and friplejeboliger',
   'app.skipToList': 'Skip to the list of care homes',
 
   'header.toDark': 'Switch to dark theme',
@@ -240,7 +240,7 @@ const EN: Record<Key, Entry> = {
 
 const FA: Record<Key, Entry> = {
   'app.title': 'مراکز مراقبت سالمندان در کپنهاگ بزرگ',
-  'app.subtitle': 'خانه‌ها و مراکز رسمی مراقبت سالمندان در منطقهٔ کپنهاگ بزرگ',
+  'app.subtitle': 'خانه‌ها و مراکز رسمی مراقبت سالمندان',
   'app.skipToList': 'پرش به فهرست مراکز مراقبت',
 
   'header.toDark': 'تغییر به پوستهٔ تیره',
