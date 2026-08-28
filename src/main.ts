@@ -353,11 +353,10 @@ function render(): void {
         if (NARROW.matches) setRailCollapsed(!railOpenBeforePanel);
         railOpenBeforePanel = null;
       }
-      // Closing the card returns the map to the view the app opens on. Leaving
-      // it zoomed into one street after the card about that street is gone
-      // strands you somewhere with no way back but the reset control.
-      map.resetView();
-      live.textContent = t('live.resetView');
+      // The map deliberately stays where it is. Closing a card is not a
+      // request to go somewhere else, and snapping back to the whole region
+      // threw away the position someone had just navigated to. The reset
+      // control on the map is there for when that IS what they want.
     }
   }
 

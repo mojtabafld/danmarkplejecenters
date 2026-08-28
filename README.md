@@ -393,9 +393,11 @@ of map above the card. The fly-to lifts the marker into that strip using the
 card's own measured height, so the place being described stays visible, but the
 map is a sliver while the card is open.
 
-Closing the card returns the map to the view the app opens on. Leaving it
-zoomed into one street after the card about that street is gone stranded you
-somewhere with no way back except the reset control.
+Closing the card leaves the map exactly where it is. Closing a card is not a
+request to go somewhere else, and snapping back to the whole region threw away
+the position someone had just navigated to -- usually the street they were
+about to look around. The reset control on the map is what returns to the
+opening view, for when that is actually what is wanted.
 
 ---
 
