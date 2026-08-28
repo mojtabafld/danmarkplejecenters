@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Plejecentre i Hovedstaden: kort over plejehjem i Greater Copenhagen</title>
+    <meta
+      name="description"
+      content="Interaktivt kort over 148 plejecentre og plejehjem i hovedstadsområdet. Søg, filtrer på kommune og driftsform, og få adresse, telefon, officiel hjemmeside og rutevejledning."
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#results" data-i18n="app.skipToList"></a>
+
+    <div class="app">
+      <header class="masthead">
+        <span class="masthead__mark" id="brandMark" aria-hidden="true"></span>
+        <span class="masthead__titles">
+          <h1 class="masthead__title" data-i18n="app.title"></h1>
+          <p class="masthead__sub" data-i18n="app.subtitle"></p>
+        </span>
+        <span class="masthead__spacer"></span>
+
+        <div class="langpick" id="langpick">
+          <button
+            type="button"
+            class="langpick__button"
+            id="langButton"
+            aria-expanded="false"
+            aria-controls="langMenu"
+          >
+            <span class="sr-only" data-i18n="header.language"></span>
+            <span class="langpick__code" id="langCode">DA</span>
+          </button>
+          <div class="langpick__menu" id="langMenu" hidden></div>
+        </div>
+
+        <button type="button" class="btn btn--ghost btn--icon" id="themeToggle">
+          <span class="sr-only" data-i18n="header.toDark"></span>
+        </button>
+      </header>
+
+      <div class="workspace">
+        <!-- ---------------------------------------------------------- rail -->
+        <aside class="rail" id="rail" data-i18n-aria="results.label">
+          <div class="rail__lead">
+            <p class="tally">
+              <span class="tally__count" id="tallyCount">148</span>
+              <span class="tally__label" id="tallyLabel"></span>
+            </p>
+          </div>
+
+          <div class="filters">
+            <label class="field">
+              <span class="sr-only" data-i18n="search.label"></span>
+              <span class="field__icon" id="searchIcon" aria-hidden="true"></span>
+              <input
+                class="field__input"
+                id="search"
+                type="search"
+                autocomplete="off"
+                spellcheck="false"
+                data-i18n-ph="search.placeholder"
+              />
+              <button type="button" class="field__clear" id="searchClear" hidden>
+                <span class="sr-only" data-i18n="search.clear"></span>
+              </button>
+            </label>
+
+            <label class="field">
+              <span class="sr-only" data-i18n="filter.municipality"></span>
+              <select class="select" id="municipality">
+                
+              </select>
+            </label>
+
+            <div class="chips" role="group" data-i18n-aria="filter.ownership">
+              <button type="button" class="chip" data-own="Kommunal" data-group="Kommunal" aria-pressed="true">
+                <span class="chip__mark"></span><span data-i18n="ownership.Kommunal"></span>
+              </button>
+              <button type="button" class="chip" data-own="Selvejende" data-group="Selvejende" aria-pressed="true">
+                <span class="chip__mark"></span><span data-i18n="ownership.Selvejende"></span>
+              </button>
+              <button type="button" class="chip" data-own="Privat" data-group="Privat" aria-pressed="true">
+                <span class="chip__mark"></span><span data-i18n="ownership.Privat"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="rail__handle">
+            <button
+              type="button"
+              class="rail__toggle"
+              id="railToggle"
+              aria-expanded="true"
+              aria-controls="results"
+            ></button>
+          </div>
+
+          <nav class="results" id="results" data-i18n-aria="results.label"></nav>
+
+          <footer class="rail__foot">
+            <span data-i18n="footer.data"></span>
+            <a href="https://plejehjemsoversigten.dk" target="_blank" rel="noopener noreferrer"
+              data-i18n="footer.source"></a>
+            <span data-i18n="footer.agency"></span>
+            <span id="extractDate" dir="ltr">2026-08-22</span>.
+            <span data-i18n="footer.verified"></span>
+            <a href="https://dawadocs.dataforsyningen.dk" target="_blank" rel="noopener noreferrer"
+              data-i18n="footer.dawa"></a>.
+          </footer>
+        </aside>
+
+        <!-- ----------------------------------------------------------- map -->
+        <main class="stage">
+          <div class="map" id="map" role="application" data-i18n-aria="map.label"></div>
+
+          <div class="geo-note" id="geoNote" hidden role="status">
+            <p id="geoNoteText"></p>
+            <button type="button" class="geo-note__close" id="geoNoteClose">
+              <span class="sr-only" data-i18n="locate.dismiss"></span>
+            </button>
+          </div>
+
+          <p class="map__fallback" id="mapFallback" hidden data-i18n="map.fallback"></p>
+
+          <div class="map__tools">
+            <button type="button" class="map__tool" id="locate" aria-pressed="false" data-state="idle">
+              <span class="sr-only" id="locateLabel"></span>
+              <span class="map__tool__icon" id="locateIcon"></span>
+              <span class="map__tool__spinner" aria-hidden="true"></span>
+            </button>
+
+            <div class="map__toolgroup">
+              <button type="button" class="map__tool" id="zoomIn">
+                <span class="sr-only" data-i18n="map.zoomIn"></span>
+              </button>
+              <button type="button" class="map__tool" id="zoomOut">
+                <span class="sr-only" data-i18n="map.zoomOut"></span>
+              </button>
+            </div>
+            <button type="button" class="map__tool" id="resetView">
+              <span class="sr-only" data-i18n="map.reset"></span>
+            </button>
+          </div>
+
+          <section class="map__legend" data-i18n-aria="map.legend">
+            <h2 data-i18n="map.legendTitle"></h2>
+            <p class="legend__row" data-own="Kommunal">
+              <span class="legend__mark" style="background: var(--own-mark)"></span><span data-i18n="ownership.Kommunal"></span>
+            </p>
+            <p class="legend__row" data-own="Selvejende">
+              <span class="legend__mark" style="background: var(--own-mark)"></span><span data-i18n="ownership.Selvejende"></span>
+            </p>
+            <p class="legend__row" data-own="Privat">
+              <span class="legend__mark" style="background: var(--own-mark)"></span><span data-i18n="ownership.PrivatLong"></span>
+            </p>
+          </section>
+
+          <p class="map__credit">
+            <span data-i18n="map.credit"></span>
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer"
+              >OpenStreetMap</a
+            >
+            ·
+            <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>
+          </p>
+
+          <!-- ------------------------------------------------------- panel -->
+          <aside
+            class="panel"
+            id="panel"
+            hidden
+            role="region"
+            aria-labelledby="panelTitle"
+            tabindex="-1"
+          >
+            <div class="panel__head" id="panelHead">
+              <div>
+                <span class="panel__eyebrow"></span>
+                <h2 class="panel__title" id="panelTitle"></h2>
+              </div>
+              <button type="button" class="panel__close"></button>
+            </div>
+            <div class="panel__body" id="panelBody"></div>
+            <div class="panel__foot" id="panelFoot"></div>
+          </aside>
+        </main>
+      </div>
+    </div>
+
+    <p class="sr-only" id="live" role="status" aria-live="polite"></p>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

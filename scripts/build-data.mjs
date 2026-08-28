@@ -1,0 +1,331 @@
+#!/usr/bin/env node
+/**
+ * Rebuild src/data/plejecentre.ts from the authoritative sources.
+ *
+ *   1. Download the monthly CSV extract from Plejehjemsoversigten — the
+ *      statutory national register of Danish plejehjem, plejecentre and
+ *      friplejeboliger, maintained by Sundhedsdatastyrelsen.
+ *   2. Keep the Greater Copenhagen municipalities.
+ *   3. Resolve every row against Danmarks Adresseregister (DAWA) to get an
+ *      official address and WGS84 coordinates. Nothing is placed on the map on
+ *      a guessed coordinate: a row that will not resolve is reported, not shipped.
+ *
+ * Usage: npm run build:data
+ */
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const OUT = resolve(HERE, '../src/data/plejecentre.ts');
+
+const CSV_URL = 'https://admin.plejehjemsoversigten.dk/handlers/downloadcsvfilehandler.ashx';
+const DAWA = 'https://api.dataforsyningen.dk/adgangsadresser';
+
+/** Greater Copenhagen: the capital plus the surrounding commuter municipalities. */
+const MUNICIPALITIES = new Set([
+  'Københavns', 'Frederiksberg', 'Gentofte', 'Gladsaxe', 'Herlev', 'Rødovre',
+  'Hvidovre', 'Brøndby', 'Glostrup', 'Albertslund', 'Ballerup', 'Tårnby',
+  'Dragør', 'Lyngby-Taarbæk', 'Rudersdal', 'Furesø', 'Vallensbæk', 'Ishøj',
+  'Høje-Taastrup', 'Hørsholm', 'Egedal', 'Allerød', 'Greve',
+]);
+
+/**
+ * A handful of register rows carry a malformed street field (a repeated name, a
+ * floor note, an empty house number). These are the corrected addresses, each
+ * confirmed against the operator's own page before being written down here.
+ */
+const ADDRESS_FIXES = {
+  'Plejehjemmet Hareskovbo': ['Skovalleen', '8', '2880'],
+  'Lions Park Søllerød': ['Mariehøjvej', '23', '2850'],
+  'OK Prinsesse Benedikte': ['Sankt Nikolaj Vej', '4', '1953'],
+  'Plejecenter Egeparken': ['Rådhusstrædet', '4', '3650'],
+  'Nældebjerg - Kompetencecenter for Demens': ['Rådhusholmen', '8A', '2670'],
+  'Lærkegaard Center': ['Persillehaven', '30', '2730'],
+  'Plejehjemmet Svanepunktet': ['Paltholmterrasserne', '35', '3520'],
+};
+
+/* ------------------------------------------------------- field validation */
+
+/**
+ * The register's Phone and Email columns are free text, and ~58 rows nationally
+ * carry the literal placeholder "Besøg hjemmeside" instead of a value. Others
+ * hold two numbers separated by a slash or the word "eller". A placeholder
+ * rendered as `tel:+45` is worse than an absent field: it looks callable and
+ * dials nothing. So both are validated, and anything that is not a real value
+ * becomes null.
+ */
+function cleanPhone(raw) {
+  if (!raw) return null;
+  // "57 87 66 68/57 87 66 62", "2488 6941 eller 2488 6936" -> the first number.
+  const first = String(raw).split(/\/|\beller\b|,/i)[0];
+  const digits = first.replace(/\D/g, '').replace(/^45(?=\d{8}$)/, '');
+  return digits.length === 8 ? digits : null;
+}
+
+function cleanEmail(raw) {
+  const v = (raw ?? '').trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? v : null;
+}
+
+/**
+ * Copenhagen's municipal homes are the bulk of the placeholder rows: the
+ * register points at boligertilaeldre.kk.dk instead of publishing a number.
+ * Those numbers are public on each home's own contact page, so they are read
+ * from there and matched back by address. Secondary source, used only to fill a
+ * gap the primary register leaves empty, never to overwrite it.
+ */
+async function copenhagenPhones() {
+  const base = 'https://boligertilaeldre.kk.dk/plejehjem/find-plejehjem';
+  const slugs = new Set();
+  for (let page = 0; page < 8; page++) {
+    const res = await fetch(`${base}?page=${page}`);
+    if (!res.ok) break;
+    const html = await res.text();
+    const found = [...html.matchAll(/href="\/plejehjem\/find-plejehjem\/([a-z0-9-]+)"/g)].map((m) => m[1]);
+    if (found.length === 0) break;
+    for (const s of found) slugs.add(s);
+  }
+
+  const byAddress = new Map();
+  for (const slug of slugs) {
+    const res = await fetch(`${base}/${slug}/kontakt`);
+    if (!res.ok) continue;
+    const text = (await res.text()).replace(/<[^>]+>/g, '\n');
+    const lines = text
+      .split('\n')
+      .map((l) => l.replace(/&#\d+;|&[a-z]+;/g, ' ').trim())
+      .filter(Boolean);
+
+    const k = lines.indexOf('Kontakt os');
+    if (k === -1) continue;
+    const block = lines.slice(k + 1, k + 8);
+    const pi = block.findIndex((l) => /^\d{4}$/.test(l));
+    if (pi === -1) continue;
+
+    const street = block.slice(1, pi).join(' ').replace(/\s+/g, ' ').trim();
+    const postcode = block[pi];
+
+    const t = lines.indexOf('Telefon', k);
+    const phone = t === -1 ? null : cleanPhone(lines[t + 1]);
+    if (phone) byAddress.set(`${street.toLowerCase().replace(/\s/g, '')}|${postcode}`, phone);
+  }
+  return byAddress;
+}
+
+/* --------------------------------------------------------------- CSV parse */
+
+function parseCsv(text, delimiter = ';') {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let quoted = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else quoted = false;
+      } else field += c;
+      continue;
+    }
+    if (c === '"') { quoted = true; continue; }
+    if (c === delimiter) { row.push(field); field = ''; continue; }
+    if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; continue; }
+    if (c === '\r') continue;
+    field += c;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+
+  const header = rows.shift().map((h) => h.trim());
+  return rows
+    .filter((r) => r.length >= header.length - 2)
+    .map((r) => Object.fromEntries(header.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
+
+/* ------------------------------------------------------------- geocoding */
+
+async function dawa(params) {
+  const url = `${DAWA}?${new URLSearchParams({ ...params, struktur: 'mini' })}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function geocode(street, houseNo, postcode) {
+  const m = /^\s*(\d+)\s*([A-Za-zÆØÅæøå])?/.exec(houseNo ?? '');
+  const candidates = [
+    (houseNo ?? '').replace(/\s+/g, ''),
+    m ? m[1] + (m[2] ?? '') : '',
+    m ? m[1] : '',
+  ].filter(Boolean);
+
+  // Exact street name first. DAWA's `vejnavn` is an exact match, so this only
+  // works when the register spells the street the way the address register does.
+  for (const husnr of candidates) {
+    const hit = await dawa({ vejnavn: street, husnr, postnr: postcode });
+    if (hit.length) return hit[0];
+  }
+
+  // Street exists but not that house number.
+  const onStreet = await dawa({ vejnavn: street, postnr: postcode, per_side: '1' });
+  if (onStreet.length) return onStreet[0];
+
+  /*
+   * Fuzzy search. The register's street names drift from the official spelling
+   * in ways an exact match will never forgive: "Fuglsang Alle" for Allé,
+   * "Edith Rodes vej" for Vej, "Jægersborg Allé 148C og 150" carrying a second
+   * house number, "Nybøllevej, Ledøje" carrying a village name. Seven of the
+   * 148 Greater Copenhagen rows need this; without it they would be dropped,
+   * which is a worse outcome than a matched fuzzy hit in the right postcode.
+   */
+  const q = `${street.replace(/,.*$/, '')} ${candidates.at(-1) ?? ''}`.trim();
+  const fuzzy = await dawa({ q: `${q}, ${postcode}`, per_side: '1' });
+  if (fuzzy.length && fuzzy[0].postnr === postcode) return fuzzy[0];
+
+  const loose = await dawa({ q: `${street.replace(/,.*$/, '')}, ${postcode}`, per_side: '1' });
+  return loose.length && loose[0].postnr === postcode ? loose[0] : null;
+}
+
+/* ------------------------------------------------------------------- main */
+
+/**
+ * As of the 2026-08-22 extract, admin.plejehjemsoversigten.dk serves an expired
+ * TLS certificate. That is the government host's problem, not ours, and it is
+ * not something to paper over silently: the download fails with an explanation,
+ * and skipping verification takes a deliberate `--allow-expired-cert`.
+ */
+async function fetchExtract() {
+  try {
+    return await fetch(CSV_URL);
+  } catch (err) {
+    const expired = String(err?.cause?.code ?? '') === 'CERT_HAS_EXPIRED';
+    if (!expired) throw err;
+    if (!process.argv.includes('--allow-expired-cert')) {
+      console.error(
+        '\nadmin.plejehjemsoversigten.dk is serving an EXPIRED TLS certificate.\n' +
+          'The extract was not downloaded and nothing was written.\n\n' +
+          'If you have checked that the host is the real one and accept the risk:\n' +
+          '  npm run build:data -- --allow-expired-cert\n',
+      );
+      process.exit(2);
+    }
+    console.warn('  WARNING: certificate verification disabled for this one download.');
+    const https = await import('node:https');
+    const body = await new Promise((ok, no) => {
+      https
+        .get(CSV_URL, { rejectUnauthorized: false }, (r) => {
+          if (r.statusCode !== 200) return no(new Error(`CSV download failed: ${r.statusCode}`));
+          const chunks = [];
+          r.on('data', (c) => chunks.push(c));
+          r.on('end', () => ok({ buf: Buffer.concat(chunks), headers: r.headers }));
+        })
+        .on('error', no);
+    });
+    // Shaped like a fetch Response so the caller stays unaware of the detour.
+    return {
+      ok: true,
+      headers: { get: (h) => body.headers[h.toLowerCase()] ?? null },
+      arrayBuffer: async () => body.buf,
+    };
+  }
+}
+
+console.log('Downloading Plejehjemsoversigten extract…');
+const res = await fetchExtract();
+if (!res.ok) throw new Error(`CSV download failed: ${res.status}`);
+
+const disposition = res.headers.get('content-disposition') ?? '';
+const stamp = /Plejehjem-(\d{4})(\d{2})(\d{2})/.exec(disposition);
+const extractDate = stamp ? `${stamp[1]}-${stamp[2]}-${stamp[3]}` : new Date().toISOString().slice(0, 10);
+
+// The register serves Windows-1252, not UTF-8.
+const text = new TextDecoder('windows-1252').decode(await res.arrayBuffer());
+const all = parseCsv(text);
+console.log(`  ${all.length} rows, extract dated ${extractDate}`);
+
+const selected = all.filter(
+  (r) => r.Inactive !== 'True' && MUNICIPALITIES.has((r['Kommune'] ?? '').replace(' Kommune', '').trim()),
+);
+console.log(`  ${selected.length} rows in Greater Copenhagen — geocoding…`);
+
+console.log('  fetching Copenhagen contact pages for the numbers the register omits…');
+const kkPhones = await copenhagenPhones();
+console.log(`  ${kkPhones.size} phone number(s) available as backfill`);
+
+const records = [];
+const failures = [];
+let backfilled = 0;
+
+/** The register contains doubled spaces and stray padding in some names. */
+const tidy = (s) => (s ?? '').replace(/\s+/g, ' ').trim();
+
+for (const r of selected) {
+  const name = tidy(r['Plejehjemsnavn']);
+  const [street, houseNo, postcode] = ADDRESS_FIXES[name] ?? [r['Vejnavn'], r['Vejnummer'], r['Postalcode']];
+
+  const hit = await geocode(street, houseNo, postcode);
+  if (!hit) { failures.push(`${name} — ${street} ${houseNo}, ${postcode}`); continue; }
+
+  let web = (r['Web'] ?? '').trim();
+  if (web && !/^https?:\/\//i.test(web)) web = `https://${web}`;
+
+  const streetFull = tidy(`${street} ${houseNo}`);
+  let phone = cleanPhone(r['Phone']);
+  if (!phone) {
+    const fill = kkPhones.get(`${streetFull.toLowerCase().replace(/\s/g, '')}|${postcode}`);
+    if (fill) { phone = fill; backfilled++; }
+  }
+
+  records.push({
+    id: r['id'],
+    name,
+    street: streetFull,
+    postcode,
+    city: hit.postnrnavn,
+    municipality: r['Kommune'].replace(' Kommune', '').trim(),
+    phone,
+    email: cleanEmail(r['Email']),
+    web: web || null,
+    ownership: (r['Center type'] ?? '').trim() || 'Ukendt',
+    homes: /^\d+$/.test(r['Antal boliger'] ?? '') ? Number(r['Antal boliger']) : null,
+    lat: Number(hit.y.toFixed(6)),
+    lon: Number(hit.x.toFixed(6)),
+  });
+}
+
+records.sort((a, b) =>
+  a.municipality.localeCompare(b.municipality, 'da-DK') || a.name.localeCompare(b.name, 'da-DK'),
+);
+
+if (failures.length) {
+  console.error(`\n${failures.length} row(s) would not geocode and were NOT written:`);
+  for (const f of failures) console.error(`  ${f}`);
+  console.error('Add a corrected address to ADDRESS_FIXES in this script, then re-run.\n');
+}
+
+const banner = `// GENERATED FILE — do not edit by hand.
+// Regenerate with:  npm run build:data
+//
+// Source  Plejehjemsoversigten (Sundhedsdatastyrelsen), the statutory national
+//         register of Danish plejehjem / plejecentre / friplejeboliger.
+//         Monthly CSV extract dated ${extractDate}.
+// Geocode Danmarks Adresseregister (DAWA, api.dataforsyningen.dk) — every row
+//         resolved to an official access address; coordinates are WGS84.
+
+import type { Plejecenter } from '../types';
+
+export const EXTRACT_DATE = '${extractDate}';
+
+export const PLEJECENTRE: Plejecenter[] = ${JSON.stringify(records, null, 1)};
+`;
+
+writeFileSync(OUT, banner, 'utf8');
+const withPhone = records.filter((r) => r.phone).length;
+const withEmail = records.filter((r) => r.email).length;
+console.log(`\nWrote ${records.length} plejecentre to ${OUT}`);
+console.log(`  phone: ${withPhone}/${records.length} (${backfilled} backfilled from kk.dk)`);
+console.log(`  email: ${withEmail}/${records.length}`);
+
+if (failures.length) process.exit(1);
