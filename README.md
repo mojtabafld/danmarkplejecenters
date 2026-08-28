@@ -107,6 +107,53 @@ clone, then the built `dist/` served by a plain static server and loaded in a
 browser -- no console errors, no failed requests, tiles rendering, all 148
 records listed, and the detail card opening with its three action buttons.
 
+### "Deploy Error: Container Terminated"
+
+This means the component was created as a **Web Service** rather than a Static
+Site. A static site has no runtime container at all -- the platform builds it
+and a CDN serves the files -- so a terminated container can only come from a
+service. The build succeeds, the platform then runs the service's start
+command, nothing binds to `$PORT`, and the container is killed for failing its
+health check.
+
+Either fix works.
+
+**Preferred: make it a Static Site.** Cheaper, faster, and correct for four
+static files. Apply the committed spec to the existing app:
+
+```bash
+doctl apps update <APP_ID> --spec .do/app.yaml
+```
+
+`doctl apps list` prints the id. In the UI the equivalent is to delete the
+service component and add a Static Site component in its place; App Platform
+does not convert one into the other.
+
+**Or keep it as a Web Service.** `npm start` now runs `server.mjs`, a
+dependency-free static file server that binds `0.0.0.0:$PORT`, serves `dist/`,
+and sends any unknown path to `index.html`. Set the component's run command to
+`npm start` and its HTTP port to `8080`, or use this spec:
+
+```yaml
+name: danmarkplejecenters
+region: fra
+services:
+  - name: web
+    environment_slug: node-js
+    github:
+      repo: mojtabafld/danmarkplejecenters
+      branch: main
+      deploy_on_push: true
+    build_command: npm run build
+    run_command: npm start
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+```
+
+The server is worth having either way: `npm start` gives you the production
+bundle locally, exactly as it will be served.
+
 ---
 
 ## The data
