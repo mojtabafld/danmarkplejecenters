@@ -208,8 +208,9 @@ the edge of the screen and under the thumb that opened them. It centres with
 `inset-inline: 0` and `margin-inline: auto`, so it holds in Persian exactly as
 it does in Danish. On a wide screen it stays anchored to its button, where
 there is room for it. Marked
-plejecentre carry an extra ring on the map -- a shape rather than a fourth
-colour, because the three operator hues already mean something.
+plejecentre carry an extra ring on the map. Only a ring: the dot keeps its
+operator colour, because that is the one thing the map is colour-coded to say
+and repainting it grey read as disabled rather than as chosen.
 
 **The whole feature is optional.** Without a database the API answers 503, the
 account button never appears, and the map, the search, the filters and the

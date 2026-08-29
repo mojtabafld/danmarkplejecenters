@@ -188,19 +188,13 @@ export class PlejecenterMap {
   /**
    * Colours come from the live theme, never from literals in this file.
    *
-   * A marked plejecenter goes grey, ahead of its operator colour. That does
-   * trade one piece of information for another on the map -- you can no longer
-   * read the operator off a marked dot -- but the operator is still named in
-   * the card, and telling your own shortlist apart at a glance is what the map
-   * is being used for once you have one.
+   * A marked plejecenter keeps its operator colour. Greying the dot did
+   * separate the shortlist, but it read as disabled and it threw away the one
+   * thing the map is colour-coded to say. The grey ring around it carries
+   * "marked" on its own, as a shape rather than a repaint.
    */
   private markColor(): ExpressionSpecification {
-    return [
-      'case',
-      ['==', ['get', 'visited'], true],
-      token('--map-visited-fill'),
-      this.groupColor(),
-    ];
+    return this.groupColor();
   }
 
   private groupColor(): ExpressionSpecification {
