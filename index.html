@@ -172,6 +172,13 @@
                    An sr-only span here would be dead weight, because an
                    aria-label overrides it. -->
               <button type="button" class="iconbtn" id="visitedFilter" aria-pressed="false" hidden></button>
+
+              <!-- Shown once, the first time somebody signs in, pointing at the
+                   control above. role="status" so it is announced rather than
+                   only seen. -->
+              <div class="coach" id="savedHint" role="status" hidden>
+                <span data-i18n="visit.hint"></span>
+              </div>
             </div>
 
             <label class="field">

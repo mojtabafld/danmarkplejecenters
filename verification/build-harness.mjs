@@ -516,6 +516,15 @@ const states = `<!doctype html>
   </section>
 
   <section class="stack">
+    <h2>Førstegangstip</h2>
+    <div style="position: relative; padding-block-start: var(--space-8)">
+      <div class="coach" style="position: static; max-inline-size: 15rem" role="status">
+        Dine gemte steder finder du her.
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
     <h2>Besøgt</h2>
     <div class="row">
       <button type="button" class="iconbtn" aria-pressed="false" aria-label="Kun besøgte">${I.bookmarkCheck}</button>

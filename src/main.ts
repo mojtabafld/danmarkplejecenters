@@ -75,6 +75,7 @@ const accountButton = $<HTMLButtonElement>('#accountButton');
 const accountPanel = $('#accountPanel');
 const accountCode = $('#accountCode');
 const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
+const savedHint = $('#savedHint');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -365,7 +366,10 @@ async function submitCredentials(kind: 'signin' | 'signup'): Promise<void> {
   // not: it now shows which address the link went to, which is the one thing
   // the person needs next.
   verifiedNotice = null;
-  if (kind === 'signin') setAccountOpen(false);
+  if (kind === 'signin') {
+    setAccountOpen(false);
+    showSavedHint();
+  }
 }
 
 accountButton.addEventListener('click', () => setAccountOpen(accountPanel.hidden));
@@ -378,7 +382,12 @@ accountPanel.addEventListener('submit', (e) => {
 accountPanel.addEventListener('click', (e) => {
   const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
   if (act === 'signup') void submitCredentials('signup');
-  else if (act === 'signout') void account.signOut().then(() => setAccountOpen(false));
+  else if (act === 'signout') {
+    void account.signOut().then(() => {
+      hideSavedHint();
+      setAccountOpen(false);
+    });
+  }
   else if (act === 'close') {
     setAccountOpen(false);
     accountButton.focus();
@@ -421,6 +430,56 @@ visitedFilter.addEventListener('click', () => {
   store.setVisitedOnly(!store.filters.visitedOnly);
   visitedFilter.setAttribute('aria-pressed', String(store.filters.visitedOnly));
 });
+
+/**
+ * The one-time tip pointing at the saved-places control.
+ *
+ * Shown after a real sign-in, once and never again. The flag lives in
+ * localStorage, so "once" means once on this device rather than once per
+ * account -- which is the right unit anyway: the tip explains where a control
+ * is, and that is something you learn on the device you are holding.
+ *
+ * It fades after five seconds and can be dismissed sooner by touching it. It
+ * is supplementary throughout: the control it points at carries its own
+ * accessible name, so nothing is lost if the tip is missed.
+ */
+const HINT_KEY = 'plejekort.savedHintSeen';
+let hintShownThisSession = false;
+let hintTimers: number[] = [];
+
+function showSavedHint(): void {
+  if (!account.user || hintShownThisSession) return;
+  try {
+    if (localStorage.getItem(HINT_KEY)) return;
+    localStorage.setItem(HINT_KEY, '1');
+  } catch {
+    // Private mode: no way to remember, so show it once for this page and
+    // leave it at that rather than on every sign-in.
+  }
+  hintShownThisSession = true;
+
+  savedHint.textContent = t('visit.hint');
+  savedHint.setAttribute('title', t('visit.hintDismiss'));
+  delete savedHint.dataset.fading;
+  savedHint.hidden = false;
+
+  hintTimers.push(
+    window.setTimeout(() => {
+      savedHint.dataset.fading = 'true';
+      // Hidden only once the fade has finished, so it does not vanish mid-way.
+      hintTimers.push(window.setTimeout(() => hideSavedHint(), 400));
+    }, 5000),
+  );
+}
+
+function hideSavedHint(): void {
+  for (const id of hintTimers) window.clearTimeout(id);
+  hintTimers = [];
+  savedHint.hidden = true;
+  delete savedHint.dataset.fading;
+}
+
+savedHint.addEventListener('click', () => hideSavedHint());
 
 /** Icon only, so the label is the accessible name and the title on hover. */
 function paintVisitedFilter(): void {

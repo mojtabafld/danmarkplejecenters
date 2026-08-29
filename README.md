@@ -174,6 +174,15 @@ of the control, and the two states differ by shape (an open bookmark against
 one with a tick) as well as by fill. The hit area is 36px, comfortably over the
 24px floor an icon-only control has to clear.
 
+The first time somebody signs in, a tip appears above that control saying their
+saved places show up there, and fades out after five seconds. Once, and never
+again: the flag is in `localStorage`, so "once" means once on this device
+rather than once per account -- which is the right unit, because the tip
+explains where a control is and that is learnt on the device in your hand. It
+is supplementary throughout, carries `role="status"` so it is announced rather
+than only seen, and can be dismissed by touching it; the control it points at
+has its own accessible name, so nothing is lost if it is missed.
+
 A "visited only" toggle narrows the map to what you have marked. It sits at the
 inline end of the search row, which mirrors on its own: to the left of the
 field in Persian, to the right in Danish and English, with no physical

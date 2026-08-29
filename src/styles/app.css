@@ -312,10 +312,49 @@ a.btn { text-decoration: none; }
 /* Search and the visited toggle share a row. The toggle lands at the inline
    end, which mirrors on its own: left in Persian, right in the others. */
 .filters__search {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: var(--space-2);
   min-inline-size: 0;
+}
+
+/*
+ * The one-time tip above the saved-places control.
+ *
+ * Anchored to the inline end, which is the side the control is on, so it
+ * points at the right thing in Persian without a second rule. It sits above
+ * the row rather than over the map, so it never covers what it is describing.
+ */
+.coach {
+  position: absolute;
+  inset-block-end: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: var(--z-map-ui);
+  max-inline-size: min(15rem, calc(100vw - var(--space-10)));
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--text-on-brand);
+  background: var(--action-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+.coach[hidden] { display: none; }
+.coach[data-fading='true'] { opacity: 0; }
+
+/* The pointer, on the same side as the control it belongs to. */
+.coach::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-end: var(--space-4);
+  margin-block-start: calc(var(--border-thick) * -1);
+  border: var(--space-2) solid transparent;
+  border-block-start-color: var(--action-primary);
 }
 .filters__search .field { flex: 1 1 auto; }
 
