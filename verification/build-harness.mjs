@@ -180,8 +180,8 @@ const html = `<!doctype html>
   <header class="masthead">
     <span class="masthead__mark" aria-hidden="true">${I.pin}</span>
     <span class="masthead__titles">
-      <h1 class="masthead__title">Plejecentre i Hovedstaden</h1>
-      <p class="masthead__sub">Officielle plejehjem, plejecentre og friplejeboliger</p>
+      <h1 class="masthead__title">Plejecentre</h1>
+      <p class="masthead__sub">Hovedstadsområdet</p>
     </span>
     <span class="masthead__spacer"></span>
     <div class="langpick">
