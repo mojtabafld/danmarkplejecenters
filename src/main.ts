@@ -434,7 +434,8 @@ visitedFilter.addEventListener('click', () => {
 /**
  * The one-time tip pointing at the saved-places control.
  *
- * Shown after a real sign-in, once and never again. The flag lives in
+ * Shown once and never again, on whichever comes first: signing in, or simply
+ * arriving with a session that is still valid. The flag lives in
  * localStorage, so "once" means once on this device rather than once per
  * account -- which is the right unit anyway: the tip explains where a control
  * is, and that is something you learn on the device you are holding.
@@ -987,7 +988,11 @@ paintVisitedFilter();
 // Told once: every setData afterwards carries the marks with it.
 map.setVisitedPredicate((id) => account.isVisited(id));
 render();
-void account.load();
+// Also when a session is simply still valid. Somebody who signed up before
+// this tip existed never performs a sign-in -- their cookie lasts two months --
+// so hanging the tip off the sign-in alone would mean the people who most
+// need pointing at the control are the only ones who never get pointed at it.
+void account.load().then(() => showSavedHint());
 
 /**
  * The return trip from the confirmation link. The server redirects to

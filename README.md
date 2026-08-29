@@ -174,8 +174,12 @@ of the control, and the two states differ by shape (an open bookmark against
 one with a tick) as well as by fill. The hit area is 36px, comfortably over the
 24px floor an icon-only control has to clear.
 
-The first time somebody signs in, a tip appears above that control saying their
-saved places show up there, and fades out after five seconds. Once, and never
+A tip appears above that control saying their saved places show up there, and
+fades out after five seconds. It is shown on whichever comes first: signing in,
+or simply arriving with a session that is still valid -- somebody who signed up
+before the tip existed never performs a sign-in, because the cookie lasts two
+months, so hanging it off the sign-in alone would have missed exactly the
+people who most need pointing at the control. Once, and never
 again: the flag is in `localStorage`, so "once" means once on this device
 rather than once per account -- which is the right unit, because the tip
 explains where a control is and that is learnt on the device in your hand. It
