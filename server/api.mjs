@@ -173,9 +173,21 @@ export async function handle(req, res, { secure }) {
   // client, and it should look like a page rather than an endpoint.
   if (!path.startsWith('/api/') && path !== '/verify') return false;
 
-  if (!db.isReady()) {
-    send(res, 503, { error: 'no_database' });
+  // Health is answerable even when nothing else is: it exists to say why.
+  if (path === '/api/health') {
+    send(res, 200, { ...db.status(), mail: mail.isConfigured() ? 'configured' : 'not_configured' });
     return true;
+  }
+
+  if (!db.isReady()) {
+    // One more go before refusing. A managed database is often not accepting
+    // connections in the seconds after a deploy, and the boot attempt may have
+    // been the only one; without this, accounts stay broken until a redeploy.
+    const recovered = await db.ensureSchema({ attempts: 1 });
+    if (!recovered) {
+      send(res, 503, { error: 'no_database' });
+      return true;
+    }
   }
 
   try {

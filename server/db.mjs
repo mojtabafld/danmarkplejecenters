@@ -12,6 +12,10 @@ const { Pool } = pg;
 
 /** Set by init(); a Pool, or the one a test injected. */
 let pool = null;
+/** True only once the schema has actually been applied. */
+let schemaReady = false;
+/** Why the database is unusable, as a short code safe to return. */
+let lastError = null;
 
 export function connectionString() {
   return process.env.DATABASE_URL ?? process.env.DATABASE_URI ?? null;
@@ -76,6 +80,7 @@ export async function init({ injectedPool } = {}) {
   } else {
     const url = connectionString();
     if (!url) {
+      lastError = 'DATABASE_URL is not set';
       throw new Error(
         'DATABASE_URL is not set. Attach the database to this component and add ' +
           'DATABASE_URL = ${<db-name>.DATABASE_URL} to its envs.',
@@ -88,9 +93,57 @@ export async function init({ injectedPool } = {}) {
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
     });
+    // An idle client dropped by the network must not take the process with it.
+    pool.on('error', (err) => {
+      lastError = short(err);
+      console.error('database pool error:', err.message);
+    });
   }
-  await pool.query(SCHEMA);
+  await ensureSchema();
   return pool;
+}
+
+/**
+ * Apply the schema, and remember whether it worked.
+ *
+ * Separated from init() and retried, because "the database is there" and "the
+ * tables are there" are different facts and the second one used to be assumed.
+ * A managed database is also frequently not accepting connections yet in the
+ * seconds after a deploy, and a single failed attempt at boot used to leave
+ * accounts broken until somebody deployed again.
+ */
+export async function ensureSchema({ attempts = 3 } = {}) {
+  if (schemaReady) return true;
+  if (!pool) return false;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await pool.query(SCHEMA);
+      schemaReady = true;
+      lastError = null;
+      return true;
+    } catch (err) {
+      lastError = short(err);
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500 * 2 ** i));
+    }
+  }
+  return false;
+}
+
+/**
+ * A short, safe description of what went wrong. Never the driver's full
+ * message: it can carry the host and the user name.
+ */
+function short(err) {
+  const code = err?.code;
+  if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'EHOSTUNREACH') {
+    return 'cannot_reach_database';
+  }
+  if (code === 'ENOTFOUND') return 'host_not_found';
+  if (code === '28P01' || code === '28000') return 'credentials_rejected';
+  if (code === '3D000') return 'database_does_not_exist';
+  if (code === '42501') return 'permission_denied';
+  if (/self.signed|certificate/i.test(err?.message ?? '')) return 'tls_rejected';
+  return code ? `pg_${code}` : 'unknown';
 }
 
 export function query(text, params) {
@@ -101,8 +154,21 @@ export function query(text, params) {
 export async function close() {
   await pool?.end?.();
   pool = null;
+  schemaReady = false;
 }
 
+/**
+ * Usable, meaning a pool AND the tables. It used to mean only the first, so a
+ * failed schema left the API reporting itself available and then answering 500
+ * to every request that touched a table.
+ */
 export function isReady() {
-  return pool !== null;
+  return pool !== null && schemaReady;
+}
+
+/** For the health endpoint and the start-up log. */
+export function status() {
+  if (!connectionString() && !pool) return { database: 'not_configured' };
+  if (isReady()) return { database: 'ready' };
+  return { database: 'unavailable', reason: lastError ?? 'unknown' };
 }

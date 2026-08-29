@@ -10,6 +10,7 @@
 export type AccountUser = { email: string };
 
 export type AuthError =
+  | 'no_database'
   | 'not_verified'
   | 'mail_unavailable'
   | 'mail_failed'

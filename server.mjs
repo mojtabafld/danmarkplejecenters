@@ -136,10 +136,13 @@ const server = createServer(async (req, res) => {
 if (db.connectionString()) {
   try {
     await db.init();
-    console.log('database ready');
   } catch (err) {
-    console.error('database unavailable, accounts disabled:', err.message);
+    console.error('database init failed:', err.message);
   }
+  // One line that says exactly which state accounts are in, so a broken
+  // deployment is visible in the runtime log rather than found by whoever
+  // tries to register first.
+  console.log('database status:', JSON.stringify(db.status()));
 } else {
   console.log('no DATABASE_URL, accounts disabled');
 }

@@ -166,6 +166,7 @@ const DA = {
   'error.not_verified': 'Bekræft din e-mail først. Vi har sendt et link til {email}.',
   'error.mail_unavailable': 'Oprettelse er midlertidigt utilgængelig. Prøv igen senere.',
   'error.mail_failed': 'Bekræftelsesmailen kunne ikke sendes. Prøv igen.',
+  'error.no_database': 'Konti er midlertidigt utilgængelige. Prøv igen senere.',
 } satisfies Record<string, Entry>;
 
 type Key = keyof typeof DA;
@@ -308,6 +309,7 @@ const EN: Record<Key, Entry> = {
   'error.not_verified': 'Confirm your email first. We have sent a link to {email}.',
   'error.mail_unavailable': 'Creating accounts is temporarily unavailable. Try again later.',
   'error.mail_failed': 'The confirmation email could not be sent. Try again.',
+  'error.no_database': 'Accounts are temporarily unavailable. Try again later.',
 };
 
 const FA: Record<Key, Entry> = {
@@ -448,6 +450,7 @@ const FA: Record<Key, Entry> = {
   'error.not_verified': 'نخست ایمیل خود را تأیید کنید. پیوندی به {email} فرستادیم.',
   'error.mail_unavailable': 'ساختن حساب موقتاً در دسترس نیست. بعداً تلاش کنید.',
   'error.mail_failed': 'ایمیل تأیید فرستاده نشد. دوباره تلاش کنید.',
+  'error.no_database': 'حساب‌ها موقتاً در دسترس نیستند. بعداً تلاش کنید.',
 };
 /* eslint-enable @typescript-eslint/naming-convention */
 
@@ -509,6 +512,9 @@ export class I18n {
    */
   t(key: Key, params: Record<string, string | number> = {}): string {
     const entry = DICT[this.locale][key] ?? DA[key];
+    // An unknown key returns itself rather than throwing. A string that has not
+    // been translated yet should show as an odd label, never as a blank page.
+    if (entry === undefined) return String(key);
     let text =
       typeof entry === 'string'
         ? entry
