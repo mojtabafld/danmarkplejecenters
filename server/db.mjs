@@ -22,6 +22,48 @@ export function connectionString() {
 }
 
 /**
+ * Remove sslmode from the URL, because pg lets it silently win.
+ *
+ * Passing `ssl: { rejectUnauthorized: false }` alongside a connection string
+ * containing `sslmode=require` does NOT do what it looks like: pg parses the
+ * string and the parsed value replaces the option, leaving `ssl: {}` -- TLS
+ * with verification on. pg also treats `require` as `verify-full`. DigitalOcean
+ * signs its certificates with its own CA, which is not in the container's trust
+ * store, so the handshake fails and every query dies. Stripping the parameter
+ * is what makes the explicit setting below take effect.
+ */
+function withoutSslMode(url) {
+  try {
+    const u = new URL(url);
+    u.searchParams.delete('sslmode');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Verify properly when given the CA, encrypt without verifying otherwise.
+ *
+ * DATABASE_CA_CERT is the certificate DigitalOcean offers on the database's
+ * connection page. With it the chain is checked, which is what actually
+ * prevents someone impersonating the database. Without it the connection is
+ * still encrypted but unauthenticated, which is the usual arrangement inside a
+ * provider's private network and is what the platform's own examples do.
+ */
+function sslConfig(url) {
+  if (/[?&]sslmode=disable\b/.test(url)) return false;
+  const ca = process.env.DATABASE_CA_CERT;
+  return ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: false };
+}
+
+function tlsDescription() {
+  const url = connectionString() ?? '';
+  if (/[?&]sslmode=disable\b/.test(url)) return 'off';
+  return process.env.DATABASE_CA_CERT ? 'verified against DATABASE_CA_CERT' : 'encrypted, certificate not verified';
+}
+
+/**
  * The schema, created on start-up.
  *
  * Kept idempotent so a deploy that reuses an existing database is a no-op and
@@ -87,12 +129,13 @@ export async function init({ injectedPool } = {}) {
       );
     }
     pool = new Pool({
-      connectionString: url,
-      ssl: url.includes('sslmode=disable') ? false : { rejectUnauthorized: false },
+      connectionString: withoutSslMode(url),
+      ssl: sslConfig(url),
       max: 4,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
     });
+    console.log('database TLS:', tlsDescription());
     // An idle client dropped by the network must not take the process with it.
     pool.on('error', (err) => {
       lastError = short(err);

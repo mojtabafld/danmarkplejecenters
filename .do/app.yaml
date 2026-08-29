@@ -50,6 +50,14 @@ services:
         scope: RUN_TIME
         type: SECRET
         value: ""
+      # Optional. The CA certificate from the database's connection page. With
+      # it the server's identity is actually verified; without it the link is
+      # encrypted but unauthenticated.
+      - key: DATABASE_CA_CERT
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+
       - key: MAIL_FROM
         scope: RUN_TIME
         value: "Plejecentre <no-reply@plejefinder.online>"
