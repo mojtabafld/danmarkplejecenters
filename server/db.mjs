@@ -104,6 +104,17 @@ CREATE TABLE IF NOT EXISTS visits (
   PRIMARY KEY (user_id, plejecenter_id)
 );
 
+-- A note is deliberately its own table rather than a column on visits.
+-- Unmarking a place would then delete the text somebody typed about it, and
+-- losing written work to an unrelated click is not a trade worth making.
+CREATE TABLE IF NOT EXISTS notes (
+  user_id        BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plejecenter_id TEXT NOT NULL,
+  body           TEXT NOT NULL,
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, plejecenter_id)
+);
+
 -- Added after the first release, so it has to be an ALTER rather than part of
 -- the CREATE: an existing database already has the table and would skip it.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;

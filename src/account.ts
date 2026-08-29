@@ -50,6 +50,8 @@ export class Account {
   user: AccountUser | null = null;
   /** Plejecenter ids this user has marked. Empty when signed out. */
   visited = new Set<string>();
+  /** Free text the reader has written, by plejecenter id. */
+  notes = new Map<string, string>();
   /** False when the server has no database, so the feature is hidden entirely. */
   available = true;
   /** Set after sign-up: the address waiting on a confirmation link. */
@@ -91,10 +93,41 @@ export class Account {
 
   private async loadVisits(): Promise<void> {
     try {
-      const { status, data } = await call('GET', '/api/visits');
-      this.visited = status === 200 ? new Set(data.visits as string[]) : new Set();
+      const [visits, notes] = await Promise.all([
+        call('GET', '/api/visits'),
+        call('GET', '/api/notes'),
+      ]);
+      this.visited = visits.status === 200 ? new Set(visits.data.visits as string[]) : new Set();
+      this.notes =
+        notes.status === 200
+          ? new Map(Object.entries((notes.data.notes ?? {}) as Record<string, string>))
+          : new Map();
     } catch {
       this.visited = new Set();
+      this.notes = new Map();
+    }
+  }
+
+  noteFor(id: string): string {
+    return this.notes.get(id) ?? '';
+  }
+
+  /**
+   * Write or clear a note. Empty text removes it, so clearing the box is how
+   * you delete one and there is no second control to explain.
+   */
+  async saveNote(id: string, body: string): Promise<boolean> {
+    if (!this.user) return false;
+    const text = body.trim();
+    try {
+      const { status, data } = await call('PUT', `/api/notes/${encodeURIComponent(id)}`, { body: text });
+      if (status !== 200) return false;
+      if (data.note) this.notes.set(id, data.note as string);
+      else this.notes.delete(id);
+      this.emit();
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -173,6 +206,7 @@ export class Account {
     }
     this.user = null;
     this.visited = new Set();
+    this.notes = new Map();
     this.emit();
   }
 
@@ -185,6 +219,7 @@ export class Account {
     }
     this.user = null;
     this.visited = new Set();
+    this.notes = new Map();
     this.emit();
     return true;
   }

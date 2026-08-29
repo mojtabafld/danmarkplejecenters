@@ -98,6 +98,7 @@ const I = {
   ),
   slash: icon('<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'),
   chevronDown: icon('<path d="m6 9 6 6 6-6"/>'),
+  pencil: icon('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>'),
   user: icon('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
   bookmark: icon('<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>'),
   bookmarkCheck: icon('<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="m9 10 2 2 4-4"/>'),
@@ -322,6 +323,10 @@ const panel = `<!doctype html>
           <button type="button" class="panel__close" aria-label="Luk detaljer om ${esc(detail.name)}">${I.x}</button>
         </div>
         <div class="panel__body">
+          <div class="note">
+            <p class="note__label">Din note</p>
+            <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
+          </div>
           <div class="facts">
             ${fact(I.pin, 'Adresse', `${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}<br>${esc(detail.municipality)} Kommune`)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}
@@ -427,6 +432,19 @@ const states = `<!doctype html>
       <h3 class="empty__title">Ingen resultater</h3>
       <p class="empty__body">Ingen plejecentre matcher "zzz" i Dragør. Prøv et kortere søgeord, en anden kommune, eller slå driftsformerne til igen. Søgningen dækker navn, vej, postnummer og by.</p>
       <button type="button" class="btn btn--secondary">Nulstil filtre</button>
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2>Note</h2>
+    <form class="noteedit">
+      <label class="noteedit__label" for="hNote">Din note</label>
+      <textarea class="noteedit__text" id="hNote" rows="4"
+        placeholder="Fx ventetid, hvem du talte med, hvad du så.">Ringede tirsdag, venteliste omkring fire måneder.</textarea>
+    </form>
+    <div class="note">
+      <p class="note__label">Din note</p>
+      <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
     </div>
   </section>
 

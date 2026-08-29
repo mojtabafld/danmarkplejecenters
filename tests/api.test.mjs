@@ -119,6 +119,45 @@ check('removes it again', r.status === 200 && r.body.visited === false);
 r = await call('GET', '/api/visits');
 check('the list is empty again', r.body.visits.length === 0);
 
+/* ----------------------------------------------------------------- notes -- */
+r = await call('GET', '/api/notes');
+check('a new account has no notes', r.status === 200 && Object.keys(r.body.notes).length === 0);
+
+r = await call('PUT', '/api/notes/86bd866d-7fec-46e4-99b2-38ca86cbb59d', { body: '  Ringede tirsdag, venteliste 4 mdr.  ' });
+check('a note is saved, trimmed', r.status === 200 && r.body.note === 'Ringede tirsdag, venteliste 4 mdr.');
+
+r = await call('GET', '/api/notes');
+check('and comes back keyed by plejecenter',
+  r.body.notes['86bd866d-7fec-46e4-99b2-38ca86cbb59d'] === 'Ringede tirsdag, venteliste 4 mdr.');
+
+r = await call('PUT', '/api/notes/86bd866d-7fec-46e4-99b2-38ca86cbb59d', { body: 'Rettet' });
+check('writing again replaces rather than duplicating', r.status === 200 && r.body.note === 'Rettet');
+const noteRows = await db.query('SELECT count(*)::int AS n FROM notes');
+check('one row, not two', noteRows.rows[0].n === 1);
+
+// A note must survive unmarking: losing written text to an unrelated click
+// would be the worst kind of surprise.
+await call('PUT', '/api/visits/86bd866d-7fec-46e4-99b2-38ca86cbb59d');
+await call('DELETE', '/api/visits/86bd866d-7fec-46e4-99b2-38ca86cbb59d');
+r = await call('GET', '/api/notes');
+check('removing it from visited keeps the note',
+  r.body.notes['86bd866d-7fec-46e4-99b2-38ca86cbb59d'] === 'Rettet');
+
+r = await call('PUT', '/api/notes/86bd866d-7fec-46e4-99b2-38ca86cbb59d', { body: '   ' });
+check('an empty note deletes rather than storing a blank', r.status === 200 && r.body.note === null);
+r = await call('GET', '/api/notes');
+check('and it is gone', Object.keys(r.body.notes).length === 0);
+
+r = await call('PUT', '/api/notes/x', { body: 'y'.repeat(2001) });
+check('an over-long note is refused', r.status === 400 && r.body.error === 'note_too_long');
+
+cookie = '';
+r = await call('GET', '/api/notes');
+check('notes are private to a session', r.status === 401);
+r = await call('PUT', '/api/notes/anything', { body: 'nope' });
+check('and cannot be written while signed out', r.status === 401);
+
+
 /* --------------------------------------------------- duplicate + signin --- */
 const signedIn = cookie;
 cookie = '';
@@ -171,6 +210,8 @@ r = await call('GET', '/api/auth/me');
 check('its session no longer resolves', r.body.user === null);
 const left = await db.query('SELECT count(*)::int AS n FROM visits');
 check('deleting the account took its visits with it', left.rows[0].n === 1);
+const notesLeft = await db.query('SELECT count(*)::int AS n FROM notes');
+check('and its notes', notesLeft.rows[0].n === 0);
 
 /* ---------------------------------------------------------------- resend -- */
 cookie = '';

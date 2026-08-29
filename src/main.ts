@@ -425,6 +425,76 @@ function paintVisitedFilter(): void {
   visitedFilter.setAttribute('title', label);
 }
 
+/**
+ * The note editor, opened over the card body.
+ *
+ * Inline rather than a separate dialog: the note is about the plejecenter
+ * whose card is already open, and taking the reader somewhere else to write it
+ * would put the thing being described out of sight.
+ */
+function openNoteEditor(id: string): void {
+  const p = store.byId(id);
+  if (!p || !account.user) return;
+  const current = account.noteFor(id);
+
+  panelBody.innerHTML =
+    `<form class="noteedit" id="noteForm">` +
+    `<label class="noteedit__label" for="noteText">${esc(t('note.label'))}</label>` +
+    `<textarea class="noteedit__text" id="noteText" rows="6" maxlength="2000" ` +
+    `placeholder="${esc(t('note.placeholder'))}">${esc(current)}</textarea>` +
+    `<p class="account__error" id="noteError" role="alert" hidden></p>` +
+    `</form>`;
+
+  panelFoot.innerHTML =
+    `<div class="panel__actions">` +
+    `<button type="button" class="btn btn--primary" data-note-save="${esc(id)}">` +
+    `${icon('check')}${esc(t('note.save'))}</button>` +
+    `<button type="button" class="btn btn--secondary" data-note-cancel>${esc(t('note.cancel'))}</button>` +
+    `</div>`;
+
+  panelBody.querySelector<HTMLTextAreaElement>('#noteText')?.focus();
+}
+
+function closeNoteEditor(): void {
+  const p = store.selected;
+  if (!p) return;
+  detail.show(p, {
+    userAt: userPoint(),
+    visited: account.isVisited(p.id),
+    canVisit: Boolean(account.user),
+    note: account.noteFor(p.id),
+  });
+}
+
+panelEl.addEventListener('click', (e) => {
+  const el = e.target as HTMLElement;
+  const open = el.closest<HTMLElement>('[data-note]')?.dataset.note;
+  if (open) {
+    openNoteEditor(open);
+    return;
+  }
+  if (el.closest('[data-note-cancel]')) {
+    closeNoteEditor();
+    return;
+  }
+  const save = el.closest<HTMLElement>('[data-note-save]')?.dataset.noteSave;
+  if (save) {
+    const text = panelBody.querySelector<HTMLTextAreaElement>('#noteText')?.value ?? '';
+    void account.saveNote(save, text).then((ok) => {
+      if (!ok) {
+        const box = panelBody.querySelector<HTMLElement>('#noteError');
+        if (box) {
+          box.textContent = t('note.failed');
+          box.hidden = false;
+        }
+        return;
+      }
+      live.textContent = t('note.saved');
+      closeNoteEditor();
+    });
+  }
+});
+
 /** Marking a plejecenter visited, from the detail card. */
 async function toggleVisited(id: string): Promise<void> {
   if (!account.user) {
@@ -457,7 +527,8 @@ account.onChange(() => {
     detail.show(selected, {
       userAt: userPoint(),
       visited: account.isVisited(selected.id),
-      canVisit: account.available,
+      canVisit: Boolean(account.user),
+      note: account.noteFor(selected.id),
     });
   }
   lastVisibleKey = '';
@@ -555,7 +626,8 @@ function render(): void {
         restoreFocusTo: lastTrigger,
         userAt: userPoint(),
         visited: account.isVisited(p.id),
-        canVisit: account.available,
+        canVisit: Boolean(account.user),
+        note: account.noteFor(p.id),
       });
       // On a phone the panel is the answer to the tap. Leaving the list sheet
       // open behind it puts two overlays on the same screen competing for the
@@ -723,7 +795,8 @@ function renderGeo(status: GeoStatus): void {
         detail.show(selected, {
           userAt: { lat: status.lat, lon: status.lon },
           visited: account.isVisited(selected.id),
-          canVisit: account.available,
+          canVisit: Boolean(account.user),
+          note: account.noteFor(selected.id),
         });
       }
       break;

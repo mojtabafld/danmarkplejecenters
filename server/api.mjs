@@ -214,6 +214,10 @@ export async function handle(req, res, { secure }) {
     if (path === '/api/auth/me' && method === 'GET') return await me(req, res);
     if (path === '/api/auth/account' && method === 'DELETE') return await removeAccount(req, res, secure);
     if (path === '/api/visits' && method === 'GET') return await listVisits(req, res);
+    if (path === '/api/notes' && method === 'GET') return await listNotes(req, res);
+    if (path.startsWith('/api/notes/') && (method === 'PUT' || method === 'DELETE')) {
+      return await changeNote(req, res, decodeURIComponent(path.slice('/api/notes/'.length)), method);
+    }
     if (path.startsWith('/api/visits/') && (method === 'PUT' || method === 'DELETE')) {
       return await changeVisit(req, res, decodeURIComponent(path.slice('/api/visits/'.length)), method);
     }
@@ -367,6 +371,55 @@ async function listVisits(req, res) {
     [user.id],
   );
   send(res, 200, { visits: rows.map((r) => r.plejecenter_id) });
+  return true;
+}
+
+const NOTE_MAX = 2000;
+
+async function listNotes(req, res) {
+  const user = await currentUser(req);
+  if (!requireUser(res, user)) return true;
+  const { rows } = await db.query(
+    'SELECT plejecenter_id, body FROM notes WHERE user_id = $1',
+    [user.id],
+  );
+  send(res, 200, { notes: Object.fromEntries(rows.map((r) => [r.plejecenter_id, r.body])) });
+  return true;
+}
+
+/**
+ * Write or clear one note. An empty body deletes rather than storing a blank
+ * row, so clearing the box is the way to remove it and there is no second
+ * control to explain.
+ */
+async function changeNote(req, res, id, method) {
+  const user = await currentUser(req);
+  if (!requireUser(res, user)) return true;
+  if (!id || id.length > 64) { send(res, 400, { error: 'bad_id' }); return true; }
+
+  if (method === 'DELETE') {
+    await db.query('DELETE FROM notes WHERE user_id = $1 AND plejecenter_id = $2', [user.id, id]);
+    send(res, 200, { note: null });
+    return true;
+  }
+
+  const { body } = await readJson(req);
+  const text = String(body ?? '').trim();
+  if (text.length > NOTE_MAX) { send(res, 400, { error: 'note_too_long', max: NOTE_MAX }); return true; }
+
+  if (text === '') {
+    await db.query('DELETE FROM notes WHERE user_id = $1 AND plejecenter_id = $2', [user.id, id]);
+    send(res, 200, { note: null });
+    return true;
+  }
+
+  await db.query(
+    `INSERT INTO notes (user_id, plejecenter_id, body) VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, plejecenter_id)
+     DO UPDATE SET body = EXCLUDED.body, updated_at = now()`,
+    [user.id, id, text],
+  );
+  send(res, 200, { note: text });
   return true;
 }
 

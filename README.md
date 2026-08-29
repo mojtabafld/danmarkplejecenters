@@ -180,6 +180,18 @@ field in Persian, to the right in Danish and English, with no physical
 direction anywhere in the CSS. Icon only, with `aria-label` carrying the name
 and `aria-pressed` the state, and a 44px target.
 
+Signed in, the card also carries a **note**: free text about that plejecenter,
+which is the thing only this reader can add and so takes the wide primary slot
+in the card's foot. The website button drops to the size of the route buttons
+and joins their row -- three links outward, equal weight, with the one action
+above them. Signed out, none of that appears and the card is exactly as it was.
+
+A note is its own table rather than a column on the visited list. Unmarking a
+place would otherwise delete the text somebody wrote about it, and losing
+written work to an unrelated click is not a trade worth making. Clearing the
+box is how you delete a note, so there is no second control to explain, and
+2000 characters is the cap.
+
 On a phone the account panel is a centred card over a scrim rather than a
 dropdown hanging off a button in the top corner, which put the fields against
 the edge of the screen and under the thumb that opened them. It centres with
@@ -327,8 +339,9 @@ covering sign-up validation, duplicate addresses, the confirmation link (that
 it works once, that a superseded one stops working, that a forged token is
 refused), sign-in being blocked until confirmed, case-insensitive sign-in,
 session forgery, one account being unable to see another's visits, cascade
-deletion, malformed JSON, the SQL-injection case, and sign-up refusing when
-mail is unconfigured.
+deletion, malformed JSON, the SQL-injection case, notes (saved trimmed, replaced rather than duplicated,
+surviving an unmark, deleted by an empty body, capped, and private to a
+session), and sign-up refusing when mail is unconfigured.
 
 ```bash
 npm run serve:memdb

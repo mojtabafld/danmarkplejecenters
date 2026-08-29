@@ -982,6 +982,55 @@ a.btn { text-decoration: none; }
 }
 .panel__foot:empty { display: none; }
 
+/* A note the reader wrote, above the register's own fields. */
+.note {
+  padding: var(--space-3);
+  background: var(--surface-brand-subtle);
+  border-radius: var(--radius-md);
+  border-inline-start: var(--border-thick) solid var(--border-brand);
+}
+.note__label {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-brand);
+}
+.note__body {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The editor, in place of the facts while it is open. */
+.noteedit { display: grid; gap: var(--space-2); min-inline-size: 0; }
+.noteedit__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+.noteedit__text {
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: var(--space-3);
+  font: inherit;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--field-bg);
+  border: var(--border-hairline) solid var(--field-border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+.noteedit__text::placeholder { color: var(--text-tertiary); }
+.noteedit__text:hover { border-color: var(--field-border-hover); }
+
+.btn--note { inline-size: 100%; min-block-size: var(--control-lg); }
+
 .panel__actions { display: grid; gap: var(--space-2); align-content: start; }
 .panel__actions .btn { inline-size: 100%; min-block-size: var(--control-lg); block-size: auto; }
 
