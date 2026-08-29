@@ -81,6 +81,9 @@
           </button>
           <div class="langpick__menu account__panel" id="accountPanel" hidden></div>
         </div>
+        <div class="account__scrim" id="accountScrim" hidden></div>
+        <div style="display: contents">
+        </div>
 
         <div class="langpick" id="langpick">
           <button
@@ -111,9 +114,6 @@
             </p>
 
             <div class="chips" role="group" data-i18n-aria="filter.ownership">
-              <button type="button" class="chip chip--visited" id="visitedFilter" aria-pressed="false" hidden>
-                <span class="chip__mark" id="visitedFilterMark"></span><span data-i18n="visit.filter"></span>
-              </button>
               <button type="button" class="chip" data-own="Kommunal" data-group="Kommunal" aria-pressed="true">
                 <span class="chip__mark"></span><span data-i18n="ownership.Kommunal"></span>
               </button>
@@ -127,8 +127,9 @@
           </div>
 
           <div class="filters">
-            <label class="field">
-              <span class="sr-only" data-i18n="search.label"></span>
+            <div class="filters__search">
+              <label class="field">
+                <span class="sr-only" data-i18n="search.label"></span>
               <span class="field__icon" id="searchIcon" aria-hidden="true"></span>
               <input
                 class="field__input"
@@ -138,10 +139,16 @@
                 spellcheck="false"
                 data-i18n-ph="search.placeholder"
               />
-              <button type="button" class="field__clear" id="searchClear" hidden>
-                <span class="sr-only" data-i18n="search.clear"></span>
-              </button>
-            </label>
+                <button type="button" class="field__clear" id="searchClear" hidden>
+                  <span class="sr-only" data-i18n="search.clear"></span>
+                </button>
+              </label>
+
+              <!-- Icon only: aria-label carries the name, set with the language.
+                   An sr-only span here would be dead weight, because an
+                   aria-label overrides it. -->
+              <button type="button" class="iconbtn" id="visitedFilter" aria-pressed="false" hidden></button>
+            </div>
 
             <label class="field">
               <span class="sr-only" data-i18n="filter.municipality"></span>

@@ -212,12 +212,15 @@ const html = `<!doctype html>
       </div>
 
       <div class="filters">
-        <label class="field">
-          <span class="sr-only">Søg efter plejecenter, vej, postnummer eller by</span>
-          <span class="field__icon" aria-hidden="true">${I.search}</span>
-          <input class="field__input" type="search" value="Sølund" autocomplete="off">
-          <button type="button" class="field__clear"><span class="sr-only">Ryd søgningen</span>${I.x}</button>
-        </label>
+        <div class="filters__search">
+          <label class="field">
+            <span class="sr-only">Søg efter plejecenter, vej, postnummer eller by</span>
+            <span class="field__icon" aria-hidden="true">${I.search}</span>
+            <input class="field__input" type="search" value="Sølund" autocomplete="off">
+            <button type="button" class="field__clear"><span class="sr-only">Ryd søgningen</span>${I.x}</button>
+          </label>
+          <button type="button" class="iconbtn" aria-pressed="true" aria-label="Kun besøgte">${I.bookmarkCheck}</button>
+        </div>
 
         <label class="field">
           <span class="sr-only">Filtrér på kommune</span>
@@ -353,6 +356,18 @@ body { overflow: auto; }
 .sheet h2 { font-size: var(--text-lg); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-snug); }
 .row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .stack { display: grid; gap: var(--space-2); }
+/* Harness only: on a phone the account panel is a centred overlay, which means
+   fixed positioning and a translate. Laid out inline here for measuring, both
+   have to be undone -- an inline position:static alone leaves the translate
+   applied and the panel rides up over the control above it. */
+.stack .account__panel:not([hidden]) {
+  position: static;
+  translate: none;
+  inset: auto;
+  margin-inline: 0;
+  inline-size: auto;
+  max-block-size: none;
+}
 .err { font-size: var(--text-xs); color: var(--feedback-error-fg); }
 .field__input[aria-invalid='true'] { border-color: var(--feedback-error-fg); border-width: var(--border-thick); }\n`, 'utf8');
 const states = `<!doctype html>
@@ -470,12 +485,8 @@ const states = `<!doctype html>
   <section class="stack">
     <h2>Besøgt</h2>
     <div class="row">
-      <button type="button" class="chip chip--visited" aria-pressed="false">
-        <span class="chip__mark">${I.bookmarkCheck}</span><span>Kun besøgte</span>
-      </button>
-      <button type="button" class="chip chip--visited" aria-pressed="true">
-        <span class="chip__mark">${I.bookmarkCheck}</span><span>Kun besøgte</span>
-      </button>
+      <button type="button" class="iconbtn" aria-pressed="false" aria-label="Kun besøgte">${I.bookmarkCheck}</button>
+      <button type="button" class="iconbtn" aria-pressed="true" aria-label="Kun besøgte">${I.bookmarkCheck}</button>
     </div>
     <div class="row">
       <button type="button" class="panel__visit" aria-pressed="false" aria-label="Markér som besøgt">

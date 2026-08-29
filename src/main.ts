@@ -75,6 +75,7 @@ const accountButton = $<HTMLButtonElement>('#accountButton');
 const accountPanel = $('#accountPanel');
 const accountCode = $('#accountCode');
 const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
+const accountScrim = $('#accountScrim');
 
 const t = (key: TranslationKey, params?: Record<string, string | number>): string =>
   i18n.t(key, params);
@@ -90,7 +91,7 @@ $('#zoomIn').insertAdjacentHTML('beforeend', icon('plus'));
 $('#zoomOut').insertAdjacentHTML('beforeend', icon('minus'));
 $('#locateIcon').innerHTML = icon('crosshair');
 accountButton.insertAdjacentHTML('afterbegin', icon('user'));
-$('#visitedFilterMark').innerHTML = icon('bookmarkCheck');
+visitedFilter.insertAdjacentHTML('beforeend', icon('bookmarkCheck'));
 $('#geoNoteClose').insertAdjacentHTML('beforeend', icon('x'));
 $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
@@ -226,6 +227,7 @@ let verifiedNotice: 'ok' | 'failed' | null = null;
 
 function setAccountOpen(open: boolean): void {
   accountPanel.hidden = !open;
+  accountScrim.hidden = !open;
   accountButton.setAttribute('aria-expanded', String(open));
   if (open) accountPanel.querySelector<HTMLElement>('input, button')?.focus();
 }
@@ -389,6 +391,13 @@ visitedFilter.addEventListener('click', () => {
   store.setVisitedOnly(!store.filters.visitedOnly);
   visitedFilter.setAttribute('aria-pressed', String(store.filters.visitedOnly));
 });
+
+/** Icon only, so the label is the accessible name and the title on hover. */
+function paintVisitedFilter(): void {
+  const label = t('visit.filter');
+  visitedFilter.setAttribute('aria-label', label);
+  visitedFilter.setAttribute('title', label);
+}
 
 /** Marking a plejecenter visited, from the detail card. */
 async function toggleVisited(id: string): Promise<void> {
@@ -755,6 +764,7 @@ i18n.onChange((locale) => {
   renderMunicipalityOptions();
   renderLangMenu();
   paintThemeToggle();
+  paintVisitedFilter();
   renderGeo(geo.status);
 
   // Force the data-driven views to rebuild: the records are unchanged, but
@@ -776,6 +786,7 @@ paintThemeToggle();
 paintCaret();
 renderGeo(geo.status);
 renderAccount();
+paintVisitedFilter();
 render();
 void account.load();
 

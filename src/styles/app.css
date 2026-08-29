@@ -309,6 +309,52 @@ a.btn { text-decoration: none; }
 
 .field { position: relative; display: block; min-inline-size: 0; }
 
+/* Search and the visited toggle share a row. The toggle lands at the inline
+   end, which mirrors on its own: left in Persian, right in the others. */
+.filters__search {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.filters__search .field { flex: 1 1 auto; }
+
+/*
+ * Icon only. It is a toggle, so aria-pressed carries the state and the fill
+ * changes with it -- not the colour alone, which would leave the two states
+ * indistinguishable to anyone who cannot separate them.
+ */
+.iconbtn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: var(--control-lg);
+  min-block-size: var(--control-lg);
+  padding: 0;
+  color: var(--text-tertiary);
+  background: var(--field-bg);
+  border: var(--border-hairline) solid var(--field-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.iconbtn svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
+.iconbtn:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.iconbtn:active { background: var(--interactive-active-bg); }
+.iconbtn[hidden] { display: none; }
+
+.iconbtn[aria-pressed='true'] {
+  color: var(--text-on-brand);
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+}
+.iconbtn[aria-pressed='true']:hover {
+  background: var(--action-primary-hover);
+  border-color: var(--action-primary-hover);
+}
+
 .field__icon {
   position: absolute;
   inset-block-start: 50%;
@@ -1371,6 +1417,40 @@ a.btn { text-decoration: none; }
   display: grid;
   gap: var(--space-3);
 }
+
+/* Only ever visible with the panel, and only on a phone. */
+.account__scrim { display: none; }
+.account__scrim[hidden] { display: none; }
+
+@media (max-width: 60rem) {
+  /*
+   * Centred, not anchored. Hanging off a button in the top corner put the
+   * fields against the edge of the screen and under the thumb that opened
+   * them. `inset-inline: 0` with `margin-inline: auto` centres without naming
+   * a side, so it holds in Persian as it does in Danish.
+   */
+  .account__panel:not([hidden]) {
+    position: fixed;
+    inset-block-start: 50%;
+    inset-inline: 0;
+    margin-inline: auto;
+    translate: 0 -50%;
+    z-index: var(--z-toast);
+    inline-size: min(18rem, calc(100vw - var(--space-10)));
+    min-inline-size: 0;
+    padding: var(--space-4);
+    max-block-size: calc(100dvh - var(--space-12));
+    overflow-y: auto;
+  }
+
+  .account__scrim:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-sheet);
+    background: var(--surface-scrim);
+  }
+}
 .account__panel[data-busy='true'] { opacity: var(--opacity-muted); pointer-events: none; }
 
 .account__why,
@@ -1442,8 +1522,3 @@ a.btn { text-decoration: none; }
 #accountButton[data-state='in'] .langpick__code { color: var(--text-brand); }
 
 
-/* The visited filter carries an icon rather than a colour dot: it is not one
-   of the operator categories and should not read as a fourth one. */
-.chip--visited .chip__mark { background: none; inline-size: var(--icon-md); block-size: var(--icon-md); }
-.chip--visited .chip__mark svg { inline-size: var(--icon-md); block-size: var(--icon-md); }
-.chip--visited[hidden] { display: none; }

@@ -174,7 +174,18 @@ of the control, and the two states differ by shape (an open bookmark against
 one with a tick) as well as by fill. The hit area is 36px, comfortably over the
 24px floor an icon-only control has to clear.
 
-A "visited only" filter narrows the map to what you have marked. Marked
+A "visited only" toggle narrows the map to what you have marked. It sits at the
+inline end of the search row, which mirrors on its own: to the left of the
+field in Persian, to the right in Danish and English, with no physical
+direction anywhere in the CSS. Icon only, with `aria-label` carrying the name
+and `aria-pressed` the state, and a 44px target.
+
+On a phone the account panel is a centred card over a scrim rather than a
+dropdown hanging off a button in the top corner, which put the fields against
+the edge of the screen and under the thumb that opened them. It centres with
+`inset-inline: 0` and `margin-inline: auto`, so it holds in Persian exactly as
+it does in Danish. On a wide screen it stays anchored to its button, where
+there is room for it. Marked
 plejecentre carry an extra ring on the map -- a shape rather than a fourth
 colour, because the three operator hues already mean something.
 
@@ -247,7 +258,32 @@ which refuses a connection from App Platform. `MAIL_FROM` has to be an address
 the mailbox is allowed to send as.
 
 **Without mail configured, sign-up refuses with a clear message rather than
-creating accounts nobody can ever confirm.** The start-up log says which state it is in,
+creating accounts nobody can ever confirm.**
+
+### Getting the mail delivered
+
+Sending is only half of it. Gmail has required SPF or DKIM from every sender
+since 2024 and silently drops mail without them, while Outlook is far more
+forgiving -- so "it works in Outlook but never arrives at Gmail" is the
+signature of missing DNS records, not of a broken mailer. The domain needs, at
+minimum:
+
+| Record | Host | Value |
+|---|---|---|
+| MX | `@` | `mx.simply.com` (priority 10) |
+| TXT | `@` | `v=spf1 include:spf.simply.com ~all` |
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:you@example.com` |
+
+DKIM is enabled per domain in Simply's mail administration, which publishes the
+key itself when the DNS is hosted there.
+
+Check what is actually published rather than what was intended:
+
+```bash
+dig +short TXT plejefinder.online          # SPF
+dig +short TXT _dmarc.plejefinder.online   # DMARC
+dig +short MX plejefinder.online
+``` The start-up log says which state it is in,
 so a misconfiguration is visible in the deploy log rather than discovered by
 the first person who tries to register.
 
