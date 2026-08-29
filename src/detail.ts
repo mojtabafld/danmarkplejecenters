@@ -160,34 +160,41 @@ export class DetailPanel {
    */
   private actions(p: Plejecenter, canVisit: boolean, note: string): string {
     const t = this.i18n.t.bind(this.i18n);
-    const parts: string[] = ['<div class="panel__actions">'];
-
-    // Signed in, writing a note takes the wide primary slot: it is the thing
-    // only this reader can do here, and everything else is a link outward.
-    if (canVisit) {
-      parts.push(
-        `<button type="button" class="btn btn--primary btn--note" data-note="${esc(p.id)}">` +
-          `${icon('pencil')}${esc(t(note ? 'note.edit' : 'note.add'))}</button>`,
-      );
-    }
 
     const link = (href: string, iconName: 'external' | 'navigation', label: string, extra: string): string =>
       `<a class="btn btn--secondary" href="${esc(href)}" target="_blank" rel="noopener noreferrer">` +
       `${icon(iconName)}${esc(label)}<span class="sr-only">${extra}</span></a>`;
 
-    // The website joins the route buttons at the same size once the note has
-    // the wide slot; on its own it keeps the width, so the row is never one
-    // lonely button pretending to be a group.
-    const row: string[] = [];
-    if (p.web) {
-      row.push(link(p.web, 'external', t('panel.visit'), esc(t('panel.visitFor', { name: p.name }))));
+    // Two tiers. The top row is what you do with this plejecenter -- write
+    // something about it, or read what it says about itself -- and both
+    // buttons look the same because neither outranks the other. The row below
+    // is handing the address to a map application, which is a different kind
+    // of act and reads as one.
+    const top: string[] = [];
+    if (canVisit) {
+      top.push(
+        `<button type="button" class="btn btn--primary" data-note="${esc(p.id)}">` +
+          `${icon('pencil')}${esc(t(note ? 'note.edit' : 'note.add'))}</button>`,
+      );
     }
-    row.push(link(googleMapsHref(p), 'navigation', t('panel.google'), esc(t('panel.routeTo', { name: p.name }))));
-    row.push(link(appleMapsHref(p), 'navigation', t('panel.apple'), esc(t('panel.routeTo', { name: p.name }))));
+    if (p.web) {
+      top.push(
+        `<a class="btn btn--primary" href="${esc(p.web)}" target="_blank" rel="noopener noreferrer">` +
+          `${icon('external')}${esc(t('panel.visit'))}` +
+          `<span class="sr-only"> ${esc(t('panel.visitFor', { name: p.name }))}</span></a>`,
+      );
+    }
 
-    parts.push(`<div class="nav-links">${row.join('')}</div>`);
-    parts.push('</div>');
-    return parts.join('');
+    const routes =
+      link(googleMapsHref(p), 'navigation', t('panel.google'), esc(t('panel.routeTo', { name: p.name }))) +
+      link(appleMapsHref(p), 'navigation', t('panel.apple'), esc(t('panel.routeTo', { name: p.name })));
+
+    return (
+      '<div class="panel__actions">' +
+      (top.length ? `<div class="nav-links">${top.join('')}</div>` : '') +
+      `<div class="nav-links">${routes}</div>` +
+      '</div>'
+    );
   }
 
   /**

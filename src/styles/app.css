@@ -1006,13 +1006,47 @@ a.btn { text-decoration: none; }
   overflow-wrap: anywhere;
 }
 
-/* The editor, in place of the facts while it is open. */
-.noteedit { display: grid; gap: var(--space-2); min-inline-size: 0; }
-.noteedit__label {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--text-secondary);
+/*
+ * The note editor: small, centred, above everything.
+ *
+ * `inset-inline: 0` with `margin-inline: auto` centres without naming a side,
+ * so it holds in Persian as it does in Danish.
+ */
+.notedlg {
+  position: fixed;
+  inset-block-start: 50%;
+  inset-inline: 0;
+  margin-inline: auto;
+  translate: 0 -50%;
+  z-index: var(--z-toast);
+  display: grid;
+  gap: var(--space-3);
+  inline-size: min(22rem, calc(100vw - var(--space-10)));
+  max-block-size: calc(100dvh - var(--space-12));
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--surface-overlay);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
 }
+.notedlg[hidden] { display: none; }
+
+.notedlg__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-panel);
+  background: var(--surface-scrim);
+}
+.notedlg__scrim[hidden] { display: none; }
+
+.notedlg__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+  gap: var(--space-2);
+}
+.notedlg__actions .btn { inline-size: 100%; min-block-size: var(--control-md); }
+
 .noteedit__text {
   inline-size: 100%;
   min-inline-size: 0;

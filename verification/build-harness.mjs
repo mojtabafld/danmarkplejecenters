@@ -437,11 +437,18 @@ const states = `<!doctype html>
 
   <section class="stack">
     <h2>Note</h2>
-    <form class="noteedit">
-      <label class="noteedit__label" for="hNote">Din note</label>
+    <div class="notedlg" style="position: static; translate: none; inset: auto; margin-inline: 0; inline-size: auto; max-block-size: none">
+      <div class="account__head">
+        <p class="account__heading">Din note</p>
+        <button type="button" class="account__close" aria-label="Annullér">${I.x}</button>
+      </div>
       <textarea class="noteedit__text" id="hNote" rows="4"
         placeholder="Fx ventetid, hvem du talte med, hvad du så.">Ringede tirsdag, venteliste omkring fire måneder.</textarea>
-    </form>
+      <div class="notedlg__actions">
+        <button type="button" class="btn btn--primary">${I.check}Gem note</button>
+        <button type="button" class="btn btn--secondary">Annullér</button>
+      </div>
+    </div>
     <div class="note">
       <p class="note__label">Din note</p>
       <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>

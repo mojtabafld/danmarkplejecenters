@@ -82,6 +82,30 @@
           <div class="langpick__menu account__panel" id="accountPanel" hidden></div>
         </div>
         <div class="account__scrim" id="accountScrim" hidden></div>
+
+        <!-- The note editor. A small dialog in the middle of the screen: it is
+             one field and two buttons, and it should not have to share the card
+             with the plejecenter it is about. -->
+        <div class="notedlg__scrim" id="noteScrim" hidden></div>
+        <div
+          class="notedlg"
+          id="noteDialog"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="noteDialogTitle"
+        >
+          <div class="account__head">
+            <p class="account__heading" id="noteDialogTitle"></p>
+            <button type="button" class="account__close" id="noteClose"></button>
+          </div>
+          <textarea class="noteedit__text" id="noteText" rows="5" maxlength="2000"></textarea>
+          <p class="account__error" id="noteError" role="alert" hidden></p>
+          <div class="notedlg__actions">
+            <button type="button" class="btn btn--primary" id="noteSave"></button>
+            <button type="button" class="btn btn--secondary" id="noteCancel"></button>
+          </div>
+        </div>
         <div style="display: contents">
         </div>
 

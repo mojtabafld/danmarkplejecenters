@@ -76,6 +76,10 @@ const accountPanel = $('#accountPanel');
 const accountCode = $('#accountCode');
 const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
 const accountScrim = $('#accountScrim');
+const noteDialog = $('#noteDialog');
+const noteScrim = $('#noteScrim');
+const noteText = $<HTMLTextAreaElement>('#noteText');
+const noteError = $('#noteError');
 
 const t = (key: TranslationKey, params?: Record<string, string | number>): string =>
   i18n.t(key, params);
@@ -426,36 +430,46 @@ function paintVisitedFilter(): void {
 }
 
 /**
- * The note editor, opened over the card body.
+ * The note editor: a small dialog in the middle of the screen.
  *
- * Inline rather than a separate dialog: the note is about the plejecenter
- * whose card is already open, and taking the reader somewhere else to write it
- * would put the thing being described out of sight.
+ * It was rendered into the card body, which meant the plejecenter it is about
+ * scrolled away the moment you started writing. One field and two buttons do
+ * not need a whole card, and centring it puts the caret where the eye already
+ * is.
  */
+let noteFor: string | null = null;
+let noteReturnFocus: HTMLElement | null = null;
+
 function openNoteEditor(id: string): void {
   const p = store.byId(id);
   if (!p || !account.user) return;
-  const current = account.noteFor(id);
 
-  panelBody.innerHTML =
-    `<form class="noteedit" id="noteForm">` +
-    `<label class="noteedit__label" for="noteText">${esc(t('note.label'))}</label>` +
-    `<textarea class="noteedit__text" id="noteText" rows="6" maxlength="2000" ` +
-    `placeholder="${esc(t('note.placeholder'))}">${esc(current)}</textarea>` +
-    `<p class="account__error" id="noteError" role="alert" hidden></p>` +
-    `</form>`;
+  noteFor = id;
+  noteReturnFocus = document.activeElement as HTMLElement;
+  $('#noteDialogTitle').textContent = t('note.label');
+  $('#noteClose').setAttribute('aria-label', t('note.cancel'));
+  $('#noteClose').innerHTML = icon('x');
+  $('#noteSave').innerHTML = icon('check') + esc(t('note.save'));
+  $('#noteCancel').textContent = t('note.cancel');
+  noteText.placeholder = t('note.placeholder');
+  noteText.value = account.noteFor(id);
+  noteError.hidden = true;
 
-  panelFoot.innerHTML =
-    `<div class="panel__actions">` +
-    `<button type="button" class="btn btn--primary" data-note-save="${esc(id)}">` +
-    `${icon('check')}${esc(t('note.save'))}</button>` +
-    `<button type="button" class="btn btn--secondary" data-note-cancel>${esc(t('note.cancel'))}</button>` +
-    `</div>`;
-
-  panelBody.querySelector<HTMLTextAreaElement>('#noteText')?.focus();
+  noteDialog.hidden = false;
+  noteScrim.hidden = false;
+  noteText.focus();
+  noteText.setSelectionRange(noteText.value.length, noteText.value.length);
 }
 
 function closeNoteEditor(): void {
+  noteFor = null;
+  noteDialog.hidden = true;
+  noteScrim.hidden = true;
+  noteReturnFocus?.focus();
+  noteReturnFocus = null;
+}
+
+function refreshCard(): void {
   const p = store.selected;
   if (!p) return;
   detail.show(p, {
@@ -466,33 +480,58 @@ function closeNoteEditor(): void {
   });
 }
 
-panelEl.addEventListener('click', (e) => {
-  const el = e.target as HTMLElement;
-  const open = el.closest<HTMLElement>('[data-note]')?.dataset.note;
-  if (open) {
-    openNoteEditor(open);
-    return;
-  }
-  if (el.closest('[data-note-cancel]')) {
+$('#noteSave').addEventListener('click', () => {
+  if (!noteFor) return;
+  const id = noteFor;
+  void account.saveNote(id, noteText.value).then((ok) => {
+    if (!ok) {
+      noteError.textContent = t('note.failed');
+      noteError.hidden = false;
+      return;
+    }
+    live.textContent = t('note.saved');
+    closeNoteEditor();
+    refreshCard();
+  });
+});
+
+for (const el of [$('#noteCancel'), $('#noteClose')]) {
+  el.addEventListener('click', () => closeNoteEditor());
+}
+noteScrim.addEventListener('click', () => closeNoteEditor());
+
+/*
+ * It declares aria-modal, so it has to behave like one: Tab stays inside and
+ * Escape leaves. Declaring modality without keeping focus in is worse than not
+ * declaring it, because a screen reader is then told the rest of the page is
+ * inert while a keyboard walks straight out into it.
+ */
+noteDialog.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.stopPropagation();
     closeNoteEditor();
     return;
   }
-  const save = el.closest<HTMLElement>('[data-note-save]')?.dataset.noteSave;
-  if (save) {
-    const text = panelBody.querySelector<HTMLTextAreaElement>('#noteText')?.value ?? '';
-    void account.saveNote(save, text).then((ok) => {
-      if (!ok) {
-        const box = panelBody.querySelector<HTMLElement>('#noteError');
-        if (box) {
-          box.textContent = t('note.failed');
-          box.hidden = false;
-        }
-        return;
-      }
-      live.textContent = t('note.saved');
-      closeNoteEditor();
-    });
+  if (e.key !== 'Tab') return;
+  const stops = [...noteDialog.querySelectorAll<HTMLElement>('textarea, button')].filter(
+    (el) => !el.hasAttribute('disabled'),
+  );
+  if (stops.length === 0) return;
+  const first = stops[0];
+  const last = stops[stops.length - 1];
+  const active = document.activeElement;
+  if (e.shiftKey && active === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault();
+    first.focus();
   }
+});
+
+panelEl.addEventListener('click', (e) => {
+  const id = (e.target as HTMLElement).closest<HTMLElement>('[data-note]')?.dataset.note;
+  if (id) openNoteEditor(id);
 });
 
 /** Marking a plejecenter visited, from the detail card. */

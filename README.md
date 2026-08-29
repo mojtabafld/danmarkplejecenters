@@ -180,11 +180,21 @@ field in Persian, to the right in Danish and English, with no physical
 direction anywhere in the CSS. Icon only, with `aria-label` carrying the name
 and `aria-pressed` the state, and a 44px target.
 
-Signed in, the card also carries a **note**: free text about that plejecenter,
-which is the thing only this reader can add and so takes the wide primary slot
-in the card's foot. The website button drops to the size of the route buttons
-and joins their row -- three links outward, equal weight, with the one action
-above them. Signed out, none of that appears and the card is exactly as it was.
+Signed in, the card also carries a **note**: free text about that plejecenter.
+
+The foot has two tiers. On top, the note and the website sit side by side at
+the same size and in the same colour, because neither outranks the other:
+one is what you have to say about the place, the other is what it says about
+itself. Below them, the two route buttons, in outline -- handing an address to
+a map application is a different kind of act and reads as one. Signed out the
+note button is absent and the row holds the website alone.
+
+The editor is a small centred dialog rather than a form inside the card, which
+used to scroll the plejecenter it was about out of sight the moment you started
+typing. It declares `aria-modal`, so it keeps Tab inside and leaves on Escape:
+declaring modality without holding focus is worse than not declaring it, since
+a screen reader is told the rest of the page is inert while a keyboard walks
+straight out of it.
 
 A note is its own table rather than a column on the visited list. Unmarking a
 place would otherwise delete the text somebody wrote about it, and losing
