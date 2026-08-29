@@ -311,7 +311,10 @@ const panel = `<!doctype html>
         <div class="panel__head">
           <div>
             <span class="panel__eyebrow" data-own="Kommunal">Kommunal</span>
-            <h2 class="panel__title" id="panelTitle">${esc(detail.name)}</h2>
+            <div class="panel__titlerow">
+              <button type="button" class="panel__visit" aria-pressed="true" aria-label="Fjern fra besøgte">${I.bookmarkCheck}</button>
+              <h2 class="panel__title" id="panelTitle">${esc(detail.name)}</h2>
+            </div>
           </div>
           <button type="button" class="panel__close" aria-label="Luk detaljer om ${esc(detail.name)}">${I.x}</button>
         </div>
@@ -459,12 +462,12 @@ const states = `<!doctype html>
         <span class="chip__mark">${I.bookmarkCheck}</span><span>Kun besøgte</span>
       </button>
     </div>
-    <div style="max-inline-size: 22rem; display: grid; gap: var(--space-2)">
-      <button type="button" class="btn btn--primary btn--visit" aria-pressed="false">
-        ${I.bookmark}Markér som besøgt
+    <div class="row">
+      <button type="button" class="panel__visit" aria-pressed="false" aria-label="Markér som besøgt">
+        ${I.bookmark}
       </button>
-      <button type="button" class="btn btn--secondary btn--visit" aria-pressed="true">
-        ${I.bookmarkCheck}Fjern fra besøgte
+      <button type="button" class="panel__visit" aria-pressed="true" aria-label="Fjern fra besøgte">
+        ${I.bookmarkCheck}
       </button>
     </div>
   </section>

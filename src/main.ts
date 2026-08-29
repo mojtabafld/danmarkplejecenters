@@ -337,9 +337,9 @@ async function toggleVisited(id: string): Promise<void> {
   live.textContent = t(wasVisited ? 'live.visitRemoved' : 'live.visitAdded', { name: p?.name ?? '' });
 }
 
-// The button lives in the card's foot, which is re-rendered on every open, so
-// the listener sits on the container that survives.
-$('#panelFoot').addEventListener('click', (e) => {
+// The mark is re-rendered on every open, so the listener sits on the card,
+// which does not go away.
+panelEl.addEventListener('click', (e) => {
   const id = (e.target as HTMLElement).closest<HTMLElement>('[data-visit]')?.dataset.visit;
   if (id) void toggleVisited(id);
 });

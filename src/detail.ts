@@ -56,7 +56,8 @@ export class DetailPanel {
   ): void {
     this.lastFocus = opts.restoreFocusTo ?? null;
     this.body.innerHTML = this.markup(p, opts.userAt ?? null);
-    this.foot.innerHTML = this.actions(p, opts.visited ?? false, opts.canVisit ?? false);
+    this.foot.innerHTML = this.actions(p);
+    this.renderVisit(p, opts.visited ?? false, opts.canVisit ?? false);
     this.root.hidden = false;
 
     // Entrance: set the "before" state, then release it on the next frame so
@@ -147,20 +148,10 @@ export class DetailPanel {
    * place is the most common reason this card is open, and burying it under
    * the register's small print made it something you had to go looking for.
    */
-  private actions(p: Plejecenter, visited: boolean, canVisit: boolean): string {
+  private actions(p: Plejecenter): string {
     const t = this.i18n.t.bind(this.i18n);
     const parts: string[] = ['<div class="panel__actions">'];
 
-    // The mark sits with the other actions rather than in the scrolling body:
-    // it is a thing you do to this plejecenter, not a fact about it.
-    if (canVisit) {
-      parts.push(
-        `<button type="button" class="btn ${visited ? 'btn--secondary' : 'btn--primary'} btn--visit"` +
-          ` data-visit="${esc(p.id)}" aria-pressed="${visited}">` +
-          `${icon(visited ? 'bookmarkCheck' : 'bookmark')}` +
-          `${esc(t(visited ? 'visit.unmark' : 'visit.mark'))}</button>`,
-      );
-    }
 
     if (p.web) {
       parts.push(
@@ -183,6 +174,27 @@ export class DetailPanel {
     );
     parts.push('</div>');
     return parts.join('');
+  }
+
+  /**
+   * The mark, beside the name it belongs to.
+   *
+   * Icon only, so it takes its whole name from aria-label, and the two states
+   * differ by shape -- an open bookmark against a bookmark with a tick -- not
+   * only by colour. aria-pressed is what tells a screen reader which it is.
+   */
+  private renderVisit(p: Plejecenter, visited: boolean, canVisit: boolean): void {
+    const slot = this.root.querySelector('#panelVisitSlot');
+    if (!slot) return;
+    if (!canVisit) {
+      slot.innerHTML = '';
+      return;
+    }
+    const label = this.i18n.t(visited ? 'visit.unmark' : 'visit.mark');
+    slot.innerHTML =
+      `<button type="button" class="panel__visit" data-visit="${esc(p.id)}"` +
+      ` aria-pressed="${visited}" aria-label="${esc(label)}" title="${esc(label)}">` +
+      `${icon(visited ? 'bookmarkCheck' : 'bookmark')}</button>`;
   }
 
   /** Head is rendered separately so the title can stay above the scroll area. */

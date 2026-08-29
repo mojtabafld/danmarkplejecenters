@@ -166,8 +166,15 @@ bundle locally, exactly as it will be served.
 
 ## Accounts and the visited list
 
-Signed in, every plejecenter card gains a button that marks it visited, and a
-"visited only" filter narrows the map to what you have marked. Marked
+Signed in, every plejecenter card gains a mark beside its name -- an icon
+alone, no label, because it belongs to that name and a full-width button in the
+foot was competing with the route buttons for the same attention. It is a
+toggle: `aria-pressed` carries the state, `aria-label` carries the whole name
+of the control, and the two states differ by shape (an open bookmark against
+one with a tick) as well as by fill. The hit area is 36px, comfortably over the
+24px floor an icon-only control has to clear.
+
+A "visited only" filter narrows the map to what you have marked. Marked
 plejecentre carry an extra ring on the map -- a shape rather than a fourth
 colour, because the three operator hues already mean something.
 
