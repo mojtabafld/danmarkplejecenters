@@ -42,22 +42,36 @@ services:
         scope: RUN_TIME
         value: https://plejefinder.online
 
-      # Mail, for verifying addresses. SMTP_URL is a single connection string,
-      # e.g. smtps://apikey:SG.xxxx@smtp.sendgrid.net:465 -- set it as a SECRET,
-      # not as a plain value. Without it, sign-up reports that verification mail
-      # cannot be sent rather than creating accounts nobody can confirm.
-      - key: SMTP_URL
+      # Mail, for verifying addresses. Discrete variables rather than a URL,
+      # because a mailbox password containing @ : or / silently truncates a
+      # connection string and the failure then looks like a wrong host.
+      #
+      # For a domain hosted at Simply.com, use smtp.simply.com -- NOT
+      # websmtp.simply.com, which their documentation restricts to scripts
+      # running on Simply's own web servers and which will refuse this app.
+      # Port 587 negotiates STARTTLS, which the app requires rather than
+      # merely prefers.
+      - key: SMTP_HOST
+        scope: RUN_TIME
+        value: smtp.simply.com
+      - key: SMTP_PORT
+        scope: RUN_TIME
+        value: "587"
+      - key: SMTP_USER
+        scope: RUN_TIME
+        value: no-reply@plejefinder.online
+      - key: SMTP_PASS
         scope: RUN_TIME
         type: SECRET
         value: ""
-      # Optional. The CA certificate from the database's connection page. With
-      # it the server's identity is actually verified; without it the link is
-      # encrypted but unauthenticated.
+
       - key: DATABASE_CA_CERT
         scope: RUN_TIME
         type: SECRET
         value: ""
 
+      # Must be an address the mailbox is allowed to send as; most providers
+      # refuse anything else. Defaults to SMTP_USER when unset.
       - key: MAIL_FROM
         scope: RUN_TIME
         value: "Plejecentre <no-reply@plejefinder.online>"

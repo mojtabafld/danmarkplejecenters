@@ -221,15 +221,33 @@ and no credential is in the repository:
 
 | Variable | Example |
 |---|---|
-| `SMTP_URL` | `smtps://apikey:SG.xxxx@smtp.sendgrid.net:465` -- set as a **SECRET** |
+| `SMTP_HOST` | `smtp.simply.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | `no-reply@plejefinder.online` |
+| `SMTP_PASS` | the mailbox password -- set as a **SECRET** |
 | `MAIL_FROM` | `Plejecentre <no-reply@plejefinder.online>` |
 | `PUBLIC_URL` | `https://plejefinder.online` |
+
+`SMTP_URL` is accepted instead, but the discrete variables are preferred for a
+reason: a mailbox password containing `@`, `:` or `/` silently truncates a
+connection string, and the failure then looks like a wrong host.
 
 `PUBLIC_URL` is where the link points; without it the link is built from the
 request's own host, which is right unless a proxy rewrites it.
 
-**Without `SMTP_URL`, sign-up refuses with a clear message rather than creating
-accounts nobody can ever confirm.** The start-up log says which state it is in,
+On port 587 the app sets `requireTLS`, so the connection must upgrade to
+STARTTLS or fail. Without it nodemailer upgrades only when the server offers
+to, and would send the password in the clear if something in between stripped
+the offer.
+
+**If the domain is hosted at Simply.com**, use `smtp.simply.com` -- the
+mail-client server, reachable from anywhere. Not `websmtp.simply.com`, which
+their documentation restricts to "your scripts, from our web servers" and
+which refuses a connection from App Platform. `MAIL_FROM` has to be an address
+the mailbox is allowed to send as.
+
+**Without mail configured, sign-up refuses with a clear message rather than
+creating accounts nobody can ever confirm.** The start-up log says which state it is in,
 so a misconfiguration is visible in the deploy log rather than discovered by
 the first person who tries to register.
 

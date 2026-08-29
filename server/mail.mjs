@@ -2,13 +2,23 @@
  * Sending the verification message.
  *
  * Configured entirely from the environment, so no provider is baked in and no
- * credential is ever in the repository:
+ * credential is ever in the repository. Two forms, discrete first:
  *
- *   SMTP_URL   smtps://user:pass@smtp.example.com:465   (set as a SECRET)
+ *   SMTP_HOST  smtp.simply.com
+ *   SMTP_PORT  587
+ *   SMTP_USER  no-reply@example.com
+ *   SMTP_PASS  the mailbox password        (set as a SECRET)
+ *
+ *   SMTP_URL   smtp://user:pass@host:587   (set as a SECRET)
+ *
+ * The discrete form exists because a password is not URL-safe. An @, a : or a
+ * / in it silently truncates the connection string and the failure looks like
+ * a wrong host. With the discrete variables nothing needs encoding.
+ *
  *   MAIL_FROM  Plejecentre <no-reply@example.com>
  *
- * Without SMTP_URL the module reports itself unconfigured and sign-up refuses
- * rather than creating accounts that can never be confirmed.
+ * Without either form the module reports itself unconfigured and sign-up
+ * refuses rather than creating accounts that can never be confirmed.
  */
 import nodemailer from 'nodemailer';
 
@@ -26,22 +36,57 @@ export function setTransport(t) {
 }
 
 export function isConfigured() {
-  return overridden || Boolean(process.env.SMTP_URL);
+  return overridden || Boolean(process.env.SMTP_URL || (process.env.SMTP_HOST && process.env.SMTP_USER));
+}
+
+/**
+ * Build the transport options.
+ *
+ * `requireTLS` is the part that matters on port 587. Without it nodemailer
+ * upgrades to STARTTLS only if the server offers it, and quietly sends the
+ * password in the clear if something between here and there strips the
+ * offer. With it, the connection fails instead -- which is the right outcome.
+ */
+function options() {
+  const common = {
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
+  };
+
+  if (process.env.SMTP_HOST) {
+    const port = Number(process.env.SMTP_PORT) || 587;
+    // 465 is implicit TLS; everything else negotiates upward and must.
+    const secure = process.env.SMTP_SECURE === '1' || port === 465;
+    return {
+      ...common,
+      host: process.env.SMTP_HOST,
+      port,
+      secure,
+      requireTLS: !secure,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? '' },
+    };
+  }
+
+  const url = process.env.SMTP_URL ?? '';
+  return [url, { ...common, requireTLS: !url.startsWith('smtps:') }];
 }
 
 function mailer() {
   if (!transport) {
-    transport = nodemailer.createTransport(process.env.SMTP_URL, {
-      // A slow or dead mail host must not hold a web request open.
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
-      socketTimeout: 15_000,
-    });
+    const opts = options();
+    // A slow or dead mail host must not hold a web request open, which is what
+    // the timeouts in options() are for.
+    transport = Array.isArray(opts)
+      ? nodemailer.createTransport(opts[0], opts[1])
+      : nodemailer.createTransport(opts);
   }
   return transport;
 }
 
-const FROM = () => process.env.MAIL_FROM ?? 'no-reply@localhost';
+// Falls back to the authenticating mailbox: most providers refuse to send as
+// an address the account does not own, so that is the safest default.
+const FROM = () => process.env.MAIL_FROM ?? process.env.SMTP_USER ?? 'no-reply@localhost';
 
 /**
  * One message, in all three languages, because the server does not know which
@@ -94,11 +139,12 @@ export async function sendVerification(to, url) {
 /** For the start-up log, so a misconfiguration is visible before anyone tries. */
 export async function check() {
   if (overridden) return 'mail transport injected';
-  if (!isConfigured()) return 'SMTP_URL not set, sign-up disabled';
+  if (!isConfigured()) return 'mail not configured (set SMTP_HOST/SMTP_USER/SMTP_PASS), sign-up disabled';
   try {
     await mailer().verify();
-    return 'mail ready';
+    return `mail ready via ${process.env.SMTP_HOST ?? 'SMTP_URL'} as ${FROM()}`;
   } catch (err) {
-    return `mail configured but not reachable: ${err.message}`;
+    // The message names the host and the failure, never the password.
+    return `mail configured but not usable: ${err.message}`;
   }
 }
