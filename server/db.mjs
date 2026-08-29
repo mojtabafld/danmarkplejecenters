@@ -42,12 +42,25 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
 
+CREATE TABLE IF NOT EXISTS email_tokens (
+  token_hash TEXT PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS email_tokens_user_id_idx ON email_tokens(user_id);
+
 CREATE TABLE IF NOT EXISTS visits (
   user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   plejecenter_id TEXT NOT NULL,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, plejecenter_id)
 );
+
+-- Added after the first release, so it has to be an ALTER rather than part of
+-- the CREATE: an existing database already has the table and would skip it.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
 `;
 
 /**

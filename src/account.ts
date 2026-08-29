@@ -10,6 +10,9 @@
 export type AccountUser = { email: string };
 
 export type AuthError =
+  | 'not_verified'
+  | 'mail_unavailable'
+  | 'mail_failed'
   | 'bad_email'
   | 'too_short'
   | 'too_long'
@@ -48,6 +51,10 @@ export class Account {
   visited = new Set<string>();
   /** False when the server has no database, so the feature is hidden entirely. */
   available = true;
+  /** Set after sign-up: the address waiting on a confirmation link. */
+  pendingEmail: string | null = null;
+  /** The address sign-in refused because it is not confirmed yet. */
+  unverifiedEmail: string | null = null;
 
   private listeners = new Set<Listener>();
 
@@ -101,19 +108,57 @@ export class Account {
     }
     if (status === 200 || status === 201) {
       this.user = data.user as AccountUser;
+      this.pendingEmail = null;
+      this.unverifiedEmail = null;
       await this.loadVisits();
       this.emit();
       return null;
     }
-    return ((data.error as AuthError) ?? 'server_error');
+    const error = (data.error as AuthError) ?? 'server_error';
+    if (error === 'not_verified') {
+      this.unverifiedEmail = (data.email as string) ?? email;
+      this.emit();
+    }
+    return error;
   }
 
   signIn(email: string, password: string): Promise<AuthError | null> {
     return this.credentials('/api/auth/signin', email, password);
   }
 
-  signUp(email: string, password: string): Promise<AuthError | null> {
-    return this.credentials('/api/auth/signup', email, password);
+  /**
+   * Sign-up does not sign you in. It creates an unconfirmed account and posts a
+   * link; `pendingEmail` is what the panel then shows instead of the form.
+   */
+  async signUp(email: string, password: string): Promise<AuthError | null> {
+    let status: number;
+    let data: Record<string, unknown>;
+    try {
+      ({ status, data } = await call('POST', '/api/auth/signup', { email, password }));
+    } catch {
+      return 'offline';
+    }
+    if (status === 201) {
+      this.pendingEmail = (data.email as string) ?? email;
+      this.emit();
+      return null;
+    }
+    return (data.error as AuthError) ?? 'server_error';
+  }
+
+  /** Ask for the confirmation link again. Always resolves; never reveals much. */
+  async resend(email: string): Promise<boolean> {
+    try {
+      const { status } = await call('POST', '/api/auth/resend', { email });
+      return status === 200;
+    } catch {
+      return false;
+    }
+  }
+
+  clearPending(): void {
+    this.pendingEmail = null;
+    this.emit();
   }
 
   async signOut(): Promise<void> {

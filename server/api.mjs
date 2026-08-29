@@ -7,6 +7,7 @@
  */
 import * as db from './db.mjs';
 import * as auth from './auth.mjs';
+import * as mail from './mail.mjs';
 
 const COOKIE = 'plejekort_session';
 const MAX_BODY = 4 * 1024;
@@ -83,36 +84,80 @@ const clearCookie = (secure) =>
 /* ------------------------------------------------------- rate limiting --- */
 
 /**
- * A small in-memory throttle on the credential endpoints. It is per-instance
- * and resets on deploy, which is the honest limit of doing this without another
- * table; it still turns an online guessing attack from thousands of tries a
- * minute into a handful.
+ * A small in-memory throttle on the credential endpoints.
+ *
+ * Per-instance and reset on deploy, which is the honest limit of doing this
+ * without another table; it still turns online guessing from thousands of tries
+ * a minute into a handful.
+ *
+ * Two deliberate choices. Each endpoint has its own bucket, so somebody
+ * registering does not spend the allowance for signing in. And sign-in counts
+ * only FAILURES, cleared the moment a password is right: counting successes
+ * would lock out an office or a family behind one address after a dozen
+ * ordinary logins, which punishes exactly the wrong people.
  */
-const attempts = new Map();
+const buckets = new Map();
 const WINDOW_MS = 15 * 60_000;
-const MAX_ATTEMPTS = 12;
 
-function tooManyAttempts(key) {
+function overLimit(endpoint, key, max) {
+  const rec = buckets.get(`${endpoint}:${key}`);
+  return Boolean(rec && Date.now() <= rec.reset && rec.n >= max);
+}
+
+function countAttempt(endpoint, key) {
+  const id = `${endpoint}:${key}`;
   const now = Date.now();
-  const rec = attempts.get(key);
-  if (!rec || now > rec.reset) {
-    attempts.set(key, { n: 1, reset: now + WINDOW_MS });
-    return false;
-  }
-  rec.n += 1;
-  return rec.n > MAX_ATTEMPTS;
+  const rec = buckets.get(id);
+  if (!rec || now > rec.reset) buckets.set(id, { n: 1, reset: now + WINDOW_MS });
+  else rec.n += 1;
+}
+
+function clearAttempts(endpoint, key) {
+  buckets.delete(`${endpoint}:${key}`);
 }
 
 // Bounded, so a flood of distinct addresses cannot grow the map without limit.
 setInterval(() => {
   const now = Date.now();
-  for (const [k, v] of attempts) if (now > v.reset) attempts.delete(k);
+  for (const [k, v] of buckets) if (now > v.reset) buckets.delete(k);
 }, WINDOW_MS).unref?.();
 
 const clientKey = (req) =>
   (req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() ||
   req.socket.remoteAddress ||
   'unknown';
+
+/* ----------------------------------------------------------------- mail -- */
+
+/**
+ * Where the verification link points. PUBLIC_URL when set, otherwise the host
+ * the request arrived on, which is right unless a proxy rewrites it.
+ */
+function publicOrigin(req) {
+  const configured = process.env.PUBLIC_URL?.replace(/\/+$/, '');
+  if (configured) return configured;
+  const proto = req.headers['x-forwarded-proto'] ?? 'http';
+  const host = req.headers['x-forwarded-host'] ?? req.headers.host ?? 'localhost';
+  return `${proto}://${host}`;
+}
+
+/**
+ * Mint a token and mail it. Returns false if the message could not be sent, so
+ * the caller can tell the truth rather than claim a mail is on its way.
+ */
+async function sendVerificationTo(req, user) {
+  const token = await auth.createEmailToken(user.id);
+  const link = `${publicOrigin(req)}/verify?token=${encodeURIComponent(token)}`;
+  try {
+    await mail.sendVerification(user.email, link);
+    return true;
+  } catch (err) {
+    // The address is never logged with the link: the log would then be enough
+    // to take over the account.
+    console.error('verification mail failed:', err?.message);
+    return false;
+  }
+}
 
 /* ------------------------------------------------------------- handlers -- */
 
@@ -124,7 +169,9 @@ const clientKey = (req) =>
 export async function handle(req, res, { secure }) {
   const url = new URL(req.url, 'http://localhost');
   const path = url.pathname;
-  if (!path.startsWith('/api/')) return false;
+  // /verify is not under /api/ because it is a link someone clicks in a mail
+  // client, and it should look like a page rather than an endpoint.
+  if (!path.startsWith('/api/') && path !== '/verify') return false;
 
   if (!db.isReady()) {
     send(res, 503, { error: 'no_database' });
@@ -135,6 +182,8 @@ export async function handle(req, res, { secure }) {
     const method = req.method ?? 'GET';
 
     if (path === '/api/auth/signup' && method === 'POST') return await signup(req, res, secure);
+    if (path === '/api/auth/resend' && method === 'POST') return await resend(req, res);
+    if (path === '/verify' && method === 'GET') return await verify(req, res, url);
     if (path === '/api/auth/signin' && method === 'POST') return await signin(req, res, secure);
     if (path === '/api/auth/signout' && method === 'POST') return await signout(req, res, secure);
     if (path === '/api/auth/me' && method === 'GET') return await me(req, res);
@@ -167,27 +216,72 @@ function requireUser(res, user) {
 }
 
 async function signup(req, res, secure) {
-  if (tooManyAttempts(clientKey(req))) { send(res, 429, { error: 'too_many' }); return true; }
+  const who = clientKey(req);
+  // Every attempt counts here: creating accounts is the expensive thing, and a
+  // valid one is as good a reason to slow down as an invalid one.
+  if (overLimit('signup', who, 10)) { send(res, 429, { error: 'too_many' }); return true; }
+  countAttempt('signup', who);
   const { email, password } = await readJson(req);
 
   if (!auth.isPlausibleEmail(email ?? '')) { send(res, 400, { error: 'bad_email' }); return true; }
   const problem = auth.passwordProblem(password);
   if (problem) { send(res, 400, { error: problem, min: auth.PASSWORD_MIN }); return true; }
 
+  // Refuse before creating anything: an account that can never be confirmed is
+  // worse than no account.
+  if (!mail.isConfigured()) { send(res, 503, { error: 'mail_unavailable' }); return true; }
+
   const user = await auth.createUser(email, password);
-  // The insert is ON CONFLICT DO NOTHING, so a null row means the address is
-  // taken. Said plainly: hiding it would only trade a real usability problem
-  // for privacy this app does not otherwise offer, since sign-in reveals the
-  // same thing to anyone who tries.
+  // A null row means the unique index rejected it, so the address is taken.
+  // Said plainly: hiding it would trade a real usability problem for privacy
+  // this app does not otherwise offer, since sign-in reveals the same thing.
   if (!user) { send(res, 409, { error: 'email_taken' }); return true; }
 
-  const { token, expires } = await auth.createSession(user.id);
-  send(res, 201, { user: { email: user.email } }, { 'set-cookie': sessionCookie(token, expires, secure) });
+  // No session yet. The account exists but is not usable until the address is
+  // confirmed, which is the whole point of confirming it.
+  const sent = await sendVerificationTo(req, user);
+  if (!sent) { send(res, 502, { error: 'mail_failed' }); return true; }
+
+  send(res, 201, { pending: true, email: user.email });
+  return true;
+}
+
+/**
+ * Send the link again. Deliberately answers the same way whether or not the
+ * address exists, so it cannot be used to discover who has an account -- unlike
+ * sign-up, where telling the truth is the more useful behaviour.
+ */
+async function resend(req, res) {
+  const who = clientKey(req);
+  if (overLimit('resend', who, 6)) { send(res, 429, { error: 'too_many' }); return true; }
+  countAttempt('resend', who);
+  const { email } = await readJson(req);
+  const record = await auth.findUser(email ?? '');
+  if (record && !record.verified_at && mail.isConfigured()) {
+    await sendVerificationTo(req, { id: record.id, email: record.email });
+  }
+  send(res, 200, { ok: true });
+  return true;
+}
+
+/**
+ * The link from the mail. A GET, because that is what clicking a link is, and
+ * it redirects to the app rather than answering with JSON a person would have
+ * to read.
+ */
+async function verify(req, res, url) {
+  const userId = await auth.consumeEmailToken(url.searchParams.get('token'));
+  res.writeHead(303, {
+    location: userId ? '/?verified=1' : '/?verified=0',
+    'cache-control': 'no-store',
+  });
+  res.end();
   return true;
 }
 
 async function signin(req, res, secure) {
-  if (tooManyAttempts(clientKey(req))) { send(res, 429, { error: 'too_many' }); return true; }
+  const who = clientKey(req);
+  if (overLimit('signin', who, 10)) { send(res, 429, { error: 'too_many' }); return true; }
   const { email, password } = await readJson(req);
   const record = await auth.findUser(email ?? '');
 
@@ -197,8 +291,19 @@ async function signin(req, res, secure) {
     ? await auth.verifyPassword(password ?? '', record.password_hash)
     : await auth.verifyPassword(password ?? '', 'scrypt$32768$8$1$AAAA$AAAA');
 
-  if (!record || !ok) { send(res, 401, { error: 'bad_credentials' }); return true; }
+  if (!record || !ok) {
+    countAttempt('signin', who);
+    send(res, 401, { error: 'bad_credentials' });
+    return true;
+  }
 
+  // Correct password, unconfirmed address: say so specifically, because "wrong
+  // password" would send someone hunting for a problem that is not there.
+  if (!record.verified_at) { send(res, 403, { error: 'not_verified', email: record.email }); return true; }
+
+  // A right password clears the record: the limit exists to slow guessing, not
+  // to cap how often somebody may legitimately sign in.
+  clearAttempts('signin', who);
   const { token, expires } = await auth.createSession(record.id);
   send(res, 200, { user: { email: record.email } }, { 'set-cookie': sessionCookie(token, expires, secure) });
   return true;

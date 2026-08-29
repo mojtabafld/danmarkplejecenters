@@ -156,6 +156,16 @@ const DA = {
   'visit.none': 'Du har ikke markeret nogen plejecentre endnu.',
   'live.visitAdded': '{name} er markeret som besøgt.',
   'live.visitRemoved': '{name} er fjernet fra besøgte.',
+  'verify.sent': 'Vi har sendt et link til {email}. Åbn det for at fuldføre oprettelsen.',
+  'verify.checkSpam': 'Kig i spam-mappen, hvis den ikke er kommet efter et par minutter.',
+  'verify.resend': 'Send linket igen',
+  'verify.resent': 'Linket er sendt igen.',
+  'verify.ok': 'Din e-mail er bekræftet. Log ind for at komme i gang.',
+  'verify.failed': 'Linket virker ikke længere. Bed om et nyt, og prøv igen.',
+  'verify.back': 'Tilbage til log ind',
+  'error.not_verified': 'Bekræft din e-mail først. Vi har sendt et link til {email}.',
+  'error.mail_unavailable': 'Oprettelse er midlertidigt utilgængelig. Prøv igen senere.',
+  'error.mail_failed': 'Bekræftelsesmailen kunne ikke sendes. Prøv igen.',
 } satisfies Record<string, Entry>;
 
 type Key = keyof typeof DA;
@@ -288,6 +298,16 @@ const EN: Record<Key, Entry> = {
   'visit.none': 'You have not marked any care homes yet.',
   'live.visitAdded': '{name} marked as visited.',
   'live.visitRemoved': '{name} removed from visited.',
+  'verify.sent': 'We have sent a link to {email}. Open it to finish creating your account.',
+  'verify.checkSpam': 'Check your spam folder if it has not arrived after a couple of minutes.',
+  'verify.resend': 'Send the link again',
+  'verify.resent': 'The link has been sent again.',
+  'verify.ok': 'Your email is confirmed. Sign in to get started.',
+  'verify.failed': 'That link no longer works. Ask for a new one and try again.',
+  'verify.back': 'Back to sign in',
+  'error.not_verified': 'Confirm your email first. We have sent a link to {email}.',
+  'error.mail_unavailable': 'Creating accounts is temporarily unavailable. Try again later.',
+  'error.mail_failed': 'The confirmation email could not be sent. Try again.',
 };
 
 const FA: Record<Key, Entry> = {
@@ -418,6 +438,16 @@ const FA: Record<Key, Entry> = {
   'visit.none': 'هنوز هیچ مرکزی را نشان نکرده‌اید.',
   'live.visitAdded': '{name} به‌عنوان بازدیدشده نشان شد.',
   'live.visitRemoved': '{name} از بازدیدشده‌ها برداشته شد.',
+  'verify.sent': 'پیوندی به {email} فرستادیم. برای کامل شدن ساخت حساب آن را باز کنید.',
+  'verify.checkSpam': 'اگر تا چند دقیقه نرسید، پوشهٔ هرزنامه را ببینید.',
+  'verify.resend': 'فرستادن دوبارهٔ پیوند',
+  'verify.resent': 'پیوند دوباره فرستاده شد.',
+  'verify.ok': 'ایمیل شما تأیید شد. برای شروع وارد شوید.',
+  'verify.failed': 'این پیوند دیگر کار نمی‌کند. پیوند تازه بخواهید و دوباره تلاش کنید.',
+  'verify.back': 'بازگشت به ورود',
+  'error.not_verified': 'نخست ایمیل خود را تأیید کنید. پیوندی به {email} فرستادیم.',
+  'error.mail_unavailable': 'ساختن حساب موقتاً در دسترس نیست. بعداً تلاش کنید.',
+  'error.mail_failed': 'ایمیل تأیید فرستاده نشد. دوباره تلاش کنید.',
 };
 /* eslint-enable @typescript-eslint/naming-convention */
 

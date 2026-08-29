@@ -440,6 +440,21 @@ const states = `<!doctype html>
   </section>
 
   <section class="stack">
+    <h2>Konto: afventer bekræftelse</h2>
+    <div class="langpick" style="position: static">
+      <div class="langpick__menu account__panel" style="position: static">
+        <p class="account__who">Vi har sendt et link til anna@example.dk. Åbn det for at fuldføre oprettelsen.</p>
+        <p class="account__why">Kig i spam-mappen, hvis den ikke er kommet efter et par minutter.</p>
+        <p class="account__note" role="status">Linket er sendt igen.</p>
+        <div class="account__actions">
+          <button type="button" class="btn btn--primary">Send linket igen</button>
+          <button type="button" class="btn btn--secondary">Tilbage til log ind</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
     <h2>Konto: logget ind</h2>
     <div class="langpick" style="position: static">
       <div class="langpick__menu account__panel" style="position: static">

@@ -200,14 +200,29 @@ langMenu.addEventListener('keydown', (e) => {
   }
 });
 
+/*
+ * composedPath(), not contains(). The path is fixed when the event is
+ * dispatched, so it still names the real ancestors even when the handler that
+ * ran first replaced the panel's contents -- at which point the original target
+ * is detached, contains() says false, and the panel closes itself on its own
+ * button.
+ */
 document.addEventListener('click', (e) => {
-  if (!langMenu.hidden && !$('#langpick').contains(e.target as Node)) setLangMenuOpen(false);
+  if (langMenu.hidden) return;
+  if (!e.composedPath().includes($('#langpick'))) setLangMenuOpen(false);
 });
 
 /* --------------------------------------------------------------- account */
 
 /** True while a request is in flight, so the form cannot be submitted twice. */
 let accountBusy = false;
+
+/**
+ * The outcome of following a confirmation link, held as state rather than
+ * written straight into the panel: `account.load()` finishes a moment later and
+ * re-renders, which would wipe a message that was only in the DOM.
+ */
+let verifiedNotice: 'ok' | 'failed' | null = null;
 
 function setAccountOpen(open: boolean): void {
   accountPanel.hidden = !open;
@@ -228,7 +243,15 @@ function renderAccount(): void {
   );
   accountButton.dataset.state = account.user ? 'in' : 'out';
 
-  accountPanel.innerHTML = account.user ? signedInMarkup() : signedOutMarkup();
+  const notice = verifiedNotice
+    ? `<p class="account__${verifiedNotice === 'ok' ? 'note' : 'error'}">` +
+      `${esc(t(verifiedNotice === 'ok' ? 'verify.ok' : 'verify.failed'))}</p>`
+    : '';
+
+  accountPanel.innerHTML = account.user
+    ? signedInMarkup()
+    : notice +
+      (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup());
 
   // The visited filter only means anything to someone with visits.
   visitedFilter.hidden = !account.user;
@@ -241,6 +264,24 @@ function signedInMarkup(): string {
     `<div class="account__actions">` +
     `<button type="button" class="btn btn--secondary" data-act="signout">${esc(t('account.signOut'))}</button>` +
     `<button type="button" class="btn btn--danger" data-act="delete">${esc(t('account.deleteAccount'))}</button>` +
+    `</div>`
+  );
+}
+
+/**
+ * After sign-up: the account exists but the address is not confirmed, so there
+ * is nothing to sign in to yet. Shows where the link went, says to check spam
+ * because that is where it usually is, and offers to send it again.
+ */
+function pendingMarkup(email: string): string {
+  return (
+    `<p class="account__who">${esc(t('verify.sent', { email }))}</p>` +
+    `<p class="account__why">${esc(t('verify.checkSpam'))}</p>` +
+    `<p class="account__note" id="accountNote" role="status" hidden></p>` +
+    `<div class="account__actions">` +
+    `<button type="button" class="btn btn--primary" data-act="resend" data-email="${esc(email)}">` +
+    `${esc(t('verify.resend'))}</button>` +
+    `<button type="button" class="btn btn--secondary" data-act="back">${esc(t('verify.back'))}</button>` +
     `</div>`
   );
 }
@@ -263,9 +304,18 @@ function signedOutMarkup(): string {
 }
 
 function showAuthError(err: AuthError): void {
+  // An unconfirmed address is not really an error in the form; it is a state
+  // with its own next step, so it takes over the panel instead.
+  if (err === 'not_verified' && account.unverifiedEmail) {
+    accountPanel.innerHTML = pendingMarkup(account.unverifiedEmail);
+    return;
+  }
   const box = accountPanel.querySelector<HTMLElement>('#accountError');
   if (!box) return;
-  box.textContent = t(`error.${err}` as TranslationKey, { n: 10 });
+  box.textContent = t(`error.${err}` as TranslationKey, {
+    n: 10,
+    email: account.unverifiedEmail ?? '',
+  });
   box.hidden = false;
 }
 
@@ -283,8 +333,15 @@ async function submitCredentials(kind: 'signin' | 'signup'): Promise<void> {
   accountBusy = false;
   delete accountPanel.dataset.busy;
 
-  if (err) showAuthError(err);
-  else setAccountOpen(false);
+  if (err) {
+    showAuthError(err);
+    return;
+  }
+  // Signing in is finished, so the panel gets out of the way. Signing up is
+  // not: it now shows which address the link went to, which is the one thing
+  // the person needs next.
+  verifiedNotice = null;
+  if (kind === 'signin') setAccountOpen(false);
 }
 
 accountButton.addEventListener('click', () => setAccountOpen(accountPanel.hidden));
@@ -298,6 +355,17 @@ accountPanel.addEventListener('click', (e) => {
   const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
   if (act === 'signup') void submitCredentials('signup');
   else if (act === 'signout') void account.signOut().then(() => setAccountOpen(false));
+  else if (act === 'back') account.clearPending();
+  else if (act === 'resend') {
+    const email = (e.target as HTMLElement).closest<HTMLElement>('[data-email]')?.dataset.email ?? '';
+    void account.resend(email).then(() => {
+      const note = accountPanel.querySelector<HTMLElement>('#accountNote');
+      if (note) {
+        note.textContent = t('verify.resent');
+        note.hidden = false;
+      }
+    });
+  }
   else if (act === 'delete') {
     // A destructive, irreversible action gets an explicit confirmation.
     if (confirm(t('account.deleteConfirm'))) void account.deleteAccount().then(() => setAccountOpen(false));
@@ -313,7 +381,8 @@ accountPanel.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('click', (e) => {
-  if (!accountPanel.hidden && !accountEl.contains(e.target as Node)) setAccountOpen(false);
+  if (accountPanel.hidden) return;
+  if (!e.composedPath().includes(accountEl)) setAccountOpen(false);
 });
 
 visitedFilter.addEventListener('click', () => {
@@ -709,6 +778,22 @@ renderGeo(geo.status);
 renderAccount();
 render();
 void account.load();
+
+/**
+ * The return trip from the confirmation link. The server redirects to
+ * /?verified=1 or 0; this turns that into a sentence and then removes the
+ * parameter, so a reload or a shared URL does not repeat the message.
+ */
+{
+  const verified = new URLSearchParams(location.search).get('verified');
+  if (verified !== null) {
+    history.replaceState(null, '', location.pathname);
+    verifiedNotice = verified === '1' ? 'ok' : 'failed';
+    live.textContent = t(verifiedNotice === 'ok' ? 'verify.ok' : 'verify.failed');
+    renderAccount();
+    setAccountOpen(true);
+  }
+}
 map.setData(store.visible);
 
 // Dev-only handle, so the map can be inspected from the console during

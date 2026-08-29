@@ -11,6 +11,14 @@ import { newDb } from 'pg-mem';
 
 import * as db from '../server/db.mjs';
 import * as api from '../server/api.mjs';
+import * as mail from '../server/mail.mjs';
+
+/**
+ * Captures mail instead of sending it, and exposes the last link at
+ * /__outbox so the browser test can click it the way a person would.
+ */
+const outbox = [];
+mail.setTransport({ sendMail: async (m) => { outbox.push(m); return { messageId: 'dev' }; } });
 
 const ROOT = resolve(fileURLToPath(new URL('../dist', import.meta.url)));
 const PORT = Number(process.env.PORT) || 8150;
@@ -26,6 +34,16 @@ const TYPES = new Map(Object.entries({
 }));
 
 const server = createServer(async (req, res) => {
+  if ((req.url ?? '').startsWith('/__outbox')) {
+    const last = outbox.at(-1);
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({
+      count: outbox.length,
+      to: last?.to ?? null,
+      link: (last?.text.match(/https?:\/\/\S+/) ?? [])[0] ?? null,
+    }));
+    return;
+  }
   if (await api.handle(req, res, { secure: false })) return;
   const path = decodeURIComponent((req.url ?? '/').split('?')[0]);
   const target = resolve(join(ROOT, normalize(path)));

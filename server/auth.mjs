@@ -82,6 +82,52 @@ export async function destroySession(token) {
   await db.query('DELETE FROM sessions WHERE token_hash = $1', [hashToken(token)]);
 }
 
+/* --------------------------------------------------- e-mail verification -- */
+
+const VERIFY_HOURS = 24;
+
+/**
+ * Mint a verification token. Only its hash is stored, for the same reason as
+ * session tokens: the row is useless to anyone who reads the table.
+ *
+ * Any earlier token for the same user is dropped, so "resend" invalidates the
+ * previous link rather than leaving several live at once.
+ */
+export async function createEmailToken(userId) {
+  const token = randomBytes(32).toString('base64url');
+  await db.query('DELETE FROM email_tokens WHERE user_id = $1', [userId]);
+  await db.query(
+    'INSERT INTO email_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+    [hashToken(token), userId, new Date(Date.now() + VERIFY_HOURS * 3600e3)],
+  );
+  return token;
+}
+
+/**
+ * Consume a token. Returns the user id it belonged to, or null.
+ *
+ * The DELETE decides: it returns a row only if one was actually removed, so two
+ * simultaneous clicks on the same link cannot both succeed. Marking the user
+ * verified is idempotent, so a second click on an already-used link simply
+ * finds nothing and reports failure.
+ */
+export async function consumeEmailToken(token) {
+  if (!token) return null;
+  const { rows } = await db.query(
+    'DELETE FROM email_tokens WHERE token_hash = $1 AND expires_at > now() RETURNING user_id',
+    [hashToken(token)],
+  );
+  const userId = rows[0]?.user_id;
+  if (userId === undefined) return null;
+  await db.query('UPDATE users SET verified_at = now() WHERE id = $1 AND verified_at IS NULL', [userId]);
+  return userId;
+}
+
+export async function isVerified(userId) {
+  const { rows } = await db.query('SELECT verified_at FROM users WHERE id = $1', [userId]);
+  return Boolean(rows[0]?.verified_at);
+}
+
 /* ---------------------------------------------------------------- users --- */
 
 /** Case- and whitespace-insensitive for lookup; the typed form is kept for display. */
@@ -130,7 +176,7 @@ export async function createUser(email, password) {
 
 export async function findUser(email) {
   const { rows } = await db.query(
-    'SELECT id, email, password_hash FROM users WHERE email_key = $1',
+    'SELECT id, email, password_hash, verified_at FROM users WHERE email_key = $1',
     [emailKey(email)],
   );
   return rows[0] ?? null;

@@ -28,14 +28,33 @@ services:
     instance_size_slug: apps-s-1vcpu-0.5gb
 
     envs:
-      # The binding that makes accounts work. `plejedb` must match the database
-      # component's name below. Without this the app still runs; the account
-      # button simply does not appear.
+      # The binding that makes accounts work. The name in ${...} must match the
+      # database component's name. Never paste the connection string itself: it
+      # carries the password, and this file is in git.
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${plejedb.DATABASE_URL}
+        value: ${dev-db-718494.DATABASE_URL}
+
+      # Where the verification link points. Without it the link is built from
+      # the request's own host, which is right in almost every case but wrong
+      # behind a proxy that rewrites it.
+      - key: PUBLIC_URL
+        scope: RUN_TIME
+        value: https://plejefinder.online
+
+      # Mail, for verifying addresses. SMTP_URL is a single connection string,
+      # e.g. smtps://apikey:SG.xxxx@smtp.sendgrid.net:465 -- set it as a SECRET,
+      # not as a plain value. Without it, sign-up reports that verification mail
+      # cannot be sent rather than creating accounts nobody can confirm.
+      - key: SMTP_URL
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+      - key: MAIL_FROM
+        scope: RUN_TIME
+        value: "Plejecentre <no-reply@plejefinder.online>"
 
 databases:
-  - name: plejedb
+  - name: dev-db-718494
     engine: PG
     production: false

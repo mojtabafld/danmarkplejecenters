@@ -199,10 +199,44 @@ where `plejedb` is the database component's name. `.do/app.yaml` has this
 already. The schema (three tables) is created on start-up if it is not there,
 so there is no migration step.
 
+### Confirming the address
+
+Sign-up creates the account but does not sign you in. It posts a link to the
+address, and only clicking that link makes the account usable. Sign-in refuses
+an unconfirmed address with a message naming it, rather than "wrong password",
+which would send someone hunting for a problem that is not there.
+
+- Tokens are 32 random bytes; only the SHA-256 is stored, and they expire after
+  24 hours.
+- Asking for a new link deletes the previous one, so exactly one is ever live.
+- A link works once: the `DELETE ... RETURNING` that consumes it is what
+  decides, so two clicks on the same link cannot both succeed.
+- Resend answers identically whether or not the address exists, so it cannot be
+  used to discover who has an account. Sign-up deliberately does not: telling
+  you the address is taken is more useful than a privacy gesture that sign-in
+  undoes anyway.
+
+Mail is configured entirely from the environment, so no provider is baked in
+and no credential is in the repository:
+
+| Variable | Example |
+|---|---|
+| `SMTP_URL` | `smtps://apikey:SG.xxxx@smtp.sendgrid.net:465` -- set as a **SECRET** |
+| `MAIL_FROM` | `Plejecentre <no-reply@plejefinder.online>` |
+| `PUBLIC_URL` | `https://plejefinder.online` |
+
+`PUBLIC_URL` is where the link points; without it the link is built from the
+request's own host, which is right unless a proxy rewrites it.
+
+**Without `SMTP_URL`, sign-up refuses with a clear message rather than creating
+accounts nobody can ever confirm.** The start-up log says which state it is in,
+so a misconfiguration is visible in the deploy log rather than discovered by
+the first person who tries to register.
+
 ### How the accounts work
 
-Email and password, and nothing else: no email is ever sent, so there is no
-mail provider to configure and no delivery to fail.
+Email and password. Nothing about a person is stored beyond the address, the
+hash, and which plejecentre they marked.
 
 - **Passwords** are hashed with scrypt -- memory-hard, so a stolen table is
   expensive to attack offline -- using Node's own crypto. A password hash is
@@ -234,10 +268,13 @@ leaves the database, and the delete button really deletes.
 npm test
 ```
 
-28 checks against an in-memory Postgres, covering sign-up validation,
-duplicate addresses, case-insensitive sign-in, session forgery, one account
-being unable to see another's visits, cascade deletion, malformed JSON and the
-SQL-injection case.
+46 checks against an in-memory Postgres and a capturing mail transport,
+covering sign-up validation, duplicate addresses, the confirmation link (that
+it works once, that a superseded one stops working, that a forged token is
+refused), sign-in being blocked until confirmed, case-insensitive sign-in,
+session forgery, one account being unable to see another's visits, cascade
+deletion, malformed JSON, the SQL-injection case, and sign-up refusing when
+mail is unconfigured.
 
 ```bash
 npm run serve:memdb

@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import * as api from './server/api.mjs';
 import * as db from './server/db.mjs';
+import * as mail from './server/mail.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('./dist', import.meta.url)));
 const PORT = Number(process.env.PORT) || 8080;
@@ -142,6 +143,10 @@ if (db.connectionString()) {
 } else {
   console.log('no DATABASE_URL, accounts disabled');
 }
+
+// Said at start-up, so a missing or wrong mail configuration is visible in the
+// deploy log rather than discovered by the first person who tries to register.
+console.log(await mail.check());
 
 server.listen(PORT, HOST, () => {
   console.log(`serving ${ROOT} on http://${HOST}:${PORT}`);

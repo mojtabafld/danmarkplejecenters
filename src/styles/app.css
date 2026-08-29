@@ -1398,6 +1398,18 @@ a.btn { text-decoration: none; }
 
 .account__hint { font-weight: var(--weight-regular); color: var(--text-tertiary); }
 
+.account__note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--text-brand);
+  background: var(--surface-brand-subtle);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+.account__note[hidden] { display: none; }
+
 .account__error {
   margin: 0;
   padding: var(--space-2) var(--space-3);
