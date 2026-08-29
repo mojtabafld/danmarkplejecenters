@@ -71,7 +71,10 @@ export class Account {
   async load(): Promise<void> {
     try {
       const { status, data } = await call('GET', '/api/auth/me');
-      if (status === 503) {
+      // Read the code from the body, not the status. The platform rewrites an
+      // upstream 5xx into its own HTML page, so a status alone cannot be
+      // trusted to distinguish "accounts are not set up" from "it is broken".
+      if (data.error === 'no_database' || status === 503) {
         this.available = false;
         this.emit();
         return;

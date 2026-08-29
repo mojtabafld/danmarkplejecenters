@@ -185,7 +185,12 @@ export async function handle(req, res, { secure }) {
     // been the only one; without this, accounts stay broken until a redeploy.
     const recovered = await db.ensureSchema({ attempts: 1 });
     if (!recovered) {
-      send(res, 503, { error: 'no_database' });
+      // 409, not 503. App Platform intercepts an upstream 5xx and serves its
+      // own error page instead, so the JSON body never reaches the browser and
+      // the client cannot tell "not configured" from "the app is down". These
+      // are expected, explainable states, so they answer in the 4xx range and
+      // the client reads the code from the body.
+      send(res, 409, { error: 'no_database' });
       return true;
     }
   }
@@ -241,7 +246,8 @@ async function signup(req, res, secure) {
 
   // Refuse before creating anything: an account that can never be confirmed is
   // worse than no account.
-  if (!mail.isConfigured()) { send(res, 503, { error: 'mail_unavailable' }); return true; }
+  // 409 rather than 503, for the reason given above: a 5xx never arrives.
+  if (!mail.isConfigured()) { send(res, 409, { error: 'mail_unavailable' }); return true; }
 
   const user = await auth.createUser(email, password);
   // A null row means the unique index rejected it, so the address is taken.
@@ -252,7 +258,9 @@ async function signup(req, res, secure) {
   // No session yet. The account exists but is not usable until the address is
   // confirmed, which is the whole point of confirming it.
   const sent = await sendVerificationTo(req, user);
-  if (!sent) { send(res, 502, { error: 'mail_failed' }); return true; }
+  // 424: the request failed because something it depended on did. 4xx for the
+  // same reason as above.
+  if (!sent) { send(res, 424, { error: 'mail_failed' }); return true; }
 
   send(res, 201, { pending: true, email: user.email });
   return true;

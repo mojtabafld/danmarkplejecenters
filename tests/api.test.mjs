@@ -217,7 +217,9 @@ cookie = '';
 client = '10.0.0.5';
 r = await call('POST', '/api/auth/signup', { email: 'nomail@example.dk', password: 'a-long-enough-pass' });
 check('with no mail configured, sign-up refuses rather than stranding an account',
-  r.status === 503 && r.body.error === 'mail_unavailable');
+  r.status === 409 && r.body.error === 'mail_unavailable');
+check('and refuses in the 4xx range, because the platform eats a 5xx',
+  r.status >= 400 && r.status < 500);
 const stranded = await db.query("SELECT count(*)::int AS n FROM users WHERE email_key = 'nomail@example.dk'");
 check('and creates nothing', stranded.rows[0].n === 0);
 
