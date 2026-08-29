@@ -309,7 +309,6 @@ function pendingMarkup(email: string): string {
 
 function signedOutMarkup(): string {
   return (
-    `<p class="account__why">${esc(t('account.why'))}</p>` +
     `<form class="account__form" id="accountForm" novalidate>` +
     `<label class="account__field"><span>${esc(t('account.email'))}</span>` +
     `<input class="field__input" type="email" name="email" autocomplete="email" required></label>` +
