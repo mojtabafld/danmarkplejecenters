@@ -1492,6 +1492,31 @@ a.btn { text-decoration: none; }
 }
 
 /* ========================================================================== *
+   TOUCH: KEEP TEXT FIELDS AT 16px
+ * ========================================================================== */
+
+/*
+ * iOS Safari zooms the whole page in when a text field it is focusing has a
+ * font smaller than 16px, and the zoom stays after the field is closed -- which
+ * is why opening the note editor appeared to widen the site and left you
+ * pinching to get back. The body scale is 15px, a step under the threshold.
+ *
+ * The fix is the font size, not the viewport tag: `maximum-scale=1` would stop
+ * the zoom by taking pinch-zoom away from everyone, which is a real
+ * accessibility loss (WCAG 1.4.4) to paper over a typographic detail.
+ *
+ * Only text entry, and only on a touch pointer, so the rest of the type scale
+ * is untouched.
+ */
+@media (pointer: coarse) {
+  .field__input,
+  .select,
+  .noteedit__text {
+    font-size: var(--text-md);
+  }
+}
+
+/* ========================================================================== *
    ACCOUNT
  * ========================================================================== */
 .account__panel {

@@ -698,6 +698,14 @@ Worth recording, because they were all invisible in a happy-path screenshot:
   overlays competed for the same tap.
 - `<option>` elements did not inherit the theme, so the dropdown list came back
   black-on-white in dark mode.
+- Opening the note editor appeared to widen the whole site, and closing it left
+  you pinching to get back. Nothing overflowed: iOS Safari zooms the page in
+  when it focuses a text field whose font is under 16px, and the body scale is
+  15px -- one step under the line. Text entry is 16px under
+  `(pointer: coarse)` now, and only there, so the type scale is untouched
+  everywhere else. The fix is deliberately not `maximum-scale=1`, which stops
+  the zoom by taking pinch-zoom away from everyone (WCAG 1.4.4) to paper over a
+  typographic detail.
 - `type="search"` drew its own clear button on top of ours — two crosses in one
   field.
 - `aria-label` on the bare `<div>` holding the location dot is prohibited ARIA;
