@@ -226,7 +226,9 @@
   --map-cluster-ring: rgb(255 255 255 / 0.9);
   --map-pin-ring: var(--p-neutral-0);
   --map-pin-selected-halo: var(--p-brand-500);
-  --map-visited-ring: var(--p-brand-700);
+  /* Neutral, not brand: a mark you made is a note to yourself, not a
+     category of plejecenter. 6.27:1 on the light basemap. */
+  --map-visited-ring: var(--p-neutral-700);
   --map-user-dot: var(--p-live-600);
   --map-user-ring: var(--p-live-500);
   --map-user-accuracy: var(--p-live-600);
@@ -380,7 +382,7 @@
   --map-cluster-ring: rgb(18 22 22 / 0.85);
   --map-pin-ring: var(--p-neutral-1000);
   --map-pin-selected-halo: var(--p-brand-300);
-  --map-visited-ring: var(--p-brand-300);
+  --map-visited-ring: var(--p-neutral-300);  /* 10.04:1 on the dark basemap */
   --map-user-dot: var(--p-live-400);
   --map-user-ring: var(--p-live-300);
   --map-user-accuracy: var(--p-live-300);

@@ -152,7 +152,7 @@ export class PlejecenterMap {
       this.install();
       this.ready = true;
       if (this.pending) {
-        this.setData(this.pending, this.lastVisited);
+        this.setData(this.pending);
         this.pending = null;
       }
       for (const fn of this.queued) fn(map);
@@ -339,11 +339,21 @@ export class PlejecenterMap {
     });
   }
 
-  setData(items: Plejecenter[], isVisited: (id: string) => boolean = () => false): void {
-    this.pending = items;
+  /**
+   * Which plejecentre are marked. Held here rather than passed with the data,
+   * because setData is called from several places and the one that forgot the
+   * argument silently unmarked everything: the ring simply stopped appearing.
+   * One caller sets the predicate; every caller gets it.
+   */
+  setVisitedPredicate(isVisited: (id: string) => boolean): void {
     this.lastVisited = isVisited;
+    if (this.pending) this.setData(this.pending);
+  }
+
+  setData(items: Plejecenter[]): void {
+    this.pending = items;
     this.run((m) => {
-      (m.getSource(SRC) as GeoJSONSource).setData(toFeatureCollection(items, isVisited));
+      (m.getSource(SRC) as GeoJSONSource).setData(toFeatureCollection(items, this.lastVisited));
     });
   }
 

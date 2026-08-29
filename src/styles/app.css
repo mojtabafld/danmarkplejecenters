@@ -1453,6 +1453,48 @@ a.btn { text-decoration: none; }
 }
 .account__panel[data-busy='true'] { opacity: var(--opacity-muted); pointer-events: none; }
 
+/* Heading and the way out, on one row at the top of every state. */
+.account__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.account__heading {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-primary);
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.account__close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: var(--control-md);
+  block-size: var(--control-md);
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: var(--border-hairline) solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.account__close svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
+.account__close:hover { background: var(--interactive-hover-bg); color: var(--text-primary); }
+.account__close:active { background: var(--interactive-active-bg); }
+
+/* The one thing a signed-in reader is most likely to want. */
+.account__saved {
+  inline-size: 100%;
+  min-block-size: var(--control-lg);
+}
+
 .account__why,
 .account__who {
   margin: 0;

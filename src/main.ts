@@ -250,10 +250,20 @@ function renderAccount(): void {
       `${esc(t(verifiedNotice === 'ok' ? 'verify.ok' : 'verify.failed'))}</p>`
     : '';
 
-  accountPanel.innerHTML = account.user
-    ? signedInMarkup()
-    : notice +
-      (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup());
+  const heading = account.user || account.pendingEmail ? t('account.title') : t('account.why');
+  // The close button is part of the panel rather than of each state, so it is
+  // there whichever state the panel is in.
+  const head =
+    `<div class="account__head"><p class="account__heading">${esc(heading)}</p>` +
+    `<button type="button" class="account__close" data-act="close" ` +
+    `aria-label="${esc(t('account.close'))}">${icon('x')}</button></div>`;
+
+  accountPanel.innerHTML =
+    head +
+    (account.user
+      ? signedInMarkup()
+      : notice +
+        (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup()));
 
   // The visited filter only means anything to someone with visits.
   visitedFilter.hidden = !account.user;
@@ -261,8 +271,17 @@ function renderAccount(): void {
 }
 
 function signedInMarkup(): string {
+  const saved = account.visited.size;
+  // With nothing saved the button would filter the map down to nothing and
+  // read as broken, so it says so instead.
+  const savedRow = saved
+    ? `<button type="button" class="btn btn--primary account__saved" data-act="saved">` +
+      `${icon('bookmarkCheck')}${esc(t('visit.showSaved', { n: saved }))}</button>`
+    : `<p class="account__why">${esc(t('visit.none'))}</p>`;
+
   return (
     `<p class="account__who">${esc(t('account.signedInAs', { email: account.user!.email }))}</p>` +
+    savedRow +
     `<div class="account__actions">` +
     `<button type="button" class="btn btn--secondary" data-act="signout">${esc(t('account.signOut'))}</button>` +
     `<button type="button" class="btn btn--danger" data-act="delete">${esc(t('account.deleteAccount'))}</button>` +
@@ -357,7 +376,15 @@ accountPanel.addEventListener('click', (e) => {
   const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
   if (act === 'signup') void submitCredentials('signup');
   else if (act === 'signout') void account.signOut().then(() => setAccountOpen(false));
-  else if (act === 'back') account.clearPending();
+  else if (act === 'close') {
+    setAccountOpen(false);
+    accountButton.focus();
+  } else if (act === 'saved') {
+    // Show the saved ones on the map, and get out of the way to reveal them.
+    store.setVisitedOnly(true);
+    visitedFilter.setAttribute('aria-pressed', 'true');
+    setAccountOpen(false);
+  } else if (act === 'back') account.clearPending();
   else if (act === 'resend') {
     const email = (e.target as HTMLElement).closest<HTMLElement>('[data-email]')?.dataset.email ?? '';
     void account.resend(email).then(() => {
@@ -425,7 +452,7 @@ panelEl.addEventListener('click', (e) => {
 account.onChange(() => {
   renderAccount();
   // The map and the card both show visited state, so both are rebuilt.
-  map.setData(store.visible, (id) => account.isVisited(id));
+  map.setData(store.visible);
   const selected = store.selected;
   if (selected) {
     detail.show(selected, {
@@ -787,6 +814,8 @@ paintCaret();
 renderGeo(geo.status);
 renderAccount();
 paintVisitedFilter();
+// Told once: every setData afterwards carries the marks with it.
+map.setVisitedPredicate((id) => account.isVisited(id));
 render();
 void account.load();
 

@@ -437,7 +437,10 @@ const states = `<!doctype html>
         ${I.user}<span class="langpick__code"></span>
       </button>
       <div class="langpick__menu account__panel" id="acctOut" style="position: static; margin-block-start: var(--space-2)">
-        <p class="account__why">Opret en konto for at markere plejecentre som besøgt og finde dem igen senere.</p>
+        <div class="account__head">
+          <p class="account__heading">Log ind eller opret en konto</p>
+          <button type="button" class="account__close" aria-label="Luk kontopanelet">${I.x}</button>
+        </div>
         <form class="account__form">
           <label class="account__field"><span>E-mail</span>
             <input class="field__input" type="email" name="email" autocomplete="email"></label>
@@ -473,7 +476,12 @@ const states = `<!doctype html>
     <h2>Konto: logget ind</h2>
     <div class="langpick" style="position: static">
       <div class="langpick__menu account__panel" style="position: static">
+        <div class="account__head">
+          <p class="account__heading">Din konto</p>
+          <button type="button" class="account__close" aria-label="Luk kontopanelet">${I.x}</button>
+        </div>
         <p class="account__who">Logget ind som anna@example.dk</p>
+        <button type="button" class="btn btn--primary account__saved">${I.bookmarkCheck}Vis gemte steder (3)</button>
         <div class="account__actions">
           <button type="button" class="btn btn--secondary">Log ud</button>
           <button type="button" class="btn btn--danger">Slet konto</button>
