@@ -175,7 +175,15 @@ export async function handle(req, res, { secure }) {
 
   // Health is answerable even when nothing else is: it exists to say why.
   if (path === '/api/health') {
-    send(res, 200, { ...db.status(), mail: mail.isConfigured() ? 'configured' : 'not_configured' });
+    send(res, 200, {
+      ...db.status(),
+      mail: mail.isConfigured() ? 'configured' : 'not_configured',
+      // Variable NAMES the process can see, never their values. Turns "it is
+      // not configured" into "the app cannot see SMTP_USER", which is the
+      // difference between guessing and knowing.
+      mailVars: mail.configuredVars(),
+      publicUrl: (process.env.PUBLIC_URL ?? '').trim() !== '',
+    });
     return true;
   }
 

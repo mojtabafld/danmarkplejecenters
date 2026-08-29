@@ -136,6 +136,19 @@ export async function sendVerification(to, url) {
   });
 }
 
+/**
+ * Which of the expected variables the process can actually see.
+ *
+ * Names only, never values: this exists to answer "did the platform pass them
+ * through, and under the names the code reads" without putting a password in
+ * an endpoint anyone can call. An empty string counts as absent, because that
+ * is what an unfilled placeholder in the app spec leaves behind.
+ */
+export function configuredVars() {
+  const names = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_URL', 'MAIL_FROM'];
+  return names.filter((n) => (process.env[n] ?? '').trim() !== '');
+}
+
 /** For the start-up log, so a misconfiguration is visible before anyone tries. */
 export async function check() {
   if (overridden) return 'mail transport injected';
