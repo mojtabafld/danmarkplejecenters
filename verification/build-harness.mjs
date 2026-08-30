@@ -217,6 +217,7 @@ const html = `<!doctype html>
 
       <div class="filters">
         <div class="filters__body" id="hFilters">
+        <div class="filters__inner">
         <div class="filters__search">
           <label class="field">
             <span class="sr-only">Søg efter plejecenter, vej, postnummer eller by</span>
@@ -235,6 +236,7 @@ const html = `<!doctype html>
             <option>Lyngby-Taarbæk Kommune</option>
           </select>
         </label>
+        </div>
         </div>
 
       </div>

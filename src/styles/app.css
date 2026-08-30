@@ -348,16 +348,32 @@ a.btn { text-decoration: none; }
   grid-template-rows: 1fr;
   transition: grid-template-rows var(--duration-base) var(--ease-out);
 }
-.filters__body > * {
+.filters__inner {
+  display: grid;
+  gap: var(--space-3);
   min-block-size: 0;
   overflow: hidden;
   transition: translate var(--duration-base) var(--ease-out),
               opacity var(--duration-fast) var(--ease-out);
 }
 .filters[data-collapsed='true'] .filters__body { grid-template-rows: 0fr; }
-.filters[data-collapsed='true'] .filters__body > * {
+.filters[data-collapsed='true'] .filters__inner {
   translate: 0 var(--space-4);
   opacity: 0;
+}
+
+/*
+ * The padding and the divider go too. A collapsed row leaves its container's
+ * padding behind, which showed as a band of empty sheet under the filters with
+ * nothing in it. Animated alongside the row so the whole thing closes as one.
+ */
+.filters {
+  transition: padding-block var(--duration-base) var(--ease-out),
+              border-block-end-color var(--duration-base) var(--ease-out);
+}
+.filters[data-collapsed='true'] {
+  padding-block: 0;
+  border-block-end-color: transparent;
 }
 
 .field { position: relative; display: block; min-inline-size: 0; }

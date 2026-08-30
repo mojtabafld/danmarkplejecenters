@@ -163,6 +163,10 @@
           <div class="filters" id="filters">
 
             <div class="filters__body" id="filtersBody">
+              <!-- One child, not two. A collapsing grid row only collapses the
+                   rows it declares, and a second child would land in an
+                   implicit auto row that keeps its height. -->
+              <div class="filters__inner">
               <div class="filters__search">
               <label class="field">
                 <span class="sr-only" data-i18n="search.label"></span>
@@ -199,6 +203,7 @@
                 
                 </select>
               </label>
+              </div>
             </div>
           </div>
 
