@@ -76,6 +76,9 @@ const accountPanel = $('#accountPanel');
 const accountCode = $('#accountCode');
 const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
 const savedHint = $('#savedHint');
+const filtersEl = $('#filters');
+const filtersBody = $('#filtersBody');
+const filtersGrabber = $<HTMLButtonElement>('#filtersGrabber');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -677,6 +680,76 @@ const list = new ResultList(resultsEl, store, i18n, (p) => {
   map.focus(p, panelInset());
 });
 
+/* ----------------------------------------------------- the search fields -- */
+
+/**
+ * Pull the grabber down to put the search fields away, up to bring them back.
+ *
+ * The gesture is an enhancement: the grabber is an ordinary button, so a tap
+ * toggles and so does Enter or Space, and the drag is read on top of that. A
+ * control that could only be dragged would be unreachable by keyboard.
+ */
+let filtersOpen = true;
+
+function setFiltersOpen(open: boolean): void {
+  filtersOpen = open;
+  filtersEl.dataset.collapsed = String(!open);
+  filtersGrabber.setAttribute('aria-expanded', String(open));
+  filtersGrabber.setAttribute('aria-label', t(open ? 'filters.hide' : 'filters.show'));
+  // Out of the tab order and out of the accessibility tree while closed:
+  // collapsed fields are still focusable otherwise, and Tab would walk into
+  // a search box nobody can see.
+  if (open) filtersBody.removeAttribute('inert');
+  else filtersBody.setAttribute('inert', '');
+}
+
+{
+  const DRAG_THRESHOLD = 18;
+  let startY: number | null = null;
+  let moved = false;
+
+  filtersGrabber.addEventListener('pointerdown', (e) => {
+    startY = e.clientY;
+    moved = false;
+    filtersGrabber.setPointerCapture(e.pointerId);
+  });
+
+  filtersGrabber.addEventListener('pointermove', (e) => {
+    if (startY === null) return;
+    const dy = e.clientY - startY;
+    if (Math.abs(dy) < DRAG_THRESHOLD) return;
+    moved = true;
+    // Down closes, up opens, and each only in the direction that has somewhere
+    // to go, so a long drag does not flap the panel open and shut.
+    if (dy > 0 && filtersOpen) setFiltersOpen(false);
+    else if (dy < 0 && !filtersOpen) setFiltersOpen(true);
+    startY = e.clientY;
+  });
+
+  const end = (e: PointerEvent): void => {
+    if (startY === null) return;
+    // A press that never travelled is a tap, and a tap toggles.
+    if (!moved) setFiltersOpen(!filtersOpen);
+    startY = null;
+    if (filtersGrabber.hasPointerCapture(e.pointerId)) {
+      filtersGrabber.releasePointerCapture(e.pointerId);
+    }
+  };
+  filtersGrabber.addEventListener('pointerup', end);
+  filtersGrabber.addEventListener('pointercancel', end);
+
+  // pointerdown/up already covers mouse and touch; a click would toggle twice.
+  filtersGrabber.addEventListener('click', (e) => e.preventDefault());
+
+  // Enter and Space still have to work, and they arrive as key events only.
+  filtersGrabber.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setFiltersOpen(!filtersOpen);
+    }
+  });
+}
+
 /* ------------------------------------------------- mobile rail (sheet) --- */
 
 const NARROW = window.matchMedia('(max-width: 60rem)');
@@ -967,6 +1040,7 @@ i18n.onChange((locale) => {
   paintThemeToggle();
   paintVisitedFilter();
   renderGeo(geo.status);
+  setFiltersOpen(filtersOpen);
   // The account panel's contents are built from strings in JS, not marked up
   // with data-i18n, so the pass above does not reach them: signed out and
   // switching language left the sign-in form in the language before it.
@@ -994,6 +1068,7 @@ paintCaret();
 renderGeo(geo.status);
 renderAccount();
 paintVisitedFilter();
+setFiltersOpen(true);
 // Told once: every setData afterwards carries the marks with it.
 map.setVisitedPredicate((id) => account.isVisited(id));
 render();

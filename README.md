@@ -13,6 +13,20 @@ and the municipality picker on screen beneath it: those are how you narrow 148
 homes down, and putting them behind a drawer would have put a step in front of
 the primary task.
 
+A grabber sits above the search fields on a phone, the way an iOS sheet has
+one. Pull it down and the search box and municipality picker slide away; pull
+it up and they come back, and the map takes the space either way. It is an
+ordinary button underneath, so a tap toggles it and so do Enter and Space --
+a control that could only be dragged would be unreachable by keyboard. While
+the fields are away they carry `inert`, so Tab cannot walk into a search box
+nobody can see.
+
+The collapse animates `grid-template-rows` from `1fr` to `0fr`, because height
+`auto` does not animate, and the inner block slides down and fades as the row
+closes so it reads as being pushed out of the way. `touch-action: none` on the
+grabber is what makes the drag readable at all: without it the browser claims
+the vertical gesture for scrolling before a `pointermove` ever arrives.
+
 There is no visible list of centres. The map is the interface; you find a home
 by looking, searching or filtering, and you open it by tapping its dot. The
 list still exists in the page, though, because the dots are drawn into a WebGL

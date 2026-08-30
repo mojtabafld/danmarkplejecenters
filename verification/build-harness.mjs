@@ -213,6 +213,9 @@ const html = `<!doctype html>
       </div>
 
       <div class="filters">
+        <button type="button" class="grabber" style="display:block" aria-expanded="true"
+                aria-controls="hFilters" aria-label="Skjul søgefelterne"></button>
+        <div class="filters__body" id="hFilters">
         <div class="filters__search">
           <label class="field">
             <span class="sr-only">Søg efter plejecenter, vej, postnummer eller by</span>
@@ -231,6 +234,7 @@ const html = `<!doctype html>
             <option>Lyngby-Taarbæk Kommune</option>
           </select>
         </label>
+        </div>
 
       </div>
 
@@ -513,6 +517,12 @@ const states = `<!doctype html>
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="stack">
+    <h2>Greb</h2>
+    <button type="button" class="grabber" style="display:block; max-inline-size: 20rem"
+            aria-expanded="true" aria-label="Skjul søgefelterne"></button>
   </section>
 
   <section class="stack">

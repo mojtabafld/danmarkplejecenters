@@ -307,6 +307,59 @@ a.btn { text-decoration: none; }
   border-block-end: var(--border-hairline) solid var(--border-subtle);
 }
 
+/*
+ * The grabber above the search fields.
+ *
+ * A full-width button so the target is generous, with the visible bar drawn by
+ * a pseudo-element. `touch-action: none` is what lets the drag be read at all:
+ * without it the browser claims the vertical gesture for scrolling before a
+ * pointermove ever arrives.
+ */
+.grabber {
+  display: none;
+  inline-size: 100%;
+  min-block-size: var(--control-md);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.grabber:active { cursor: grabbing; }
+.grabber::before {
+  content: '';
+  display: block;
+  inline-size: 2.25rem;
+  block-size: 0.3125rem;
+  margin-inline: auto;
+  border-radius: var(--radius-pill);
+  background: var(--border-default);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.grabber:hover::before { background: var(--border-strong); }
+
+/*
+ * Collapsing by grid row rather than height: 0fr to 1fr animates, where height
+ * auto does not. The inner block slides down and fades as the row closes, so it
+ * reads as being pushed out of the way rather than merely disappearing.
+ */
+.filters__body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--duration-base) var(--ease-out);
+}
+.filters__body > * {
+  min-block-size: 0;
+  overflow: hidden;
+  transition: translate var(--duration-base) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+}
+.filters[data-collapsed='true'] .filters__body { grid-template-rows: 0fr; }
+.filters[data-collapsed='true'] .filters__body > * {
+  translate: 0 var(--space-4);
+  opacity: 0;
+}
+
 .field { position: relative; display: block; min-inline-size: 0; }
 
 /* Search and the visited toggle share a row. The toggle lands at the inline
@@ -1214,6 +1267,11 @@ a.btn { text-decoration: none; }
   /* The sheet is: count + types, then the search fields. */
   .filters { padding-block-end: var(--space-3); }
   .rail__lead .chips { margin-block-start: var(--space-2); }
+
+  /* Only on the sheet: on a wide screen the rail is a column with room to
+     spare, and a drag handle there would be decoration. */
+  .grabber { display: block; }
+  .filters { padding-block-start: var(--space-1); }
 
 
 
