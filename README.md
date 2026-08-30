@@ -13,9 +13,11 @@ and the municipality picker on screen beneath it: those are how you narrow 148
 homes down, and putting them behind a drawer would have put a step in front of
 the primary task.
 
-A grabber sits above the search fields on a phone, the way an iOS sheet has
+A grabber sits at the top of the sheet on a phone, the way an iOS sheet has
 one. Pull it down and the search box and municipality picker slide away; pull
-it up and they come back, and the map takes the space either way. It is an
+it up and they come back, and the map takes the space either way. The count
+and the operator filters stay put throughout -- they say what is on the map
+rather than change it, so they are not part of what folds away. It is an
 ordinary button underneath, so a tap toggles it and so do Enter and Space --
 a control that could only be dragged would be unreachable by keyboard. While
 the fields are away they carry `inert`, so Tab cannot walk into a search box

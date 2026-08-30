@@ -253,7 +253,7 @@ a.btn { text-decoration: none; }
   position: relative;
   z-index: var(--z-rail);
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   min-inline-size: 0;
   min-block-size: 0;
   background: var(--rail-bg);
@@ -1234,7 +1234,7 @@ a.btn { text-decoration: none; }
     align-self: end;
     inline-size: 100%;
     max-block-size: min(62%, 34rem);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     border-inline-end: 0;
     border-block-start: var(--border-hairline) solid var(--border-default);
     border-start-start-radius: var(--radius-xl);
@@ -1269,9 +1269,10 @@ a.btn { text-decoration: none; }
   .rail__lead .chips { margin-block-start: var(--space-2); }
 
   /* Only on the sheet: on a wide screen the rail is a column with room to
-     spare, and a drag handle there would be decoration. */
-  .grabber { display: block; }
-  .filters { padding-block-start: var(--space-1); }
+     spare, and a drag handle there would be decoration. At the very top of the
+     sheet it also carries the sheet's own top padding. */
+  .grabber { display: block; padding-block-start: var(--space-2); }
+  .rail__lead { padding-block-start: var(--space-2); }
 
 
 

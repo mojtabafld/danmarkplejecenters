@@ -131,6 +131,16 @@
       <div class="workspace">
         <!-- ---------------------------------------------------------- rail -->
         <aside class="rail" id="rail" data-i18n-aria="results.label">
+            <!-- The grabber. A real button, so it works by tap and by keyboard;
+                 the drag below is an enhancement, not the only way in. -->
+            <button
+              type="button"
+              class="grabber"
+              id="filtersGrabber"
+              aria-expanded="true"
+              aria-controls="filtersBody"
+            ></button>
+
           <div class="rail__lead">
             <p class="tally">
               <span class="tally__count" id="tallyCount">148</span>
@@ -151,15 +161,6 @@
           </div>
 
           <div class="filters" id="filters">
-            <!-- The grabber. A real button, so it works by tap and by keyboard;
-                 the drag below is an enhancement, not the only way in. -->
-            <button
-              type="button"
-              class="grabber"
-              id="filtersGrabber"
-              aria-expanded="true"
-              aria-controls="filtersBody"
-            ></button>
 
             <div class="filters__body" id="filtersBody">
               <div class="filters__search">
