@@ -619,6 +619,9 @@ panelEl.addEventListener('click', (e) => {
 
 account.onChange(() => {
   renderAccount();
+  // Recompute first. With "visited only" on, unmarking a place changes what
+  // the filter selects, and everything below reads store.visible.
+  store.refresh();
   // The map and the card both show visited state, so both are rebuilt.
   map.setData(store.visible);
   const selected = store.selected;
@@ -964,6 +967,12 @@ i18n.onChange((locale) => {
   paintThemeToggle();
   paintVisitedFilter();
   renderGeo(geo.status);
+  // The account panel's contents are built from strings in JS, not marked up
+  // with data-i18n, so the pass above does not reach them: signed out and
+  // switching language left the sign-in form in the language before it.
+  renderAccount();
+  // The note editor too, if it happens to be open.
+  if (!noteDialog.hidden && noteFor) openNoteEditor(noteFor);
 
   // Force the data-driven views to rebuild: the records are unchanged, but
   // every label around them is not.

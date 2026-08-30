@@ -1708,6 +1708,10 @@ a.btn { text-decoration: none; }
 .btn--danger:active { background: var(--button-destructive-bg-active); border-color: var(--button-destructive-bg-active); }
 
 /* The account button shows an initial once signed in. */
+/* Signed in, the whole control goes green -- icon and initial together. The
+   icon was left grey, so the one glance that answers "am I signed in?" was
+   answering it with a letter the size of a full stop. */
+#accountButton[data-state='in'] { color: var(--text-brand); }
 #accountButton[data-state='in'] .langpick__code { color: var(--text-brand); }
 
 

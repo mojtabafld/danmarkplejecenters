@@ -86,6 +86,18 @@ export class Store {
     this.emit();
   }
 
+  /**
+   * Recompute what is visible, without changing a filter.
+   *
+   * The visited-only filter reads a predicate that lives outside the store, so
+   * when that predicate's answer changes -- somebody unmarks a place -- the
+   * filters are the same but their result is not. Without this the list and
+   * the count kept showing a place that had just been removed.
+   */
+  refresh(): void {
+    this.emit();
+  }
+
   setVisitedOnly(on: boolean): void {
     this.filters.visitedOnly = on;
     this.emit();
