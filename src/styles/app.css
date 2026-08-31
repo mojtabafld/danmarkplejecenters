@@ -810,6 +810,121 @@ a.btn { text-decoration: none; }
 }
 .map__tool:active { background: var(--interactive-active-bg); }
 
+/* ================================================================ dock === */
+/*
+ * A pill over the map. Collapsed it is one round segment, or two once somebody
+ * is signed in; pressing search grows it into a card holding the field and the
+ * kommune list.
+ */
+.dock {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  inset-block-start: var(--space-3);
+  /*
+   * Centred over the map. `inset-inline: 0` gives the box the full width to
+   * centre inside and `margin-inline: auto` does the centring, which a 50%
+   * offset could not do without knowing the width first -- and the width here
+   * changes with the number of segments and with whether it is open.
+   */
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: fit-content;
+  /*
+   * Room for the zoom controls sitting at the end of the same row, doubled so
+   * the reservation is symmetrical and the pill stays centred on the map
+   * rather than on what is left of it.
+   */
+  max-inline-size: min(24rem, calc(100% - 2 * (var(--space-3) + var(--control-lg) + var(--space-2))));
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  background: var(--surface-raised);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-md);
+  transition: border-radius var(--duration-fast) var(--ease-out),
+              padding var(--duration-fast) var(--ease-out);
+}
+
+/*
+ * Open it is a card, not a pill. A pill radius on a box two rows tall bows the
+ * sides into an oval and pulls the corners off the fields inside it.
+ */
+.dock[data-open='true'] {
+  inline-size: min(21rem, 100%);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+}
+
+.dock__bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.dock__seg {
+  display: grid;
+  place-items: center;
+  inline-size: var(--control-lg);
+  block-size: var(--control-lg);
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+/* Author `display` beats the browser's own `[hidden]`, so without this the
+   saved segment shows for everybody. Same reason `.bootfail` and `.intro`
+   carry one. */
+.dock__seg[hidden] { display: none; }
+
+.dock__seg svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
+.dock__seg:hover { background: var(--interactive-hover-bg); color: var(--text-primary); }
+.dock__seg:active { background: var(--interactive-active-bg); }
+
+/* Open, or filtering: the segment is doing something, and says so. */
+.dock__seg[aria-expanded='true'],
+.dock__seg[aria-pressed='true'] {
+  color: var(--button-primary-fg);
+  background: var(--action-primary);
+}
+.dock__seg[aria-expanded='true']:hover,
+.dock__seg[aria-pressed='true']:hover {
+  color: var(--button-primary-fg);
+  background: var(--action-primary-hover);
+}
+
+/* The hairline between the two segments, as in the reference. */
+.dock__split {
+  display: block;
+  inline-size: var(--border-hairline);
+  block-size: var(--space-5);
+  background: var(--border-default);
+  flex: none;
+}
+.dock__split[hidden] { display: none; }
+
+.dock__fields { display: grid; gap: var(--space-2); }
+.dock__fields[hidden] { display: none; }
+
+/* The dock's own copies sit inside a raised card, so they take the sunken
+   ground the rail's do not need. `background-color`, never the shorthand: the
+   shorthand also resets background-image, and the select's caret is an image. */
+.dock .field__input, .dock .select { background-color: var(--surface-sunken); }
+
+/*
+ * The sheet owns the bottom of a narrow screen and the zoom controls own the
+ * top corner, so the pill keeps to the top and takes the width it can get.
+ */
+@media (max-width: 60rem) {
+  .dock { inset-block-start: var(--space-2); }
+  .dock[data-open='true'] { inline-size: min(21rem, 100%); }
+}
+
 .map__legend {
   position: absolute;
   z-index: var(--z-map-ui);
@@ -853,7 +968,13 @@ a.btn { text-decoration: none; }
 .map__fallback {
   position: absolute;
   z-index: var(--z-map-ui);
-  inset-block-start: var(--space-3);
+  /*
+   * Below the dock, not beside it. This is nearly as wide as the map on a
+   * phone, so sharing the dock's row put the two on top of each other -- and
+   * this notice appears exactly when the tile CDN is unreachable, which is a
+   * real network for some of the people this site is for, not a rare one.
+   */
+  inset-block-start: calc(var(--space-3) + var(--control-lg) + var(--space-4));
   inset-inline-start: var(--space-3);
   max-inline-size: min(26rem, calc(100% - var(--space-16)));
   padding: var(--space-3) var(--space-4);

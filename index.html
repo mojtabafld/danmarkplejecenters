@@ -237,6 +237,64 @@
 
           <p class="map__fallback" id="mapFallback" hidden data-i18n="map.fallback"></p>
 
+          <!--
+            The dock: a pill over the map, and the quickest way into the two
+            things people come here to do.
+
+            One segment while nobody is signed in -- search -- and two once
+            somebody is, because "the places I saved" only means anything to
+            an account. Pressing search grows the pill into a card with the
+            field and the kommune list in it. Both are bound to the same store
+            as the pair in the rail, so whichever one you use, the other says
+            the same thing.
+
+            The buttons carry no text: the label is set in script as the
+            accessible name and the hover title, the way the visited filter
+            does, because the search segment's name changes when it opens.
+          -->
+          <div class="dock" id="dock" data-open="false">
+            <div class="dock__bar">
+              <button
+                type="button"
+                class="dock__seg"
+                id="dockSearchBtn"
+                aria-expanded="false"
+                aria-controls="dockFields"
+              >
+                <span class="dock__icon" id="dockSearchIcon"></span>
+              </button>
+
+              <span class="dock__split" id="dockSplit" aria-hidden="true" hidden></span>
+
+              <button type="button" class="dock__seg" id="dockSaved" aria-pressed="false" hidden>
+                <span class="dock__icon" id="dockSavedIcon"></span>
+              </button>
+            </div>
+
+            <div class="dock__fields" id="dockFields" hidden>
+              <label class="field">
+                <span class="sr-only" data-i18n="search.label"></span>
+                <span class="field__icon" id="dockFieldIcon" aria-hidden="true"></span>
+                <input
+                  class="field__input"
+                  id="dockSearch"
+                  type="search"
+                  autocomplete="off"
+                  spellcheck="false"
+                  data-i18n-ph="search.placeholder"
+                />
+                <button type="button" class="field__clear" id="dockClear" hidden>
+                  <span class="sr-only" data-i18n="search.clear"></span>
+                </button>
+              </label>
+
+              <label class="field">
+                <span class="sr-only" data-i18n="filter.municipality"></span>
+                <select class="select" id="dockMunicipality"></select>
+              </label>
+            </div>
+          </div>
+
           <div class="map__tools">
             <button type="button" class="map__tool" id="locate" aria-pressed="false" data-state="idle">
               <span class="sr-only" id="locateLabel"></span>
