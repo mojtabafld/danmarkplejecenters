@@ -1127,7 +1127,9 @@ a.btn { text-decoration: none; }
   overflow-wrap: anywhere;
 }
 .joblink svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); flex: none; }
-.joblink:hover { text-decoration: underline; text-underline-offset: 0.15em; }
+/* No underline on hover: the row reads as a line of the card, not as body
+   copy with a link in it. The colour lifts instead. */
+.joblink:hover { color: var(--text-link-hover); }
 
 /* A note the reader wrote, above the register's own fields. */
 .note {

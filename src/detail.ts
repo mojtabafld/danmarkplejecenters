@@ -106,12 +106,6 @@ export class DetailPanel {
     parts.push(this.fact('pin', 'panel.address', address));
     parts.push(this.fact('building', 'panel.ownership', esc(t(ownershipDetailKey(p)))));
 
-    if (p.homes) {
-      parts.push(
-        this.fact('bed', 'panel.capacity', esc(t('panel.capacityValue', { n: p.homes }))),
-      );
-    }
-
     if (p.phone) {
       parts.push(
         this.fact(

@@ -334,11 +334,10 @@ const panel = `<!doctype html>
             <p class="note__label">Din note</p>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
-          <a class="joblink" href="https://www.google.com/search?q=x">${I.search}<span>Søg ledige stillinger</span></a>
+          <a class="joblink" href="https://www.google.com/search?q=x">${I.search}<span>Søg ledige stillinger på dette center</span></a>
           <div class="facts">
             ${fact(I.pin, 'Adresse', `${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}<br>${esc(detail.municipality)} Kommune`)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}
-            ${fact(I.bed, 'Kapacitet', `${detail.homes ?? 0} plejeboliger`)}
             ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}">82 32 50 50</a>`)}
             ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}">${esc(detail.email ?? 'kontakt@kk.dk')}</a>`)}
             ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}">boligertilaeldre.kk.dk<span class="sr-only"> (åbner i ny fane)</span></a>`)}

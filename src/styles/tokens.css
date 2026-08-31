@@ -176,6 +176,7 @@
   --text-on-brand: var(--p-neutral-0);
   --text-brand: var(--p-brand-700);
   --text-link: var(--p-brand-700);
+  --text-link-hover: var(--p-brand-800);
 
   --border-subtle: var(--p-neutral-200);
   --border-default: var(--p-neutral-300);
@@ -337,6 +338,7 @@
   --text-on-brand: var(--p-brand-950);
   --text-brand: var(--p-brand-300);
   --text-link: var(--p-brand-300);
+  --text-link-hover: var(--p-brand-200);
 
   --border-subtle: #2C3131;
   --border-default: #3B4141;
