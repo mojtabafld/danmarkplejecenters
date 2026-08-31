@@ -752,13 +752,22 @@ a.btn { text-decoration: none; }
    */
   inset-inline: 0;
   margin-inline: auto;
-  inline-size: fit-content;
   /*
-   * Room for the zoom controls sitting at the end of the same row, doubled so
-   * the reservation is symmetrical and the pill stays centred on the map
-   * rather than on what is left of it.
+   * How much width there is to be had: everything except the zoom controls at
+   * the end of the row, reserved on both sides so the reservation is
+   * symmetrical and the dock stays centred on the map rather than on what is
+   * left of it.
+   *
+   * Every width below is a `min()` against it, deliberately. A `min-inline-size`
+   * would have been the obvious way to make the resting bar wider, and it would
+   * have been wrong: where the two disagree the minimum wins, so on a 280px
+   * screen the bar would have grown straight back under the zoom buttons.
    */
-  max-inline-size: min(24rem, calc(100% - 2 * (var(--space-3) + var(--control-lg) + var(--space-2))));
+  --dock-room: calc(100% - 2 * (var(--space-3) + var(--control-lg) + var(--space-2)));
+  /* Wider than the icons in it, so it reads as a bar over the map rather than
+     as a button that happens to be round. */
+  inline-size: min(10rem, var(--dock-room));
+  max-inline-size: min(24rem, var(--dock-room));
   display: grid;
   gap: var(--space-2);
   padding: var(--space-1);
@@ -770,7 +779,7 @@ a.btn { text-decoration: none; }
    */
   background: var(--surface-sunken);
   border: var(--border-hairline) solid var(--border-default);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
   /*
    * Resting at 80%, with the blur behind it so the translucency reads as glass
@@ -800,15 +809,18 @@ a.btn { text-decoration: none; }
 .dock[hidden] { display: none; }
 
 .dock[data-open='true'] {
-  inline-size: min(21rem, 100%);
+  inline-size: min(21rem, var(--dock-room));
   padding: var(--space-2);
 }
 
+/* Centred in the rectangle, across and down: one icon lands in the middle on
+   its own, two land either side of the divider with the pair centred. */
 .dock__bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  min-block-size: var(--control-lg);
 }
 
 .dock__seg {
@@ -885,7 +897,6 @@ a.btn { text-decoration: none; }
  */
 @media (max-width: 60rem) {
   .dock { inset-block-end: calc(var(--dock-lift, 0px) + var(--space-2)); }
-  .dock[data-open='true'] { inline-size: min(21rem, 100%); }
 }
 
 .map__legend {
