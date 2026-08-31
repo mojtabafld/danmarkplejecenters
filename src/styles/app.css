@@ -265,7 +265,8 @@ a.btn { text-decoration: none; }
   position: relative;
   z-index: var(--z-rail);
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  /* The lead, then the list taking everything left. */
+  grid-template-rows: auto minmax(0, 1fr);
   min-inline-size: 0;
   min-block-size: 0;
   background: var(--rail-bg);
@@ -311,101 +312,16 @@ a.btn { text-decoration: none; }
   font-weight: var(--weight-semibold);
 }
 
-/* --------------------------------------------------------------- filters -- */
-.filters {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  border-block-end: var(--border-hairline) solid var(--border-subtle);
-}
-
-/*
- * The grabber above the search fields.
- *
- * A full-width button so the target is generous, with the visible bar drawn by
- * a pseudo-element. `touch-action: none` is what lets the drag be read at all:
- * without it the browser claims the vertical gesture for scrolling before a
- * pointermove ever arrives.
- */
-.grabber {
-  display: none;
-  inline-size: 100%;
-  min-block-size: var(--control-md);
-  padding: 0;
-  background: transparent;
-  border: 0;
-  cursor: grab;
-  touch-action: none;
-}
-.grabber:active { cursor: grabbing; }
-.grabber::before {
-  content: '';
-  display: block;
-  inline-size: 2.25rem;
-  block-size: 0.3125rem;
-  margin-inline: auto;
-  border-radius: var(--radius-pill);
-  background: var(--border-default);
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-.grabber:hover::before { background: var(--border-strong); }
-
-/*
- * Collapsing by grid row rather than height: 0fr to 1fr animates, where height
- * auto does not. The inner block slides down and fades as the row closes, so it
- * reads as being pushed out of the way rather than merely disappearing.
- */
-.filters__body {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows var(--duration-base) var(--ease-out);
-}
-.filters__inner {
-  display: grid;
-  gap: var(--space-3);
-  min-block-size: 0;
-  overflow: hidden;
-  transition: translate var(--duration-base) var(--ease-out),
-              opacity var(--duration-fast) var(--ease-out);
-}
-.filters[data-collapsed='true'] .filters__body { grid-template-rows: 0fr; }
-.filters[data-collapsed='true'] .filters__inner {
-  translate: 0 var(--space-4);
-  opacity: 0;
-}
-
-/*
- * The padding and the divider go too. A collapsed row leaves its container's
- * padding behind, which showed as a band of empty sheet under the filters with
- * nothing in it. Animated alongside the row so the whole thing closes as one.
- */
-.filters {
-  transition: padding-block var(--duration-base) var(--ease-out),
-              border-block-end-color var(--duration-base) var(--ease-out);
-}
-.filters[data-collapsed='true'] {
-  padding-block: 0;
-  border-block-end-color: transparent;
-}
-
 .field { position: relative; display: block; min-inline-size: 0; }
-
-/* Search and the visited toggle share a row. The toggle lands at the inline
-   end, which mirrors on its own: left in Persian, right in the others. */
-.filters__search {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  gap: var(--space-2);
-  min-inline-size: 0;
-}
 
 /*
  * The one-time tip above the saved-places control.
  *
  * Anchored to the inline end, which is the side the control is on, so it
  * points at the right thing in Persian without a second rule. It sits above
- * the row rather than over the map, so it never covers what it is describing.
+ * the chips row rather than over the map, so it never covers what it is
+ * describing -- and that row is what positions it, which is why `.chips` is
+ * relative.
  */
 .coach {
   position: absolute;
@@ -437,7 +353,6 @@ a.btn { text-decoration: none; }
   border: var(--space-2) solid transparent;
   border-block-start-color: var(--action-primary);
 }
-.filters__search .field { flex: 1 1 auto; }
 
 /*
  * Icon only. It is a toggle, so aria-pressed carries the state and the fill
@@ -566,6 +481,9 @@ a.btn { text-decoration: none; }
 [dir='rtl'] .select { background-position: left var(--space-3) center; }
 
 .chips {
+  /* Positions the one-time saved-places tip, which sits above this row
+     because the control it points at is in it. */
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -819,7 +737,13 @@ a.btn { text-decoration: none; }
 .dock {
   position: absolute;
   z-index: var(--z-map-ui);
-  inset-block-start: var(--space-3);
+  /*
+   * Just above the sheet. `--dock-lift` is the sheet's measured height, set in
+   * script and zero above the breakpoint where the sheet is a column beside
+   * the map rather than an overlay across the bottom of it. A constant would
+   * be wrong the moment the tally wraps or the text size is turned up.
+   */
+  inset-block-end: calc(var(--dock-lift, 0px) + var(--space-3));
   /*
    * Centred over the map. `inset-inline: 0` gives the box the full width to
    * centre inside and `margin-inline: auto` does the centring, which a 50%
@@ -842,9 +766,33 @@ a.btn { text-decoration: none; }
   border: var(--border-hairline) solid var(--border-default);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-md);
+  /*
+   * Resting at 80%, with the blur behind it so the translucency reads as glass
+   * over the map rather than as something half-drawn. It goes solid the moment
+   * it is opened, hovered or focused: a search field and a kommune list at 80%
+   * are a form you have to read through the streets underneath.
+   */
+  opacity: 0.8;
+  backdrop-filter: blur(0.5rem);
   transition: border-radius var(--duration-fast) var(--ease-out),
-              padding var(--duration-fast) var(--ease-out);
+              padding var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out),
+              translate var(--duration-base) var(--ease-out);
 }
+.dock:hover, .dock:focus-within, .dock[data-open='true'] { opacity: 1; }
+
+/*
+ * Away with the sheet, while a detail card has the bottom of the map. Matches
+ * `.rail[data-offscreen]`: `visibility` also takes it out of the tab order and
+ * the accessibility tree, so it is gone for a keyboard too, not just visually.
+ */
+.dock[data-away='true'] {
+  translate: 0 calc(100% + var(--space-3));
+  visibility: hidden;
+}
+/* An author `display` beats the browser's `[hidden]`, the way the tour found
+   out. Nothing sets it today; this is here so nothing has to find out again. */
+.dock[hidden] { display: none; }
 
 /*
  * Open it is a card, not a pill. A pill radius on a box two rows tall bows the
@@ -882,7 +830,10 @@ a.btn { text-decoration: none; }
    carry one. */
 .dock__seg[hidden] { display: none; }
 
-.dock__seg svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
+/* A lighter line and a slightly larger glyph than the map's square tools: at
+   this size the 2px stroke the icon set draws by default reads as heavy. CSS
+   beats the presentation attribute on the <svg>, so nothing else changes. */
+.dock__seg svg { inline-size: 1.375rem; block-size: 1.375rem; stroke-width: 1.6; }
 .dock__seg:hover { background: var(--interactive-hover-bg); color: var(--text-primary); }
 .dock__seg:active { background: var(--interactive-active-bg); }
 
@@ -921,7 +872,7 @@ a.btn { text-decoration: none; }
  * top corner, so the pill keeps to the top and takes the width it can get.
  */
 @media (max-width: 60rem) {
-  .dock { inset-block-start: var(--space-2); }
+  .dock { inset-block-end: calc(var(--dock-lift, 0px) + var(--space-2)); }
   .dock[data-open='true'] { inline-size: min(21rem, 100%); }
 }
 
@@ -968,13 +919,7 @@ a.btn { text-decoration: none; }
 .map__fallback {
   position: absolute;
   z-index: var(--z-map-ui);
-  /*
-   * Below the dock, not beside it. This is nearly as wide as the map on a
-   * phone, so sharing the dock's row put the two on top of each other -- and
-   * this notice appears exactly when the tile CDN is unreachable, which is a
-   * real network for some of the people this site is for, not a rare one.
-   */
-  inset-block-start: calc(var(--space-3) + var(--control-lg) + var(--space-4));
+  inset-block-start: var(--space-3);
   inset-inline-start: var(--space-3);
   max-inline-size: min(26rem, calc(100% - var(--space-16)));
   padding: var(--space-3) var(--space-4);
@@ -1415,7 +1360,7 @@ a.btn { text-decoration: none; }
     align-self: end;
     inline-size: 100%;
     max-block-size: min(62%, 34rem);
-    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     border-inline-end: 0;
     border-block-start: var(--border-hairline) solid var(--border-default);
     border-start-start-radius: var(--radius-xl);
@@ -1446,14 +1391,8 @@ a.btn { text-decoration: none; }
     padding-block-end: var(--space-3);
   }
 
-  /* The sheet is: count + types, then the search fields. */
-  .filters { padding-block-end: var(--space-3); }
   .rail__lead .chips { margin-block-start: var(--space-2); }
 
-  /* Only on the sheet: on a wide screen the rail is a column with room to
-     spare, and a drag handle there would be decoration. At the very top of the
-     sheet it also carries the sheet's own top padding. */
-  .grabber { display: block; padding-block-start: var(--space-2); }
   .rail__lead { padding-block-start: var(--space-2); }
 
 
@@ -1525,7 +1464,7 @@ a.btn { text-decoration: none; }
 }
 
 @media (max-width: 26rem) {
-  .rail__lead, .filters { padding-inline: var(--space-4); }
+  .rail__lead { padding-inline: var(--space-4); }
   .result { padding-inline: var(--space-4); }
   .results__group { padding-inline: var(--space-4); }
   .masthead { padding-inline: var(--space-3); gap: var(--space-2); }
