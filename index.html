@@ -17,15 +17,22 @@
        * token layer, and the module fills the meta in once the stylesheet has
        * been parsed and --header-bg actually resolves.
        *
+       * It has to reach the same answer as ThemeController's constructor, by
+       * the same two steps -- a stored choice first, the device's setting when
+       * there is none -- or the frame this paints is the wrong one and the
+       * flash it exists to prevent is the flash it causes.
+       *
        * The key matches KEY in src/theme.ts.
        */
       (function () {
-        var t = 'light';
+        var t = null;
         try {
-          if (localStorage.getItem('plejekort.theme') === 'dark') t = 'dark';
+          var v = localStorage.getItem('plejekort.theme');
+          if (v === 'dark' || v === 'light') t = v;
         } catch (e) {
-          /* private mode: the default stands */
+          /* private mode: nothing stored, so the device decides */
         }
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', t);
         document
           .querySelector('meta[name="color-scheme"]')
