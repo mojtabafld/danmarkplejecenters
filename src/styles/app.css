@@ -1867,6 +1867,17 @@ a.btn { text-decoration: none; }
   padding: var(--space-4);
   padding-block-end: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
 }
+/*
+ * Not optional, and not a tidy-up. `display` above is an author declaration and
+ * the browser's own `[hidden] { display: none }` is a user-agent one, so this
+ * rule beats it: without this line the overlay stays on screen with the
+ * attribute set, and every path that closes the tour sets exactly that
+ * attribute. A visitor who pressed "start" kept a full-screen card over a
+ * working app, and a Danish or English visitor -- who is never shown the tour,
+ * so it is never filled in -- got the empty one. `.bootfail` above carries the
+ * same line for the same reason.
+ */
+.intro[hidden] { display: none; }
 .intro__scrim {
   position: absolute;
   inset: 0;
