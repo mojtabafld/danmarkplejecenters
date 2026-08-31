@@ -63,6 +63,14 @@ const STEPS: { title: TranslationKey; body: TranslationKey }[] = [
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /**
+ * How far a finger travels before it is a swipe rather than a tap that wobbled.
+ *
+ * Comfortably past the ~10px slop a browser allows before it stops treating a
+ * touch as a click, so the two gestures cannot both fire from one movement.
+ */
+const SWIPE_MIN = 45;
+
+/**
  * The three-step tour, shown once.
  *
  * Once means once per person, not once per session: the seen-flag is written
@@ -73,20 +81,72 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [ta
 export class Intro {
   private step = 0;
   private lastFocus: HTMLElement | null = null;
+  /** Where a one-finger gesture started, while it is still in progress. */
+  private touch: { x: number; y: number } | null = null;
+  /** When a swipe was last acted on, so the click it may spawn is ignored. */
+  private swipedAt = 0;
 
   constructor(
     private root: HTMLElement,
     private app: HTMLElement,
     private i18n: I18n,
-    private onClose: () => void,
+    private onClose?: () => void,
   ) {
     this.root.addEventListener('click', (e) => {
+      // A swipe that happens to end on a button is not a press of it. Browsers
+      // suppress the click once a touch has travelled far enough, but not all
+      // of them agree on how far, and being wrong here skips a step.
+      if (Date.now() - this.swipedAt < 500) return;
       const act = (e.target as HTMLElement).closest<HTMLElement>('[data-intro]')?.dataset.intro;
       if (act === 'next') this.advance();
       else if (act === 'skip') this.close();
     });
 
     this.root.addEventListener('keydown', (e) => this.onKey(e));
+
+    /*
+     * Swiping between the steps. A tour on a phone is a thing you flick
+     * through, and the button was the only way onward.
+     *
+     * Only a decisively horizontal gesture counts. The overlay scrolls
+     * vertically when the card is taller than the window -- landscape, or the
+     * text size turned up -- and stealing that would put the buttons out of
+     * reach again by another route. Both listeners are passive: neither calls
+     * preventDefault, and saying so keeps the scroll off the main thread.
+     */
+    this.root.addEventListener(
+      'touchstart',
+      (e) => {
+        // One finger only: two is a pinch or a stray palm, not a swipe.
+        const t = e.touches.length === 1 ? e.touches[0] : null;
+        this.touch = t ? { x: t.clientX, y: t.clientY } : null;
+      },
+      { passive: true },
+    );
+
+    this.root.addEventListener('touchcancel', () => { this.touch = null; }, { passive: true });
+
+    this.root.addEventListener(
+      'touchend',
+      (e) => {
+        const from = this.touch;
+        const to = e.changedTouches[0];
+        this.touch = null;
+        if (!from || !to) return;
+
+        const dx = to.clientX - from.x;
+        const dy = to.clientY - from.y;
+        if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) <= Math.abs(dy)) return;
+
+        this.swipedAt = Date.now();
+        // Onward follows the reading direction, exactly as the arrow keys do:
+        // the card moves the way the page of a book moves, so in Persian the
+        // next step is a drag to the right and everywhere else to the left.
+        if (rtl() ? dx > 0 : dx < 0) this.advance();
+        else this.back();
+      },
+      { passive: true },
+    );
 
     // The tour is built in script, not from data-i18n attributes, so it has to
     // be told when the language changes -- same as the account panel.
@@ -154,7 +214,7 @@ export class Intro {
     this.app.inert = false;
     this.lastFocus?.focus();
     this.lastFocus = null;
-    this.onClose();
+    this.onClose?.();
   }
 
   private onKey(e: KeyboardEvent): void {
@@ -166,13 +226,12 @@ export class Intro {
 
     // Arrow keys read as "onward" and "back" along the reading direction, so
     // they swap in Persian rather than pointing the wrong way.
-    const rtl = document.documentElement.dir === 'rtl';
-    if (e.key === (rtl ? 'ArrowLeft' : 'ArrowRight')) {
+    if (e.key === (rtl() ? 'ArrowLeft' : 'ArrowRight')) {
       e.preventDefault();
       this.advance();
       return;
     }
-    if (e.key === (rtl ? 'ArrowRight' : 'ArrowLeft')) {
+    if (e.key === (rtl() ? 'ArrowRight' : 'ArrowLeft')) {
       e.preventDefault();
       this.back();
       return;
@@ -226,5 +285,8 @@ export class Intro {
     this.root.dataset.step = String(this.step);
   }
 }
+
+/** The reading direction the document is currently in. */
+const rtl = (): boolean => document.documentElement.dir === 'rtl';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
