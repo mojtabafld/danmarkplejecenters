@@ -524,6 +524,18 @@ savedHint.addEventListener('click', () => hideSavedHint());
  */
 let dockOpen = false;
 
+/**
+ * True when the dock's own two controls are narrowing the list.
+ *
+ * Its own two, deliberately -- not `store.isFiltered`, which also counts the
+ * ownership chips and the saved toggle. Those are separate controls with their
+ * own visible state, and a button that offered to clear them from over here
+ * would be undoing things somebody set somewhere else.
+ */
+function dockFiltered(): boolean {
+  return store.filters.query !== '' || store.filters.municipality !== null;
+}
+
 function setDockOpen(open: boolean): void {
   dockOpen = open;
   dock.dataset.open = String(open);
@@ -547,8 +559,23 @@ function paintDock(): void {
   dockSavedBtn.hidden = !account.available;
   dockSplit.hidden = !account.available;
 
-  dockSearchIcon.innerHTML = icon(dockOpen ? 'x' : 'search');
-  const search = t(dockOpen ? 'dock.close' : 'dock.search');
+  /*
+   * The search segment has three jobs, and wears a different face for each.
+   *
+   *   open              an x, and pressing it closes the panel
+   *   filtered, closed  a funnel, filled, and pressing it clears the filters
+   *   otherwise         the magnifier, and pressing it opens the panel
+   *
+   * The funnel rather than a second x: an x closed and an x open would be the
+   * same button doing two different things while looking identical. A filled
+   * funnel says "these results are narrowed" on its own, which is the state
+   * somebody needs to notice before they wonder where the other centres went.
+   */
+  const filtered = !dockOpen && dockFiltered();
+  const face = dockOpen ? 'x' : filtered ? 'filter' : 'search';
+  dockSearchIcon.innerHTML = icon(face);
+  dockSearchBtn.dataset.filtered = String(filtered);
+  const search = t(dockOpen ? 'dock.close' : filtered ? 'dock.clearFilters' : 'dock.search');
   dockSearchBtn.setAttribute('aria-label', search);
   dockSearchBtn.setAttribute('title', search);
 
@@ -593,6 +620,10 @@ function syncDock(): void {
 
   // Only when it is a toggle; paintDock owns the signed-out shape of it.
   if (account.user) dockSavedBtn.setAttribute('aria-pressed', String(store.filters.visitedOnly));
+
+  // The search segment's face depends on the filters, so it is repainted with
+  // them rather than only when the dock is opened or the language changes.
+  paintDock();
 }
 
 /**
@@ -614,7 +645,20 @@ function paintDockLift(): void {
 new ResizeObserver(() => paintDockLift()).observe(railEl);
 window.addEventListener('resize', paintDockLift);
 
-dockSearchBtn.addEventListener('click', () => setDockOpen(!dockOpen));
+dockSearchBtn.addEventListener('click', () => {
+  // Filtered and closed, the segment is the way out of the filter rather than
+  // the way into the panel. One press puts every plejecentre back on the map;
+  // the face returns to the magnifier with it, so searching again is the next
+  // press rather than something you have to go looking for.
+  if (!dockOpen && dockFiltered()) {
+    dockSearchInput.value = '';
+    store.setQuery('');
+    store.setMunicipality(null);
+    map.fitTo(store.visible);
+    return;
+  }
+  setDockOpen(!dockOpen);
+});
 
 dockSavedBtn.addEventListener('click', () => {
   // Signed out the button is the way in rather than a filter: somebody

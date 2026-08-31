@@ -857,14 +857,18 @@ a.btn { text-decoration: none; }
 .dock__seg:hover { background: var(--interactive-active-bg); color: var(--text-primary); }
 .dock__seg:active { background: var(--surface-raised); }
 
-/* Open, or filtering: the segment is doing something, and says so. */
+/* Open, filtering, or holding a filter: the segment is doing something, and
+   says so. `data-filtered` is the search segment wearing its funnel, which
+   needs the same fill for the same reason -- it is a state, not an invitation. */
 .dock__seg[aria-expanded='true'],
-.dock__seg[aria-pressed='true'] {
+.dock__seg[aria-pressed='true'],
+.dock__seg[data-filtered='true'] {
   color: var(--button-primary-fg);
   background: var(--action-primary);
 }
 .dock__seg[aria-expanded='true']:hover,
-.dock__seg[aria-pressed='true']:hover {
+.dock__seg[aria-pressed='true']:hover,
+.dock__seg[data-filtered='true']:hover {
   color: var(--button-primary-fg);
   background: var(--action-primary-hover);
 }

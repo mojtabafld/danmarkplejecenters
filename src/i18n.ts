@@ -58,6 +58,7 @@ const DA = {
   'dock.search': 'Søg på kortet',
   'dock.close': 'Luk søgningen',
   'dock.savedSignedOut': 'Log ind for at se dine gemte steder',
+  'dock.clearFilters': 'Ryd filtrene og vis alle plejecentre',
 
   'filter.municipality': 'Filtrér på kommune',
   'filter.allMunicipalities': 'Alle kommuner',
@@ -228,6 +229,7 @@ const EN: Record<Key, Entry> = {
   'dock.search': 'Search the map',
   'dock.close': 'Close the search',
   'dock.savedSignedOut': 'Log in to see your saved places',
+  'dock.clearFilters': 'Clear the filters and show every care home',
 
   'filter.municipality': 'Filter by municipality',
   'filter.allMunicipalities': 'All municipalities',
@@ -396,6 +398,7 @@ const FA: Record<Key, Entry> = {
   'dock.search': 'جست‌وجو روی نقشه',
   'dock.close': 'بستن جست‌وجو',
   'dock.savedSignedOut': 'برای دیدن جاهای ذخیره‌شده وارد شوید',
+  'dock.clearFilters': 'پاک کردن فیلترها و نمایش همهٔ مراکز',
 
   'filter.municipality': 'پالایش بر پایهٔ شهرداری',
   'filter.allMunicipalities': 'همهٔ شهرداری‌ها',
