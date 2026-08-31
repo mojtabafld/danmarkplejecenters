@@ -1111,45 +1111,23 @@ a.btn { text-decoration: none; }
 .panel__foot:empty { display: none; }
 
 /*
- * The job block. Reads as a section of the card rather than a control strip:
- * a border down the inline start ties its rows together, and the actions are
- * list-like so two of them do not look like a pair of competing buttons.
+ * The job link. One line, no box: it is a link to a search, and dressing it as
+ * a card or a button would have claimed more of the eye than a search deserves
+ * sitting above the address it belongs to.
  */
-.jobs {
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  background: var(--surface-sunken);
-  border-radius: var(--radius-md);
-  border-inline-start: var(--border-thick) solid var(--action-primary);
-}
-.jobs__label {
-  margin: 0 0 var(--space-1);
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-.jobs__action {
+.joblink {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-block-size: var(--control-md);
+  min-block-size: var(--control-sm);
   font-size: var(--text-base);
   font-weight: var(--weight-medium);
   color: var(--text-link);
   text-decoration: none;
   overflow-wrap: anywhere;
 }
-.jobs__action svg { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; }
-.jobs__action:hover { text-decoration: underline; text-underline-offset: 0.15em; }
-.jobs__none {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-snug);
-  color: var(--text-secondary);
-}
+.joblink svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); flex: none; }
+.joblink:hover { text-decoration: underline; text-underline-offset: 0.15em; }
 
 /* A note the reader wrote, above the register's own fields. */
 .note {

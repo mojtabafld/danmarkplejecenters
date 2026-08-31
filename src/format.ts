@@ -122,9 +122,3 @@ export function jobsHref(p: Plejecenter): string {
  * address in the register a real route in, so the message opens with the
  * subject and the greeting already filled and the plejecenter named.
  */
-export function applicationHref(p: Plejecenter, subject: string, body: string): string {
-  return (
-    `mailto:${encodeURIComponent(p.email ?? '')}` +
-    `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  );
-}

@@ -2,7 +2,6 @@ import { distanceKm } from './geolocate';
 import type { I18n, TranslationKey } from './i18n';
 import { icon, type IconName } from './icons';
 import {
-  applicationHref,
   appleMapsHref,
   formatPhone,
   googleMapsHref,
@@ -143,10 +142,13 @@ export class DetailPanel {
 
     parts.push('</div>');
 
-    // Work first. People come to this map to find somewhere to apply, so the
-    // two ways in -- look for a posting, or write to them directly -- sit above
-    // the register's own fields rather than below three rows of buttons.
-    parts.unshift(this.jobs(p));
+    // One line, above the register's own fields: the search this map exists to
+    // shorten. A block with a heading and two actions was more furniture than
+    // a single link needs.
+    parts.unshift(
+      `<a class="joblink" href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
+        `${icon('search')}<span>${esc(t('jobs.search'))}</span></a>`,
+    );
 
     // A note the reader wrote outranks even that: it is what they already know
     // about this place.
@@ -158,41 +160,6 @@ export class DetailPanel {
     }
 
     return `<span class="sr-only" data-own="${group}"></span>` + parts.join('');
-  }
-
-  /**
-   * The job block.
-   *
-   * A section rather than another row of buttons in the foot: the foot already
-   * carries two tiers, and a third would bury the thing the site exists for
-   * under everything else.
-   */
-  private jobs(p: Plejecenter): string {
-    const t = this.i18n.t.bind(this.i18n);
-    const rows: string[] = [
-      `<a class="jobs__action" href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
-        `${icon('search')}<span>${esc(t('jobs.search'))}</span></a>`,
-    ];
-
-    if (p.email) {
-      const href = applicationHref(
-        p,
-        t('jobs.mailSubject'),
-        t('jobs.mailBody', { name: p.name }),
-      );
-      rows.push(
-        `<a class="jobs__action" href="${esc(href)}">` +
-          `${icon('mail')}<span>${esc(t('jobs.apply'))}</span></a>`,
-      );
-    } else {
-      rows.push(`<p class="jobs__none">${esc(t('jobs.noEmail'))}</p>`);
-    }
-
-    return (
-      `<div class="jobs"><p class="jobs__label">${esc(t('jobs.label'))}</p>` +
-      rows.join('') +
-      `</div>`
-    );
   }
 
   /**
