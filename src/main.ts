@@ -1090,10 +1090,17 @@ void account.load().then(() => showSavedHint());
 
 /*
  * The tour, last of all, so it opens over a page that has already drawn. It
- * decides for itself whether anybody needs it; on the way out it hands focus
- * to the search box, which is where the first step points.
+ * decides for itself whether anybody needs it.
+ *
+ * Nothing is focused on the way out, and that is the point. Handing focus to
+ * the search box read well on a desktop -- the first step is about searching --
+ * but on a phone focusing a text field summons the on-screen keyboard, so
+ * pressing "start" traded the tour for a keyboard covering half the map. What
+ * somebody wants at that moment is to see the thing they were just told about.
+ * Focus falls back to the document, so a Tab from there starts at the skip
+ * link, which is the top of the page.
  */
-const intro = new Intro($('#intro'), $('.app'), i18n, () => searchInput.focus());
+const intro = new Intro($('#intro'), $('.app'), i18n);
 intro.openIfUnseen();
 
 /**
