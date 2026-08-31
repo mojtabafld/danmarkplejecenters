@@ -326,6 +326,7 @@ const panel = `<!doctype html>
               <button type="button" class="panel__visit" aria-pressed="true" aria-label="Fjern fra besøgte">${I.bookmarkCheck}</button>
               <h2 class="panel__title" id="panelTitle">${esc(detail.name)}</h2>
             </div>
+            <a class="joblink" href="https://www.google.com/search?q=x">${I.search}<span>Søg ledige stillinger på dette center</span></a>
           </div>
           <button type="button" class="panel__close" aria-label="Luk detaljer om ${esc(detail.name)}">${I.x}</button>
         </div>
@@ -334,7 +335,6 @@ const panel = `<!doctype html>
             <p class="note__label">Din note</p>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
-          <a class="joblink" href="https://www.google.com/search?q=x">${I.search}<span>Søg ledige stillinger på dette center</span></a>
           <div class="facts">
             ${fact(I.pin, 'Adresse', `${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}<br>${esc(detail.municipality)} Kommune`)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}

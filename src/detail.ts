@@ -136,16 +136,8 @@ export class DetailPanel {
 
     parts.push('</div>');
 
-    // One line, above the register's own fields: the search this map exists to
-    // shorten. A block with a heading and two actions was more furniture than
-    // a single link needs.
-    parts.unshift(
-      `<a class="joblink" href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
-        `${icon('search')}<span>${esc(t('jobs.search'))}</span></a>`,
-    );
-
-    // A note the reader wrote outranks even that: it is what they already know
-    // about this place.
+    // A note the reader wrote comes first: it is what they already know about
+    // this place, and it outranks the register's own fields.
     if (note) {
       parts.unshift(
         `<div class="note"><p class="note__label">${esc(t('note.label'))}</p>` +
@@ -223,7 +215,13 @@ export class DetailPanel {
       `${icon(canVisit && visited ? 'bookmarkCheck' : 'bookmark')}</button>`;
   }
 
-  /** Head is rendered separately so the title can stay above the scroll area. */
+  /**
+   * Head is rendered separately so the title can stay above the scroll area.
+   *
+   * The job search sits here, under the name, rather than in the body: it is
+   * about this centre as a place to work, which is the same register of
+   * information as the name itself, and up here it survives scrolling.
+   */
   renderHead(p: Plejecenter, head: HTMLElement): void {
     const group = ownershipGroup(p);
     const eyebrow = head.querySelector('.panel__eyebrow')!;
@@ -233,5 +231,12 @@ export class DetailPanel {
     head
       .querySelector('.panel__close')!
       .setAttribute('aria-label', this.i18n.t('panel.close', { name: p.name }));
+
+    const job = head.querySelector('#panelJobSlot');
+    if (job) {
+      job.innerHTML =
+        `<a class="joblink" href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
+        `${icon('search')}<span>${esc(this.i18n.t('jobs.search'))}</span></a>`;
+    }
   }
 }
