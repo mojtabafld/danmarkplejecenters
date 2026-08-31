@@ -157,6 +157,12 @@
               <button type="button" class="chip" data-own="Privat" data-group="Privat" aria-pressed="true">
                 <span class="chip__mark"></span><span data-i18n="ownership.Privat"></span>
               </button>
+
+              <!-- Lives with the other filters rather than in the search row: it
+                   has to survive the search fields being folded away, and it is
+                   a filter like the three beside it. Icon only, so aria-label
+                   carries its name. -->
+              <button type="button" class="iconbtn iconbtn--chip" id="visitedFilter" aria-pressed="false" hidden></button>
             </div>
           </div>
 
@@ -184,10 +190,6 @@
                 </button>
               </label>
 
-              <!-- Icon only: aria-label carries the name, set with the language.
-                   An sr-only span here would be dead weight, because an
-                   aria-label overrides it. -->
-              <button type="button" class="iconbtn" id="visitedFilter" aria-pressed="false" hidden></button>
 
               <!-- Shown once, the first time somebody signs in, pointing at the
                    control above. role="status" so it is announced rather than

@@ -2,9 +2,11 @@ import { distanceKm } from './geolocate';
 import type { I18n, TranslationKey } from './i18n';
 import { icon, type IconName } from './icons';
 import {
+  applicationHref,
   appleMapsHref,
   formatPhone,
   googleMapsHref,
+  jobsHref,
   ownershipDetailKey,
   ownershipGroup,
   prettyHost,
@@ -141,8 +143,13 @@ export class DetailPanel {
 
     parts.push('</div>');
 
-    // A note the reader wrote outranks the register's own fields, so it sits
-    // at the top of the card rather than under them.
+    // Work first. People come to this map to find somewhere to apply, so the
+    // two ways in -- look for a posting, or write to them directly -- sit above
+    // the register's own fields rather than below three rows of buttons.
+    parts.unshift(this.jobs(p));
+
+    // A note the reader wrote outranks even that: it is what they already know
+    // about this place.
     if (note) {
       parts.unshift(
         `<div class="note"><p class="note__label">${esc(t('note.label'))}</p>` +
@@ -151,6 +158,41 @@ export class DetailPanel {
     }
 
     return `<span class="sr-only" data-own="${group}"></span>` + parts.join('');
+  }
+
+  /**
+   * The job block.
+   *
+   * A section rather than another row of buttons in the foot: the foot already
+   * carries two tiers, and a third would bury the thing the site exists for
+   * under everything else.
+   */
+  private jobs(p: Plejecenter): string {
+    const t = this.i18n.t.bind(this.i18n);
+    const rows: string[] = [
+      `<a class="jobs__action" href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
+        `${icon('search')}<span>${esc(t('jobs.search'))}</span></a>`,
+    ];
+
+    if (p.email) {
+      const href = applicationHref(
+        p,
+        t('jobs.mailSubject'),
+        t('jobs.mailBody', { name: p.name }),
+      );
+      rows.push(
+        `<a class="jobs__action" href="${esc(href)}">` +
+          `${icon('mail')}<span>${esc(t('jobs.apply'))}</span></a>`,
+      );
+    } else {
+      rows.push(`<p class="jobs__none">${esc(t('jobs.noEmail'))}</p>`);
+    }
+
+    return (
+      `<div class="jobs"><p class="jobs__label">${esc(t('jobs.label'))}</p>` +
+      rows.join('') +
+      `</div>`
+    );
   }
 
   /**
@@ -207,15 +249,17 @@ export class DetailPanel {
   private renderVisit(p: Plejecenter, visited: boolean, canVisit: boolean): void {
     const slot = this.root.querySelector('#panelVisitSlot');
     if (!slot) return;
-    if (!canVisit) {
-      slot.innerHTML = '';
-      return;
-    }
-    const label = this.i18n.t(visited ? 'visit.unmark' : 'visit.mark');
+    // Shown whether or not anybody is signed in. Hiding it made saving a place
+    // invisible to exactly the people who had not discovered accounts yet;
+    // signed out it invites a sign-in instead, which is the honest prompt.
+    const label = this.i18n.t(
+      canVisit ? (visited ? 'visit.unmark' : 'visit.mark') : 'visit.signInFirst',
+    );
     slot.innerHTML =
       `<button type="button" class="panel__visit" data-visit="${esc(p.id)}"` +
-      ` aria-pressed="${visited}" aria-label="${esc(label)}" title="${esc(label)}">` +
-      `${icon(visited ? 'bookmarkCheck' : 'bookmark')}</button>`;
+      (canVisit ? ` aria-pressed="${visited}"` : '') +
+      ` aria-label="${esc(label)}" title="${esc(label)}">` +
+      `${icon(canVisit && visited ? 'bookmarkCheck' : 'bookmark')}</button>`;
   }
 
   /** Head is rendered separately so the title can stay above the scroll area. */

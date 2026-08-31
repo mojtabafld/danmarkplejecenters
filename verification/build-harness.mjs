@@ -334,6 +334,11 @@ const panel = `<!doctype html>
             <p class="note__label">Din note</p>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
+          <div class="jobs">
+            <p class="jobs__label">Job</p>
+            <a class="jobs__action" href="https://www.google.com/search?q=x">${I.search}<span>Søg ledige stillinger</span></a>
+            <a class="jobs__action" href="mailto:kontakt@kk.dk?subject=x&amp;body=y">${I.mail}<span>Skriv en ansøgning</span></a>
+          </div>
           <div class="facts">
             ${fact(I.pin, 'Adresse', `${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}<br>${esc(detail.municipality)} Kommune`)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}

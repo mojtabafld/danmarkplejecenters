@@ -90,3 +90,41 @@ export function setCollatorLocale(locale: string): void {
 export function compare(a: string, b: string): number {
   return collator.compare(a, b);
 }
+
+/* ------------------------------------------------------------------ jobs -- */
+
+/**
+ * Where to look for vacancies at one plejecenter.
+ *
+ * Care homes advertise on their own or their municipality's pages far more than
+ * on any single portal, and the register carries no vacancy field, so the
+ * honest thing is a search rather than a link pretending to be a listing. With
+ * a website we scope the search to that host, which is the difference between
+ * "jobs somewhere in Denmark" and "jobs at this address".
+ */
+export function jobsHref(p: Plejecenter): string {
+  let host = '';
+  try {
+    if (p.web) host = new URL(p.web).host;
+  } catch {
+    /* a malformed URL in the register just means a broader search */
+  }
+  const query = host
+    ? `site:${host} (job OR stilling OR ledige OR karriere)`
+    : `"${p.name}" ${p.city} ledige stillinger`;
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
+/**
+ * A ready-to-edit unsolicited application.
+ *
+ * Danish care homes hire on uopfordrede ansøgninger to a degree that makes the
+ * address in the register a real route in, so the message opens with the
+ * subject and the greeting already filled and the plejecenter named.
+ */
+export function applicationHref(p: Plejecenter, subject: string, body: string): string {
+  return (
+    `mailto:${encodeURIComponent(p.email ?? '')}` +
+    `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  );
+}

@@ -424,10 +424,19 @@ accountPanel.addEventListener('keydown', (e) => {
   }
 });
 
-document.addEventListener('click', (e) => {
-  if (accountPanel.hidden) return;
-  if (!e.composedPath().includes(accountEl)) setAccountOpen(false);
-});
+// Capture, not bubble. A control elsewhere on the page can open this panel --
+// the bookmark on the detail card does -- and on the bubbling phase this
+// listener would run after that control's own handler, see a panel that is now
+// open, find the click outside it, and close it again in the same gesture.
+// In the capture phase the panel is still closed at this point, so it stands.
+document.addEventListener(
+  'click',
+  (e) => {
+    if (accountPanel.hidden) return;
+    if (!e.composedPath().includes(accountEl)) setAccountOpen(false);
+  },
+  true,
+);
 
 visitedFilter.addEventListener('click', () => {
   store.setVisitedOnly(!store.filters.visitedOnly);

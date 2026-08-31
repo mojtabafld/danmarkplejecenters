@@ -137,7 +137,19 @@ a { color: var(--text-link); }
 }
 
 /* -------------------------------------------------------------- header --- */
+/*
+ * The header paints the notch as well as itself.
+ *
+ * The viewport is viewport-fit=cover, so the app extends under the status bar
+ * and the notch. Without the safe-area padding the title sits underneath them;
+ * with it, the header's own background fills that strip -- and since
+ * theme-color is read from --header-bg, the browser's chrome, the notch strip
+ * and the header are all painted the same colour in both themes.
+ */
 .masthead {
+  padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  padding-inline-start: calc(var(--space-4) + env(safe-area-inset-left, 0px));
+  padding-inline-end: calc(var(--space-4) + env(safe-area-inset-right, 0px));
   z-index: var(--z-header);
   display: flex;
   align-items: center;
@@ -452,6 +464,14 @@ a.btn { text-decoration: none; }
 .iconbtn:hover { color: var(--text-primary); border-color: var(--border-strong); }
 .iconbtn:active { background: var(--interactive-active-bg); }
 .iconbtn[hidden] { display: none; }
+
+/* On the chips row it matches the chips' height, not the search field's. */
+.iconbtn--chip {
+  inline-size: var(--control-md);
+  min-block-size: var(--control-md);
+  border-radius: var(--radius-pill);
+}
+.iconbtn--chip svg { inline-size: var(--icon-md); block-size: var(--icon-md); }
 
 .iconbtn[aria-pressed='true'] {
   color: var(--text-on-brand);
@@ -1090,6 +1110,47 @@ a.btn { text-decoration: none; }
 }
 .panel__foot:empty { display: none; }
 
+/*
+ * The job block. Reads as a section of the card rather than a control strip:
+ * a border down the inline start ties its rows together, and the actions are
+ * list-like so two of them do not look like a pair of competing buttons.
+ */
+.jobs {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  border-inline-start: var(--border-thick) solid var(--action-primary);
+}
+.jobs__label {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.jobs__action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-md);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--text-link);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.jobs__action svg { inline-size: var(--icon-md); block-size: var(--icon-md); flex: none; }
+.jobs__action:hover { text-decoration: underline; text-underline-offset: 0.15em; }
+.jobs__none {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--text-secondary);
+}
+
 /* A note the reader wrote, above the register's own fields. */
 .note {
   padding: var(--space-3);
@@ -1255,6 +1316,7 @@ a.btn { text-decoration: none; }
     border-block-start: var(--border-hairline) solid var(--border-default);
     border-start-start-radius: var(--radius-xl);
     border-start-end-radius: var(--radius-xl);
+    padding-block-end: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
     box-shadow: var(--shadow-lg);
     transition: translate var(--duration-base) var(--ease-out);
   }
