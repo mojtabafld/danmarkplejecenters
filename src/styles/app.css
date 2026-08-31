@@ -762,9 +762,15 @@ a.btn { text-decoration: none; }
   display: grid;
   gap: var(--space-2);
   padding: var(--space-1);
-  background: var(--surface-raised);
+  /*
+   * A rounded rectangle on light grey, not a white pill. `--surface-sunken` is
+   * the token for that grey -- #EAEEED in light, and the tone that plays the
+   * same part in dark -- so the control follows the theme instead of pinning a
+   * light-mode colour into a page that can be either.
+   */
+  background: var(--surface-sunken);
   border: var(--border-hairline) solid var(--border-default);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   /*
    * Resting at 80%, with the blur behind it so the translucency reads as glass
@@ -774,8 +780,7 @@ a.btn { text-decoration: none; }
    */
   opacity: 0.8;
   backdrop-filter: blur(0.5rem);
-  transition: border-radius var(--duration-fast) var(--ease-out),
-              padding var(--duration-fast) var(--ease-out),
+  transition: padding var(--duration-fast) var(--ease-out),
               opacity var(--duration-fast) var(--ease-out),
               translate var(--duration-base) var(--ease-out);
 }
@@ -794,14 +799,9 @@ a.btn { text-decoration: none; }
    out. Nothing sets it today; this is here so nothing has to find out again. */
 .dock[hidden] { display: none; }
 
-/*
- * Open it is a card, not a pill. A pill radius on a box two rows tall bows the
- * sides into an oval and pulls the corners off the fields inside it.
- */
 .dock[data-open='true'] {
   inline-size: min(21rem, 100%);
   padding: var(--space-2);
-  border-radius: var(--radius-lg);
 }
 
 .dock__bar {
@@ -834,8 +834,14 @@ a.btn { text-decoration: none; }
    this size the 2px stroke the icon set draws by default reads as heavy. CSS
    beats the presentation attribute on the <svg>, so nothing else changes. */
 .dock__seg svg { inline-size: 1.375rem; block-size: 1.375rem; stroke-width: 1.6; }
-.dock__seg:hover { background: var(--interactive-hover-bg); color: var(--text-primary); }
-.dock__seg:active { background: var(--interactive-active-bg); }
+/*
+ * One step along from where a control on white would sit. In light mode
+ * `--interactive-hover-bg` is the very grey the dock is now made of, so the
+ * usual hover tint would have been no tint at all; the pressed state lifts to
+ * the raised surface instead of sinking further.
+ */
+.dock__seg:hover { background: var(--interactive-active-bg); color: var(--text-primary); }
+.dock__seg:active { background: var(--surface-raised); }
 
 /* Open, or filtering: the segment is doing something, and says so. */
 .dock__seg[aria-expanded='true'],
@@ -862,10 +868,16 @@ a.btn { text-decoration: none; }
 .dock__fields { display: grid; gap: var(--space-2); }
 .dock__fields[hidden] { display: none; }
 
-/* The dock's own copies sit inside a raised card, so they take the sunken
-   ground the rail's do not need. `background-color`, never the shorthand: the
-   shorthand also resets background-image, and the select's caret is an image. */
-.dock .field__input, .dock .select { background-color: var(--surface-sunken); }
+/*
+ * A step above the tray, in both themes.
+ *
+ * The tray is the sunken tone now, and in dark mode `--field-bg` resolves to
+ * that same tone -- the field and the kommune list disappeared into the grey
+ * around them. Raised is one step up from sunken either way: white on #EAEEED
+ * in light, #1E2121 on #171B1B in dark. `background-color`, never the
+ * shorthand, because the shorthand also resets the select's caret image.
+ */
+.dock .field__input, .dock .select { background-color: var(--surface-raised); }
 
 /*
  * The sheet owns the bottom of a narrow screen and the zoom controls own the
