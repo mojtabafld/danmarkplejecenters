@@ -704,7 +704,20 @@ a.btn { text-decoration: none; }
               box-shadow var(--duration-fast) var(--ease-out),
               color var(--duration-fast) var(--ease-out);
 }
-.map__tool svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
+/*
+ * `display: block` on the glyph, and a flex box around the one that has a
+ * wrapper.
+ *
+ * The locate button holds its icon in a span, because a spinner has to be able
+ * to take its place while a fix is being found. That span made a line box, and
+ * an inline-level <svg> sits on the text baseline with the descender space
+ * still reserved underneath -- so the crosshair rode 3.6px above the middle of
+ * a button that was itself centred to the pixel. The zoom pair and the reset
+ * button put their glyph straight into the grid and never had it. This fixes
+ * the one that did and forecloses it for the rest.
+ */
+.map__tool__icon { display: flex; }
+.map__tool svg { display: block; inline-size: var(--icon-lg); block-size: var(--icon-lg); }
 .map__tool:hover {
   background: var(--interactive-hover-bg);
   color: var(--text-primary);
