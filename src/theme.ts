@@ -8,12 +8,14 @@ export function token(name: string): string {
 }
 
 /**
- * The theme a first-time visitor gets. Light, not the operating system's
- * setting: this is a daytime reference tool that people open to read an address
- * and a phone number, and the light map carries far more legible detail than
- * the dark one. Dark is one click away and is remembered once chosen.
+ * The device's own setting, which is what a visitor who has never touched the
+ * toggle gets. Somebody who keeps their phone dark has said what they want
+ * once, to the phone; asking them to say it again to every site is asking
+ * twice. The toggle still wins where it has been used -- see `stored()` -- and
+ * a choice made there is remembered.
  */
-const DEFAULT_THEME: Theme = 'light';
+const DEVICE = window.matchMedia('(prefers-color-scheme: dark)');
+const deviceTheme = (): Theme => (DEVICE.matches ? 'dark' : 'light');
 
 function stored(): Theme | null {
   try {
@@ -29,8 +31,23 @@ export class ThemeController {
   private listeners = new Set<(t: Theme) => void>();
 
   constructor() {
-    this.current = stored() ?? DEFAULT_THEME;
+    this.current = stored() ?? deviceTheme();
     this.apply(this.current);
+
+    /*
+     * Follow the device while it is still the one deciding.
+     *
+     * A phone that turns itself dark at sunset should take this page with it,
+     * mid-visit, without a reload. Once somebody has used the toggle their
+     * choice is stored, and a stored choice outranks the device -- otherwise
+     * the next sunset would quietly undo it.
+     */
+    DEVICE.addEventListener('change', () => {
+      if (stored()) return;
+      this.current = deviceTheme();
+      this.apply(this.current);
+      this.notify();
+    });
   }
 
   private apply(t: Theme): void {
