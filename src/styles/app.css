@@ -765,8 +765,8 @@ a.btn { text-decoration: none; }
    */
   --dock-room: calc(100% - 2 * (var(--space-3) + var(--control-lg) + var(--space-2)));
   /* Wider than the icons in it, so it reads as a bar over the map rather than
-     as a button that happens to be round. */
-  inline-size: min(10rem, var(--dock-room));
+     as a button that happens to be round -- but only just. */
+  inline-size: min(8rem, var(--dock-room));
   max-inline-size: min(24rem, var(--dock-room));
   display: grid;
   gap: var(--space-2);
@@ -842,10 +842,21 @@ a.btn { text-decoration: none; }
    carry one. */
 .dock__seg[hidden] { display: none; }
 
+/*
+ * The span around each glyph is a flex box, and that is what actually centres
+ * the icon.
+ *
+ * Left inline it was a line box, so the <svg> sat on the text baseline with the
+ * descender space still reserved underneath it -- the button was centred to the
+ * pixel and the glyph inside it rode 3.6px high, which is exactly the sort of
+ * wrong that looks like nothing and reads as everything.
+ */
+.dock__icon { display: flex; }
+
 /* A lighter line and a slightly larger glyph than the map's square tools: at
    this size the 2px stroke the icon set draws by default reads as heavy. CSS
    beats the presentation attribute on the <svg>, so nothing else changes. */
-.dock__seg svg { inline-size: 1.375rem; block-size: 1.375rem; stroke-width: 1.6; }
+.dock__seg svg { display: block; inline-size: 1.375rem; block-size: 1.375rem; stroke-width: 1.6; }
 /*
  * One step along from where a control on white would sit. In light mode
  * `--interactive-hover-bg` is the very grey the dock is now made of, so the
