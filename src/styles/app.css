@@ -658,7 +658,22 @@ a.btn { text-decoration: none; }
   display: grid;
   gap: var(--space-2);
   justify-items: end;
+  /*
+   * Resting at 80%, the way the dock does, so the two pieces of furniture over
+   * the map read as one set rather than one floating thing and one solid one.
+   * Solid again the moment a pointer or the keyboard reaches them: a control
+   * being used should not be something you are looking through.
+   *
+   * On the cluster rather than on each button, because the zoom pair share a
+   * border and stacking two 80% layers would have made their seam darker than
+   * either of them. No blur here either: at 44px there is too little backdrop
+   * behind a button for it to show, and it would sample through the group the
+   * opacity creates rather than the map.
+   */
+  opacity: 0.8;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
+.map__tools:hover, .map__tools:focus-within { opacity: 1; }
 
 /* Zoom in / zoom out read as one control, so they share one border. */
 .map__toolgroup {

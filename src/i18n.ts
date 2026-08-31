@@ -57,6 +57,7 @@ const DA = {
   'search.clear': 'Ryd søgningen',
   'dock.search': 'Søg på kortet',
   'dock.close': 'Luk søgningen',
+  'dock.savedSignedOut': 'Log ind for at se dine gemte steder',
 
   'filter.municipality': 'Filtrér på kommune',
   'filter.allMunicipalities': 'Alle kommuner',
@@ -226,6 +227,7 @@ const EN: Record<Key, Entry> = {
   'search.clear': 'Clear the search',
   'dock.search': 'Search the map',
   'dock.close': 'Close the search',
+  'dock.savedSignedOut': 'Log in to see your saved places',
 
   'filter.municipality': 'Filter by municipality',
   'filter.allMunicipalities': 'All municipalities',
@@ -393,6 +395,7 @@ const FA: Record<Key, Entry> = {
   'search.clear': 'پاک کردن جست‌وجو',
   'dock.search': 'جست‌وجو روی نقشه',
   'dock.close': 'بستن جست‌وجو',
+  'dock.savedSignedOut': 'برای دیدن جاهای ذخیره‌شده وارد شوید',
 
   'filter.municipality': 'پالایش بر پایهٔ شهرداری',
   'filter.allMunicipalities': 'همهٔ شهرداری‌ها',
