@@ -645,19 +645,23 @@ writeFileSync(R('verification/states.html'), states, 'utf8');
    is exactly how it lays out here -- so this one needs no harness-only CSS. The
    drawing is the map step; the other two are the same card with a different
    figure in the same slot. The aria-label is set in script at runtime, so it is
-   spelled out here for the accessibility gate to see. */
+   spelled out here for the accessibility gate to see.
+
+   In Persian, because that is the only language the tour appears in, and
+   Persian type has its own metrics: a fixture in Danish would measure a card
+   nobody is ever shown. */
 const intro = `<!doctype html>
-<html lang="da">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plejecentre rundvisning</title>
+<title>Plejecentre rundvisning (fa)</title>
 <link rel="stylesheet" href="./harness.css">
 </head>
 <body>
 <div class="intro">
   <div class="intro__scrim"></div>
-  <div class="intro__card" role="dialog" aria-modal="true" aria-label="Kort rundvisning" tabindex="-1">
+  <div class="intro__card" role="dialog" aria-modal="true" aria-label="راهنمای کوتاه" tabindex="-1">
     <div class="intro__art">
       <svg class="intro__svg" viewBox="0 0 160 120" fill="none" aria-hidden="true" focusable="false">
         <rect class="intro__plate" x="6" y="10" width="148" height="100" rx="16"/>
@@ -671,19 +675,19 @@ const intro = `<!doctype html>
       </svg>
     </div>
     <div class="intro__text">
-      <h2 class="intro__title">Hvert plejecenter på kortet</h2>
-      <p class="intro__body">148 plejecentre i 23 kommuner i hovedstadsområdet. Søg på navn,
-        eller vælg en kommune, og se dem alle sammen.</p>
+      <h2 class="intro__title">همهٔ مراکز، روی نقشه</h2>
+      <p class="intro__body">۱۴۸ مرکز مراقبت در ۲۳ شهرداری منطقهٔ کپنهاگ بزرگ. با نام
+        جست‌وجو کنید یا یک شهرداری را انتخاب کنید تا همه را ببینید.</p>
     </div>
     <div class="intro__dots" aria-hidden="true">
       <span class="intro__dot" data-on="true"></span>
       <span class="intro__dot"></span>
       <span class="intro__dot"></span>
     </div>
-    <p class="sr-only" aria-live="polite">Trin 1 af 3</p>
+    <p class="sr-only" aria-live="polite">گام ۱ از ۳</p>
     <div class="intro__actions">
-      <button type="button" class="btn btn--ghost">Spring over</button>
-      <button type="button" class="btn btn--primary">Videre</button>
+      <button type="button" class="btn btn--ghost">رد کردن</button>
+      <button type="button" class="btn btn--primary">بعدی</button>
     </div>
   </div>
 </div>

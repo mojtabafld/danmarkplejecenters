@@ -97,6 +97,12 @@ export class Intro {
 
   /** True the first time somebody arrives, and once more after a VERSION bump. */
   private unseen(): boolean {
+    // Persian only. The tour is addressed to the people this site was built
+    // for, and Persian is what it opens in; a Danish reader gets the map
+    // straight away rather than a tour written past them. The Danish and
+    // English strings stay in the dictionary -- it is keyed off Danish -- so
+    // widening this is one condition, not a translation job.
+    if (this.i18n.locale !== 'fa') return false;
     try {
       return localStorage.getItem(KEY) !== VERSION;
     } catch {
