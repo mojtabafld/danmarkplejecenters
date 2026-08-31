@@ -78,6 +78,15 @@ const accountCode = $('#accountCode');
 const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
 const savedHint = $('#savedHint');
 const filtersEl = $('#filters');
+const dock = $('#dock');
+const dockSearchBtn = $<HTMLButtonElement>('#dockSearchBtn');
+const dockSearchIcon = $('#dockSearchIcon');
+const dockSplit = $('#dockSplit');
+const dockSavedBtn = $<HTMLButtonElement>('#dockSaved');
+const dockFields = $('#dockFields');
+const dockSearchInput = $<HTMLInputElement>('#dockSearch');
+const dockClear = $<HTMLButtonElement>('#dockClear');
+const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
 const filtersBody = $('#filtersBody');
 const filtersGrabber = $<HTMLButtonElement>('#filtersGrabber');
 const accountScrim = $('#accountScrim');
@@ -104,6 +113,9 @@ visitedFilter.insertAdjacentHTML('beforeend', icon('bookmarkCheck'));
 $('#geoNoteClose').insertAdjacentHTML('beforeend', icon('x'));
 $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
+$('#dockFieldIcon').innerHTML = icon('search');
+dockClear.insertAdjacentHTML('beforeend', icon('x'));
+$('#dockSavedIcon').innerHTML = icon('bookmarkCheck');
 
 /* --------------------------------------------------------------- language */
 
@@ -126,18 +138,23 @@ function applyStaticTranslations(): void {
 
 function renderMunicipalityOptions(): void {
   const current = store.filters.municipality;
-  muniSelect.innerHTML = '';
-  const all = document.createElement('option');
-  all.value = '';
-  all.textContent = t('filter.allMunicipalities');
-  muniSelect.append(all);
-  for (const m of MUNICIPALITIES) {
-    const opt = document.createElement('option');
-    opt.value = m;
-    opt.textContent = t('filter.municipalitySuffix', { name: m });
-    muniSelect.append(opt);
+  // Two of them now: the rail's and the dock's. One list, built twice, rather
+  // than one <select> moved between two places -- a select cannot be in both,
+  // and on a wide screen both are on screen at once.
+  for (const select of [muniSelect, dockMuni]) {
+    select.innerHTML = '';
+    const all = document.createElement('option');
+    all.value = '';
+    all.textContent = t('filter.allMunicipalities');
+    select.append(all);
+    for (const m of MUNICIPALITIES) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = t('filter.municipalitySuffix', { name: m });
+      select.append(opt);
+    }
+    select.value = current ?? '';
   }
-  muniSelect.value = current ?? '';
 }
 
 /**
@@ -276,6 +293,7 @@ function renderAccount(): void {
 
   // The visited filter only means anything to someone with visits.
   visitedFilter.hidden = !account.user;
+  paintDock();
   if (!account.user && store.filters.visitedOnly) store.setVisitedOnly(false);
 }
 
@@ -494,6 +512,111 @@ function hideSavedHint(): void {
 }
 
 savedHint.addEventListener('click', () => hideSavedHint());
+
+/* ------------------------------------------------------------------- dock */
+
+/*
+ * The pill over the map.
+ *
+ * It holds no state of its own beyond whether it is open: the query, the
+ * kommune and the visited filter all live in the store, and both this and the
+ * pair of fields in the rail are views onto it. That is what keeps the two
+ * from disagreeing -- there is nothing to disagree about.
+ */
+let dockOpen = false;
+
+function setDockOpen(open: boolean): void {
+  dockOpen = open;
+  dock.dataset.open = String(open);
+  dockFields.hidden = !open;
+  dockSearchBtn.setAttribute('aria-expanded', String(open));
+  paintDock();
+  // Focusing the field here is right where it was wrong on the way out of the
+  // tour: somebody has just pressed a search button, so the keyboard coming up
+  // is the thing they asked for.
+  if (open) dockSearchInput.focus();
+}
+
+/** Icon only, so the label is the accessible name and the title on hover. */
+function paintDock(): void {
+  // The saved segment means nothing without an account to have saved anything
+  // to, so signed out the pill is a single round button.
+  const signedIn = Boolean(account.available && account.user);
+  dockSavedBtn.hidden = !signedIn;
+  dockSplit.hidden = !signedIn;
+
+  dockSearchIcon.innerHTML = icon(dockOpen ? 'x' : 'search');
+  const search = t(dockOpen ? 'dock.close' : 'dock.search');
+  dockSearchBtn.setAttribute('aria-label', search);
+  dockSearchBtn.setAttribute('title', search);
+
+  const saved = t('visit.filter');
+  dockSavedBtn.setAttribute('aria-label', saved);
+  dockSavedBtn.setAttribute('title', saved);
+}
+
+/**
+ * Point both copies of a control at what the store currently says.
+ *
+ * The field somebody is typing in is left alone. The query is debounced, so
+ * for a moment after each keystroke the store is behind the input, and writing
+ * that stale value back would eat the letter just typed and move the caret.
+ */
+function syncDock(): void {
+  const query = store.filters.query;
+  for (const input of [searchInput, dockSearchInput]) {
+    if (input !== document.activeElement && input.value !== query) input.value = query;
+  }
+  dockClear.hidden = query === '';
+
+  const muni = store.filters.municipality ?? '';
+  for (const select of [muniSelect, dockMuni]) {
+    if (select !== document.activeElement && select.value !== muni) select.value = muni;
+  }
+
+  const visited = String(store.filters.visitedOnly);
+  dockSavedBtn.setAttribute('aria-pressed', visited);
+  visitedFilter.setAttribute('aria-pressed', visited);
+}
+
+dockSearchBtn.addEventListener('click', () => setDockOpen(!dockOpen));
+
+dockSavedBtn.addEventListener('click', () => {
+  store.setVisitedOnly(!store.filters.visitedOnly);
+});
+
+dockClear.addEventListener('click', () => {
+  dockSearchInput.value = '';
+  store.setQuery('');
+  dockSearchInput.focus();
+});
+
+/*
+ * Escape clears the field, and clears the dock away once there is nothing left
+ * to clear -- the same two-step the rail's search field has, with a closing
+ * move on the end because this one can be put away.
+ */
+dock.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || !dockOpen) return;
+  e.stopPropagation();
+  if (dockSearchInput.value !== '') {
+    dockSearchInput.value = '';
+    store.setQuery('');
+    return;
+  }
+  setDockOpen(false);
+  dockSearchBtn.focus();
+});
+
+/*
+ * A press anywhere else puts it away. The map is the thing underneath, and
+ * reaching for it is a good enough sign that the search is done with.
+ * `pointerdown` rather than `click`, so it closes on the press that starts a
+ * drag of the map rather than after it.
+ */
+document.addEventListener('pointerdown', (e) => {
+  if (dockOpen && !dock.contains(e.target as Node)) setDockOpen(false);
+});
 
 /** Icon only, so the label is the accessible name and the title on hover. */
 function paintVisitedFilter(): void {
@@ -830,6 +953,7 @@ function render(): void {
   }
 
   searchClear.hidden = store.filters.query === '';
+  syncDock();
 }
 
 function renderTally(items: Plejecenter[]): void {
@@ -867,14 +991,16 @@ store.subscribe(render);
 /* ----------------------------------------------------------------- events */
 
 let searchTimer: number | undefined;
-searchInput.addEventListener('input', () => {
+/** Shared by the rail's field and the dock's: one debounce, one store. */
+function typeSearch(value: string): void {
   window.clearTimeout(searchTimer);
-  const value = searchInput.value;
   searchTimer = window.setTimeout(() => {
     store.setQuery(value);
     if (value.trim().length >= 2) map.fitTo(store.visible);
   }, 160);
-});
+}
+searchInput.addEventListener('input', () => typeSearch(searchInput.value));
+dockSearchInput.addEventListener('input', () => typeSearch(dockSearchInput.value));
 
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && searchInput.value !== '') {
@@ -890,10 +1016,12 @@ function clearSearch(): void {
 }
 searchClear.addEventListener('click', clearSearch);
 
-muniSelect.addEventListener('change', () => {
-  store.setMunicipality(muniSelect.value || null);
-  map.fitTo(store.visible);
-});
+for (const select of [muniSelect, dockMuni]) {
+  select.addEventListener('change', () => {
+    store.setMunicipality(select.value || null);
+    map.fitTo(store.visible);
+  });
+}
 
 for (const chip of document.querySelectorAll<HTMLButtonElement>('.chip[data-group]')) {
   chip.addEventListener('click', () => {
@@ -1049,6 +1177,7 @@ i18n.onChange((locale) => {
   renderLangMenu();
   paintThemeToggle();
   paintVisitedFilter();
+  paintDock();
   renderGeo(geo.status);
   setFiltersOpen(filtersOpen);
   // The account panel's contents are built from strings in JS, not marked up
@@ -1078,6 +1207,7 @@ paintCaret();
 renderGeo(geo.status);
 renderAccount();
 paintVisitedFilter();
+paintDock();
 setFiltersOpen(true);
 // Told once: every setData afterwards carries the marks with it.
 map.setVisitedPredicate((id) => account.isVisited(id));

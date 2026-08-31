@@ -55,6 +55,8 @@ const DA = {
   'search.label': 'Søg efter plejecenter, vej, postnummer eller by',
   'search.placeholder': 'Søg navn, vej eller postnummer',
   'search.clear': 'Ryd søgningen',
+  'dock.search': 'Søg på kortet',
+  'dock.close': 'Luk søgningen',
 
   'filter.municipality': 'Filtrér på kommune',
   'filter.allMunicipalities': 'Alle kommuner',
@@ -224,6 +226,8 @@ const EN: Record<Key, Entry> = {
   'search.label': 'Search by care home, street, postcode or town',
   'search.placeholder': 'Search name, street or postcode',
   'search.clear': 'Clear the search',
+  'dock.search': 'Search the map',
+  'dock.close': 'Close the search',
 
   'filter.municipality': 'Filter by municipality',
   'filter.allMunicipalities': 'All municipalities',
@@ -391,6 +395,8 @@ const FA: Record<Key, Entry> = {
   'search.label': 'جست‌وجو بر پایهٔ نام مرکز، خیابان، کد پستی یا شهر',
   'search.placeholder': 'جست‌وجوی نام، خیابان یا کد پستی',
   'search.clear': 'پاک کردن جست‌وجو',
+  'dock.search': 'جست‌وجو روی نقشه',
+  'dock.close': 'بستن جست‌وجو',
 
   'filter.municipality': 'پالایش بر پایهٔ شهرداری',
   'filter.allMunicipalities': 'همهٔ شهرداری‌ها',
