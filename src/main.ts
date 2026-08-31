@@ -73,7 +73,6 @@ const accountEl = $('#account');
 const accountButton = $<HTMLButtonElement>('#accountButton');
 const accountPanel = $('#accountPanel');
 const accountCode = $('#accountCode');
-const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
 const savedHint = $('#savedHint');
 const dock = $('#dock');
 const dockSearchBtn = $<HTMLButtonElement>('#dockSearchBtn');
@@ -102,7 +101,6 @@ $('#zoomIn').insertAdjacentHTML('beforeend', icon('plus'));
 $('#zoomOut').insertAdjacentHTML('beforeend', icon('minus'));
 $('#locateIcon').innerHTML = icon('crosshair');
 accountButton.insertAdjacentHTML('afterbegin', icon('user'));
-visitedFilter.insertAdjacentHTML('beforeend', icon('bookmarkCheck'));
 $('#geoNoteClose').insertAdjacentHTML('beforeend', icon('x'));
 $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
@@ -279,8 +277,6 @@ function renderAccount(): void {
       : notice +
         (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup()));
 
-  // The visited filter only means anything to someone with visits.
-  visitedFilter.hidden = !account.user;
   paintDock();
   if (!account.user && store.filters.visitedOnly) store.setVisitedOnly(false);
 }
@@ -404,7 +400,6 @@ accountPanel.addEventListener('click', (e) => {
   } else if (act === 'saved') {
     // Show the saved ones on the map, and get out of the way to reveal them.
     store.setVisitedOnly(true);
-    visitedFilter.setAttribute('aria-pressed', 'true');
     setAccountOpen(false);
   } else if (act === 'back') account.clearPending();
   else if (act === 'resend') {
@@ -445,11 +440,6 @@ document.addEventListener(
   true,
 );
 
-visitedFilter.addEventListener('click', () => {
-  store.setVisitedOnly(!store.filters.visitedOnly);
-  visitedFilter.setAttribute('aria-pressed', String(store.filters.visitedOnly));
-});
-
 /**
  * The one-time tip pointing at the saved-places control.
  *
@@ -482,6 +472,7 @@ function showSavedHint(): void {
   savedHint.setAttribute('title', t('visit.hintDismiss'));
   delete savedHint.dataset.fading;
   savedHint.hidden = false;
+  pointHintAtSaved();
 
   hintTimers.push(
     window.setTimeout(() => {
@@ -490,6 +481,26 @@ function showSavedHint(): void {
       hintTimers.push(window.setTimeout(() => hideSavedHint(), 400));
     }, 5000),
   );
+}
+
+/**
+ * Put the tip's pointer on the saved segment, measured rather than assumed.
+ *
+ * The obvious constant -- the dock's padding plus half a segment -- is wrong,
+ * because the segments are centred in a bar wider than they are and the slack
+ * either side moves with the dock's width and with how many segments there
+ * are. Reading the two boxes is exact at any width and mirrors for free: the
+ * offset is taken from whichever edge is the inline end in the current
+ * direction, so Persian needs no second rule.
+ */
+function pointHintAtSaved(): void {
+  const tip = savedHint.getBoundingClientRect();
+  const seg = dockSavedBtn.getBoundingClientRect();
+  if (!tip.width || !seg.width) return;
+  const centre = seg.left + seg.width / 2;
+  const fromEnd =
+    document.documentElement.dir === 'rtl' ? centre - tip.left : tip.right - centre;
+  savedHint.style.setProperty('--coach-arrow', `${fromEnd}px`);
 }
 
 function hideSavedHint(): void {
@@ -563,9 +574,7 @@ function syncDock(): void {
   const muni = store.filters.municipality ?? '';
   if (dockMuni !== document.activeElement && dockMuni.value !== muni) dockMuni.value = muni;
 
-  const visited = String(store.filters.visitedOnly);
-  dockSavedBtn.setAttribute('aria-pressed', visited);
-  visitedFilter.setAttribute('aria-pressed', visited);
+  dockSavedBtn.setAttribute('aria-pressed', String(store.filters.visitedOnly));
 }
 
 /**
@@ -625,13 +634,6 @@ dock.addEventListener('keydown', (e) => {
 document.addEventListener('pointerdown', (e) => {
   if (dockOpen && !dock.contains(e.target as Node)) setDockOpen(false);
 });
-
-/** Icon only, so the label is the accessible name and the title on hover. */
-function paintVisitedFilter(): void {
-  const label = t('visit.filter');
-  visitedFilter.setAttribute('aria-label', label);
-  visitedFilter.setAttribute('title', label);
-}
 
 /**
  * The note editor: a small dialog in the middle of the screen.
@@ -1102,7 +1104,6 @@ i18n.onChange((locale) => {
   renderMunicipalityOptions();
   renderLangMenu();
   paintThemeToggle();
-  paintVisitedFilter();
   paintDock();
   renderGeo(geo.status);
   // The account panel's contents are built from strings in JS, not marked up
@@ -1131,7 +1132,6 @@ paintThemeToggle();
 paintCaret();
 renderGeo(geo.status);
 renderAccount();
-paintVisitedFilter();
 paintDock();
 paintDockLift();
 // Told once: every setData afterwards carries the marks with it.

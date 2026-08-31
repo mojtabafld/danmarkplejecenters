@@ -315,19 +315,27 @@ a.btn { text-decoration: none; }
 .field { position: relative; display: block; min-inline-size: 0; }
 
 /*
- * The one-time tip above the saved-places control.
+ * The one-time tip pointing at the saved segment in the dock.
  *
- * Anchored to the inline end, which is the side the control is on, so it
- * points at the right thing in Persian without a second rule. It sits above
- * the chips row rather than over the map, so it never covers what it is
- * describing -- and that row is what positions it, which is why `.chips` is
- * relative.
+ * It hangs off the dock itself, above it, and anchors to the inline end --
+ * which is the side the saved segment is on, and mirrors on its own, so it
+ * still points at the right icon in Persian without a second rule.
  */
 .coach {
   position: absolute;
   inset-block-end: calc(100% + var(--space-2));
   inset-inline-end: 0;
   z-index: var(--z-map-ui);
+  /*
+   * `max-content`, or the tip is as narrow as the dock.
+   *
+   * An absolutely positioned box shrink-to-fits against the space between its
+   * containing block's start edge and whatever it is anchored to -- 128px of
+   * dock here -- so the sentence wrapped to four lines and the max-width below
+   * never came into it. Sized to its content it reaches past the dock, which
+   * is what a tip pointing at one corner of a small control should do.
+   */
+  inline-size: max-content;
   max-inline-size: min(15rem, calc(100vw - var(--space-10)));
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
@@ -343,60 +351,24 @@ a.btn { text-decoration: none; }
 .coach[hidden] { display: none; }
 .coach[data-fading='true'] { opacity: 0; }
 
-/* The pointer, on the same side as the control it belongs to. */
+/*
+ * The pointer, on the centre line of the segment it belongs to: the dock's
+ * padding plus half a segment in from the inline end, so it lands on the icon
+ * rather than merely near it.
+ */
 .coach::after {
   content: '';
   position: absolute;
   inset-block-start: 100%;
-  inset-inline-end: var(--space-4);
+  /* `--coach-arrow` is the distance from the tip's inline end to the centre of
+     the saved segment, measured in script; the half-triangle is taken off so
+     the point of it, not its edge, lands on that centre. */
+  inset-inline-end: calc(var(--coach-arrow, 2rem) - var(--space-2));
   margin-block-start: calc(var(--border-thick) * -1);
   border: var(--space-2) solid transparent;
   border-block-start-color: var(--action-primary);
 }
 
-/*
- * Icon only. It is a toggle, so aria-pressed carries the state and the fill
- * changes with it -- not the colour alone, which would leave the two states
- * indistinguishable to anyone who cannot separate them.
- */
-.iconbtn {
-  display: grid;
-  place-items: center;
-  flex: none;
-  inline-size: var(--control-lg);
-  min-block-size: var(--control-lg);
-  padding: 0;
-  color: var(--text-tertiary);
-  background: var(--field-bg);
-  border: var(--border-hairline) solid var(--field-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out),
-              border-color var(--duration-fast) var(--ease-out),
-              color var(--duration-fast) var(--ease-out);
-}
-.iconbtn svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
-.iconbtn:hover { color: var(--text-primary); border-color: var(--border-strong); }
-.iconbtn:active { background: var(--interactive-active-bg); }
-.iconbtn[hidden] { display: none; }
-
-/* On the chips row it matches the chips' height, not the search field's. */
-.iconbtn--chip {
-  inline-size: var(--control-md);
-  min-block-size: var(--control-md);
-  border-radius: var(--radius-pill);
-}
-.iconbtn--chip svg { inline-size: var(--icon-md); block-size: var(--icon-md); }
-
-.iconbtn[aria-pressed='true'] {
-  color: var(--text-on-brand);
-  background: var(--action-primary);
-  border-color: var(--action-primary);
-}
-.iconbtn[aria-pressed='true']:hover {
-  background: var(--action-primary-hover);
-  border-color: var(--action-primary-hover);
-}
 
 .field__icon {
   position: absolute;
@@ -481,9 +453,6 @@ a.btn { text-decoration: none; }
 [dir='rtl'] .select { background-position: left var(--space-3) center; }
 
 .chips {
-  /* Positions the one-time saved-places tip, which sits above this row
-     because the control it points at is in it. */
-  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -794,6 +763,13 @@ a.btn { text-decoration: none; }
               translate var(--duration-base) var(--ease-out);
 }
 .dock:hover, .dock:focus-within, .dock[data-open='true'] { opacity: 1; }
+/*
+ * The tip is a child of the dock, so it would inherit the resting 80% and
+ * arrive faded -- a notice that apologises for itself. While it is showing,
+ * the whole dock is solid, which is what the tip is asking you to look at
+ * anyway. `:has()` is the only way round it: opacity cannot be un-inherited.
+ */
+.dock:has(.coach:not([hidden])) { opacity: 1; }
 
 /*
  * Away with the sheet, while a detail card has the bottom of the map. Matches

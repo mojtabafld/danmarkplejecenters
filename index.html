@@ -166,18 +166,6 @@
                 <span class="chip__mark"></span><span data-i18n="ownership.Privat"></span>
               </button>
 
-              <!-- Lives with the other filters rather than in the search row: it
-                   has to survive the search fields being folded away, and it is
-                   a filter like the three beside it. Icon only, so aria-label
-                   carries its name. -->
-              <button type="button" class="iconbtn iconbtn--chip" id="visitedFilter" aria-pressed="false" hidden></button>
-
-              <!-- Shown once, the first time somebody signs in, pointing at the
-                   control beside it. role="status" so it is announced rather
-                   than only seen. -->
-              <div class="coach" id="savedHint" role="status" hidden>
-                <span data-i18n="visit.hint"></span>
-              </div>
             </div>
           </div>
 
@@ -230,6 +218,14 @@
               <button type="button" class="dock__seg" id="dockSaved" aria-pressed="false" hidden>
                 <span class="dock__icon" id="dockSavedIcon"></span>
               </button>
+            </div>
+
+            <!-- Shown once, the first time somebody signs in, pointing down at
+                 the saved segment above. It lives in the dock because that is
+                 where the control it is about lives; role="status" so it is
+                 announced rather than only seen. -->
+            <div class="coach" id="savedHint" role="status" hidden>
+              <span data-i18n="visit.hint"></span>
             </div>
 
             <div class="dock__fields" id="dockFields" hidden>
