@@ -57,6 +57,9 @@ const PATHS: Record<string, string> = {
   bookmark: '<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
   bookmarkCheck:
     '<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="m9 10 2 2 4-4"/>',
+  // The funnel, for "these results are filtered". Drawn as one polygon so the
+  // spout and the mouth cannot drift apart at small sizes.
+  filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
   crosshair:
     '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>' +
     '<path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>',
