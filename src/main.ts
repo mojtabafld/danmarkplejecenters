@@ -538,20 +538,37 @@ function setDockOpen(open: boolean): void {
 
 /** Icon only, so the label is the accessible name and the title on hover. */
 function paintDock(): void {
-  // The saved segment means nothing without an account to have saved anything
-  // to, so signed out the pill is a single round button.
-  const signedIn = Boolean(account.available && account.user);
-  dockSavedBtn.hidden = !signedIn;
-  dockSplit.hidden = !signedIn;
+  /*
+   * The saved segment is always there -- but only where an account is possible
+   * at all. Without a database the server disables accounts outright, and a
+   * button whose whole job is to reach them would be a dead end rather than an
+   * invitation. That is the one case it stays away for.
+   */
+  dockSavedBtn.hidden = !account.available;
+  dockSplit.hidden = !account.available;
 
   dockSearchIcon.innerHTML = icon(dockOpen ? 'x' : 'search');
   const search = t(dockOpen ? 'dock.close' : 'dock.search');
   dockSearchBtn.setAttribute('aria-label', search);
   dockSearchBtn.setAttribute('title', search);
 
-  const saved = t('visit.filter');
+  /*
+   * Signed out it is not a toggle, and must not claim to be one. `aria-pressed`
+   * would announce it as a two-state control that is currently off, when what
+   * it actually does is open the account panel -- so the attribute comes off
+   * and `aria-haspopup` goes on, and the name says what pressing it gets you.
+   */
+  const signedIn = Boolean(account.user);
+  const saved = t(signedIn ? 'visit.filter' : 'dock.savedSignedOut');
   dockSavedBtn.setAttribute('aria-label', saved);
   dockSavedBtn.setAttribute('title', saved);
+  if (signedIn) {
+    dockSavedBtn.removeAttribute('aria-haspopup');
+    dockSavedBtn.setAttribute('aria-pressed', String(store.filters.visitedOnly));
+  } else {
+    dockSavedBtn.removeAttribute('aria-pressed');
+    dockSavedBtn.setAttribute('aria-haspopup', 'dialog');
+  }
 }
 
 /**
@@ -574,7 +591,8 @@ function syncDock(): void {
   const muni = store.filters.municipality ?? '';
   if (dockMuni !== document.activeElement && dockMuni.value !== muni) dockMuni.value = muni;
 
-  dockSavedBtn.setAttribute('aria-pressed', String(store.filters.visitedOnly));
+  // Only when it is a toggle; paintDock owns the signed-out shape of it.
+  if (account.user) dockSavedBtn.setAttribute('aria-pressed', String(store.filters.visitedOnly));
 }
 
 /**
@@ -599,6 +617,13 @@ window.addEventListener('resize', paintDockLift);
 dockSearchBtn.addEventListener('click', () => setDockOpen(!dockOpen));
 
 dockSavedBtn.addEventListener('click', () => {
+  // Signed out the button is the way in rather than a filter: somebody
+  // pressing "saved places" is asking for their saved places, and the honest
+  // answer is the sign-in panel rather than nothing happening.
+  if (!account.user) {
+    setAccountOpen(true);
+    return;
+  }
   store.setVisitedOnly(!store.filters.visitedOnly);
 });
 
