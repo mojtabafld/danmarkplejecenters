@@ -28,9 +28,15 @@ mem.public.registerFunction({ name: 'now', returns: 'timestamptz', implementatio
 const { Pool } = mem.adapters.createPg();
 await db.init({ injectedPool: new Pool() });
 
+// Mirrors the map in server.mjs for the types this app actually ships, so a
+// browser test against this harness sees the same content types production
+// sends -- a manifest served as octet-stream is not installable.
 const TYPES = new Map(Object.entries({
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2',
+  '.png': 'image/png', '.svg': 'image/svg+xml',
+  '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
 }));
 
 const server = createServer(async (req, res) => {
