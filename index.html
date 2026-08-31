@@ -142,16 +142,6 @@
       <div class="workspace">
         <!-- ---------------------------------------------------------- rail -->
         <aside class="rail" id="rail" data-i18n-aria="results.label">
-            <!-- The grabber. A real button, so it works by tap and by keyboard;
-                 the drag below is an enhancement, not the only way in. -->
-            <button
-              type="button"
-              class="grabber"
-              id="filtersGrabber"
-              aria-expanded="true"
-              aria-controls="filtersBody"
-            ></button>
-
           <div class="rail__lead">
             <p class="tally">
               <span class="tally__count" id="tallyCount">148</span>
@@ -174,48 +164,12 @@
                    a filter like the three beside it. Icon only, so aria-label
                    carries its name. -->
               <button type="button" class="iconbtn iconbtn--chip" id="visitedFilter" aria-pressed="false" hidden></button>
-            </div>
-          </div>
-
-          <div class="filters" id="filters">
-
-            <div class="filters__body" id="filtersBody">
-              <!-- One child, not two. A collapsing grid row only collapses the
-                   rows it declares, and a second child would land in an
-                   implicit auto row that keeps its height. -->
-              <div class="filters__inner">
-              <div class="filters__search">
-              <label class="field">
-                <span class="sr-only" data-i18n="search.label"></span>
-              <span class="field__icon" id="searchIcon" aria-hidden="true"></span>
-              <input
-                class="field__input"
-                id="search"
-                type="search"
-                autocomplete="off"
-                spellcheck="false"
-                data-i18n-ph="search.placeholder"
-              />
-                <button type="button" class="field__clear" id="searchClear" hidden>
-                  <span class="sr-only" data-i18n="search.clear"></span>
-                </button>
-              </label>
-
 
               <!-- Shown once, the first time somebody signs in, pointing at the
-                   control above. role="status" so it is announced rather than
-                   only seen. -->
+                   control beside it. role="status" so it is announced rather
+                   than only seen. -->
               <div class="coach" id="savedHint" role="status" hidden>
                 <span data-i18n="visit.hint"></span>
-              </div>
-            </div>
-
-              <label class="field">
-                <span class="sr-only" data-i18n="filter.municipality"></span>
-                <select class="select" id="municipality">
-                
-                </select>
-              </label>
               </div>
             </div>
           </div>

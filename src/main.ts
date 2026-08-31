@@ -51,9 +51,6 @@ const account = new Account();
 // The store filters on visits without holding a copy of them.
 store.isVisited = (id) => account.isVisited(id);
 
-const searchInput = $<HTMLInputElement>('#search');
-const searchClear = $<HTMLButtonElement>('#searchClear');
-const muniSelect = $<HTMLSelectElement>('#municipality');
 const resultsEl = $('#results');
 const tallyCount = $('#tallyCount');
 const tallyLabel = $('#tallyLabel');
@@ -67,6 +64,7 @@ const locateBtn = $<HTMLButtonElement>('#locate');
 const geoNote = $('#geoNote');
 const geoNoteText = $('#geoNoteText');
 const railEl = $('#rail');
+const stageEl = $('.stage');
 const live = $('#live');
 const langButton = $<HTMLButtonElement>('#langButton');
 const langMenu = $('#langMenu');
@@ -77,7 +75,6 @@ const accountPanel = $('#accountPanel');
 const accountCode = $('#accountCode');
 const visitedFilter = $<HTMLButtonElement>('#visitedFilter');
 const savedHint = $('#savedHint');
-const filtersEl = $('#filters');
 const dock = $('#dock');
 const dockSearchBtn = $<HTMLButtonElement>('#dockSearchBtn');
 const dockSearchIcon = $('#dockSearchIcon');
@@ -87,8 +84,6 @@ const dockFields = $('#dockFields');
 const dockSearchInput = $<HTMLInputElement>('#dockSearch');
 const dockClear = $<HTMLButtonElement>('#dockClear');
 const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
-const filtersBody = $('#filtersBody');
-const filtersGrabber = $<HTMLButtonElement>('#filtersGrabber');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -102,8 +97,6 @@ const esc = (v: string): string => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeA
 
 /* Static icon slots. Every glyph in this app is a lucide path — never an emoji. */
 $('#brandMark').innerHTML = icon('pin');
-$('#searchIcon').innerHTML = icon('search');
-searchClear.insertAdjacentHTML('beforeend', icon('x'));
 resetViewBtn.insertAdjacentHTML('beforeend', icon('frame'));
 $('#zoomIn').insertAdjacentHTML('beforeend', icon('plus'));
 $('#zoomOut').insertAdjacentHTML('beforeend', icon('minus'));
@@ -115,7 +108,7 @@ $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
 $('#dockFieldIcon').innerHTML = icon('search');
 dockClear.insertAdjacentHTML('beforeend', icon('x'));
-$('#dockSavedIcon').innerHTML = icon('bookmarkCheck');
+$('#dockSavedIcon').innerHTML = icon('bookmark');
 
 /* --------------------------------------------------------------- language */
 
@@ -138,23 +131,18 @@ function applyStaticTranslations(): void {
 
 function renderMunicipalityOptions(): void {
   const current = store.filters.municipality;
-  // Two of them now: the rail's and the dock's. One list, built twice, rather
-  // than one <select> moved between two places -- a select cannot be in both,
-  // and on a wide screen both are on screen at once.
-  for (const select of [muniSelect, dockMuni]) {
-    select.innerHTML = '';
-    const all = document.createElement('option');
-    all.value = '';
-    all.textContent = t('filter.allMunicipalities');
-    select.append(all);
-    for (const m of MUNICIPALITIES) {
-      const opt = document.createElement('option');
-      opt.value = m;
-      opt.textContent = t('filter.municipalitySuffix', { name: m });
-      select.append(opt);
-    }
-    select.value = current ?? '';
+  dockMuni.innerHTML = '';
+  const all = document.createElement('option');
+  all.value = '';
+  all.textContent = t('filter.allMunicipalities');
+  dockMuni.append(all);
+  for (const m of MUNICIPALITIES) {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = t('filter.municipalitySuffix', { name: m });
+    dockMuni.append(opt);
   }
+  dockMuni.value = current ?? '';
 }
 
 /**
@@ -564,20 +552,40 @@ function paintDock(): void {
  */
 function syncDock(): void {
   const query = store.filters.query;
-  for (const input of [searchInput, dockSearchInput]) {
-    if (input !== document.activeElement && input.value !== query) input.value = query;
+  // Never while it has the caret: the query is debounced, so for a moment
+  // after each keystroke the store is behind the field, and writing that
+  // stale value back would eat the letter just typed.
+  if (dockSearchInput !== document.activeElement && dockSearchInput.value !== query) {
+    dockSearchInput.value = query;
   }
   dockClear.hidden = query === '';
 
   const muni = store.filters.municipality ?? '';
-  for (const select of [muniSelect, dockMuni]) {
-    if (select !== document.activeElement && select.value !== muni) select.value = muni;
-  }
+  if (dockMuni !== document.activeElement && dockMuni.value !== muni) dockMuni.value = muni;
 
   const visited = String(store.filters.visitedOnly);
   dockSavedBtn.setAttribute('aria-pressed', visited);
   visitedFilter.setAttribute('aria-pressed', visited);
 }
+
+/**
+ * How high the dock floats.
+ *
+ * On a narrow screen the sheet owns the bottom of the map and its height is
+ * whatever its contents come to, so the gap is measured rather than guessed --
+ * a constant would be wrong the moment the tally wraps to two lines or the
+ * text size is turned up. Above the breakpoint the sheet is a column beside
+ * the map and there is nothing to clear, so the dock sits on the gutter.
+ */
+function paintDockLift(): void {
+  const lift = NARROW.matches && !railEl.dataset.offscreen ? railEl.offsetHeight : 0;
+  stageEl.style.setProperty('--dock-lift', `${lift}px`);
+}
+
+// The sheet changes height when the filters change the tally, when the
+// language changes the wrapping, and when the phone turns.
+new ResizeObserver(() => paintDockLift()).observe(railEl);
+window.addEventListener('resize', paintDockLift);
 
 dockSearchBtn.addEventListener('click', () => setDockOpen(!dockOpen));
 
@@ -813,76 +821,6 @@ const list = new ResultList(resultsEl, store, i18n, (p) => {
   map.focus(p, panelInset());
 });
 
-/* ----------------------------------------------------- the search fields -- */
-
-/**
- * Pull the grabber down to put the search fields away, up to bring them back.
- *
- * The gesture is an enhancement: the grabber is an ordinary button, so a tap
- * toggles and so does Enter or Space, and the drag is read on top of that. A
- * control that could only be dragged would be unreachable by keyboard.
- */
-let filtersOpen = true;
-
-function setFiltersOpen(open: boolean): void {
-  filtersOpen = open;
-  filtersEl.dataset.collapsed = String(!open);
-  filtersGrabber.setAttribute('aria-expanded', String(open));
-  filtersGrabber.setAttribute('aria-label', t(open ? 'filters.hide' : 'filters.show'));
-  // Out of the tab order and out of the accessibility tree while closed:
-  // collapsed fields are still focusable otherwise, and Tab would walk into
-  // a search box nobody can see.
-  if (open) filtersBody.removeAttribute('inert');
-  else filtersBody.setAttribute('inert', '');
-}
-
-{
-  const DRAG_THRESHOLD = 18;
-  let startY: number | null = null;
-  let moved = false;
-
-  filtersGrabber.addEventListener('pointerdown', (e) => {
-    startY = e.clientY;
-    moved = false;
-    filtersGrabber.setPointerCapture(e.pointerId);
-  });
-
-  filtersGrabber.addEventListener('pointermove', (e) => {
-    if (startY === null) return;
-    const dy = e.clientY - startY;
-    if (Math.abs(dy) < DRAG_THRESHOLD) return;
-    moved = true;
-    // Down closes, up opens, and each only in the direction that has somewhere
-    // to go, so a long drag does not flap the panel open and shut.
-    if (dy > 0 && filtersOpen) setFiltersOpen(false);
-    else if (dy < 0 && !filtersOpen) setFiltersOpen(true);
-    startY = e.clientY;
-  });
-
-  const end = (e: PointerEvent): void => {
-    if (startY === null) return;
-    // A press that never travelled is a tap, and a tap toggles.
-    if (!moved) setFiltersOpen(!filtersOpen);
-    startY = null;
-    if (filtersGrabber.hasPointerCapture(e.pointerId)) {
-      filtersGrabber.releasePointerCapture(e.pointerId);
-    }
-  };
-  filtersGrabber.addEventListener('pointerup', end);
-  filtersGrabber.addEventListener('pointercancel', end);
-
-  // pointerdown/up already covers mouse and touch; a click would toggle twice.
-  filtersGrabber.addEventListener('click', (e) => e.preventDefault());
-
-  // Enter and Space still have to work, and they arrive as key events only.
-  filtersGrabber.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setFiltersOpen(!filtersOpen);
-    }
-  });
-}
-
 /* ------------------------------------------------- mobile rail (sheet) --- */
 
 const NARROW = window.matchMedia('(max-width: 60rem)');
@@ -891,12 +829,19 @@ const NARROW = window.matchMedia('(max-width: 60rem)');
 function setRailOffscreen(off: boolean): void {
   if (off) railEl.dataset.offscreen = 'true';
   else delete railEl.dataset.offscreen;
+  // The card takes the bottom of the map when the sheet leaves it, and the
+  // dock was floating exactly there. It goes with the sheet and comes back
+  // with it; the search it holds is about the list, not about the one card
+  // that is open.
+  dock.dataset.away = String(off);
+  paintDockLift();
 }
 
 // Above the breakpoint the sheet is a column, not an overlay, so it must never
 // stay slid away just because a card happened to be open.
 NARROW.addEventListener('change', (e) => {
   setRailOffscreen(e.matches && !panelEl.hidden);
+  paintDockLift();
 });
 
 /* --------------------------------------------------------------- renderer */
@@ -952,7 +897,6 @@ function render(): void {
     }
   }
 
-  searchClear.hidden = store.filters.query === '';
   syncDock();
 }
 
@@ -991,7 +935,6 @@ store.subscribe(render);
 /* ----------------------------------------------------------------- events */
 
 let searchTimer: number | undefined;
-/** Shared by the rail's field and the dock's: one debounce, one store. */
 function typeSearch(value: string): void {
   window.clearTimeout(searchTimer);
   searchTimer = window.setTimeout(() => {
@@ -999,29 +942,12 @@ function typeSearch(value: string): void {
     if (value.trim().length >= 2) map.fitTo(store.visible);
   }, 160);
 }
-searchInput.addEventListener('input', () => typeSearch(searchInput.value));
 dockSearchInput.addEventListener('input', () => typeSearch(dockSearchInput.value));
 
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && searchInput.value !== '') {
-    e.stopPropagation();
-    clearSearch();
-  }
+dockMuni.addEventListener('change', () => {
+  store.setMunicipality(dockMuni.value || null);
+  map.fitTo(store.visible);
 });
-
-function clearSearch(): void {
-  searchInput.value = '';
-  store.setQuery('');
-  searchInput.focus();
-}
-searchClear.addEventListener('click', clearSearch);
-
-for (const select of [muniSelect, dockMuni]) {
-  select.addEventListener('change', () => {
-    store.setMunicipality(select.value || null);
-    map.fitTo(store.visible);
-  });
-}
 
 for (const chip of document.querySelectorAll<HTMLButtonElement>('.chip[data-group]')) {
   chip.addEventListener('click', () => {
@@ -1179,7 +1105,6 @@ i18n.onChange((locale) => {
   paintVisitedFilter();
   paintDock();
   renderGeo(geo.status);
-  setFiltersOpen(filtersOpen);
   // The account panel's contents are built from strings in JS, not marked up
   // with data-i18n, so the pass above does not reach them: signed out and
   // switching language left the sign-in form in the language before it.
@@ -1208,7 +1133,7 @@ renderGeo(geo.status);
 renderAccount();
 paintVisitedFilter();
 paintDock();
-setFiltersOpen(true);
+paintDockLift();
 // Told once: every setData afterwards carries the marks with it.
 map.setVisitedPredicate((id) => account.isVisited(id));
 render();
