@@ -283,7 +283,15 @@
   --card-radius: var(--radius-lg);
 
   --panel-bg: var(--surface-overlay);
-  --panel-border: var(--border-subtle);
+  /*
+   * One step up from `--border-subtle`, which is where this started and where
+   * it disappeared. The card floats over the map, and in dark mode a #2C3131
+   * edge on a #1E2121 card over a #121616 page was a boundary you had to know
+   * was there -- the information inside ran into the map behind it. `default`
+   * is still a hairline and still a theme token, so the edge follows the
+   * palette rather than being pinned to one mode.
+   */
+  --panel-border: var(--border-default);
   --panel-radius: var(--radius-xl);
 
   --button-primary-bg: var(--action-primary);
