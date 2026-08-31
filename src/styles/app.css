@@ -1835,3 +1835,165 @@ a.btn { text-decoration: none; }
 #accountButton[data-state='in'] .langpick__code { color: var(--text-brand); }
 
 
+
+/* ============================================================== the tour ===
+ *
+ * Three steps, shown once. The shape of it is deliberately plain -- one
+ * drawing, one line of display type, one sentence, two buttons -- because the
+ * drawing is what has to carry it, and anything else competing on the card
+ * would flatten the whole thing into a form.
+ *
+ * All the motion is declared here and none of it is load-bearing: every step
+ * renders complete with the animations removed, which is exactly what happens
+ * under prefers-reduced-motion, where the duration tokens collapse to 1ms.
+ */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  padding-block-end: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+}
+.intro__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-scrim);
+  backdrop-filter: blur(var(--space-1));
+  animation: intro-scrim var(--duration-base) var(--ease-out) both;
+}
+.intro__card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  inline-size: 100%;
+  max-inline-size: 22rem;
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  text-align: center;
+  background: var(--surface-raised);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: intro-card var(--duration-slow) var(--ease-spring) both;
+}
+.intro__card:focus-visible { outline: none; }
+
+/* The drawing sits on its own tinted field so the card does not read as a
+   dialog with a picture in it, but as a page with an illustration. */
+.intro__art {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.intro__svg { inline-size: 82%; block-size: auto; }
+
+.intro__text { display: grid; gap: var(--space-2); }
+.intro__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-primary);
+  animation: intro-rise var(--duration-base) var(--ease-out) both;
+}
+.intro__body {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+  text-wrap: pretty;
+  animation: intro-rise var(--duration-base) var(--ease-out) var(--duration-instant) both;
+}
+
+/* The step you are on is a pill, the others are dots. Not buttons: three
+   targets that small would be a target-size problem, and the two real controls
+   below already move between steps. */
+.intro__dots { display: flex; gap: var(--space-2); }
+.intro__dot {
+  inline-size: var(--space-2);
+  block-size: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  transition: inline-size var(--duration-base) var(--ease-out),
+              background var(--duration-base) var(--ease-out);
+}
+.intro__dot[data-on='true'] { inline-size: var(--space-5); background: var(--action-primary); }
+
+.intro__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+}
+.intro__actions .btn { flex: 1 1 0; min-inline-size: 0; }
+
+@keyframes intro-scrim { from { opacity: 0; } }
+@keyframes intro-card { from { opacity: 0; translate: 0 var(--space-6); scale: 0.96; } }
+@keyframes intro-rise { from { opacity: 0; translate: 0 var(--space-3); } }
+
+/* ---- the drawings ---- */
+.intro__plate {
+  fill: var(--surface-raised);
+  stroke: var(--border-default);
+  stroke-width: 2;
+  animation: intro-rise var(--duration-base) var(--ease-out) both;
+}
+.intro__line {
+  fill: var(--border-default);
+  animation: intro-line var(--duration-base) var(--ease-out) both;
+}
+.intro__line--late { animation-delay: var(--duration-instant); }
+.intro__line--later { animation-delay: var(--duration-fast); }
+.intro__road {
+  stroke: var(--border-strong);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 260;
+  animation: intro-draw var(--duration-slow) var(--ease-out) both;
+}
+.intro__road--late { animation-delay: var(--duration-fast); }
+.intro__spot {
+  fill: var(--border-strong);
+  animation: intro-pop var(--duration-base) var(--ease-spring) var(--duration-fast) both;
+}
+.intro__spot--late { animation-delay: var(--duration-base); }
+.intro__pin {
+  fill: none;
+  stroke: var(--action-primary);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: intro-drop var(--duration-slow) var(--ease-spring) var(--duration-fast) both;
+}
+.intro__lens {
+  fill: none;
+  stroke: var(--action-primary);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: intro-sweep var(--duration-slow) var(--ease-spring) var(--duration-fast) both;
+}
+.intro__mark {
+  fill: var(--action-primary);
+  stroke: var(--action-primary);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  animation: intro-drop var(--duration-slow) var(--ease-spring) var(--duration-fast) both;
+}
+
+@keyframes intro-draw { from { stroke-dashoffset: 260; } }
+@keyframes intro-line { from { opacity: 0; scale: 0.6 1; } }
+@keyframes intro-pop { from { opacity: 0; scale: 0; } }
+@keyframes intro-drop { from { opacity: 0; translate: 0 -14%; } }
+@keyframes intro-sweep { from { opacity: 0; translate: -12% 6%; } }
+
+/* Transforms on an SVG group need an origin inside the drawing, or the whole
+   thing swings from the corner of the viewport box. */
+.intro__pin, .intro__lens, .intro__mark, .intro__line, .intro__spot {
+  transform-box: fill-box;
+  transform-origin: center;
+}

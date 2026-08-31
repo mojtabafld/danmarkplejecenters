@@ -306,6 +306,24 @@
       </div>
     </div>
 
+    <!-- The three-step tour. Shown once per person: on a first visit, and one
+         final time for anybody who was already using the site before it
+         existed. Its text is built in script, so it follows the language
+         switch the way the account panel does. -->
+    <div class="intro" id="intro" hidden>
+      <div class="intro__scrim"></div>
+      <div class="intro__card" role="dialog" aria-modal="true" tabindex="-1">
+        <div class="intro__art" id="introArt"></div>
+        <div class="intro__text" id="introText"></div>
+        <div class="intro__dots" id="introDots" aria-hidden="true"></div>
+        <p class="sr-only" id="introProgress" aria-live="polite"></p>
+        <div class="intro__actions">
+          <button type="button" class="btn btn--ghost" data-intro="skip"></button>
+          <button type="button" class="btn btn--primary" data-intro="next"></button>
+        </div>
+      </div>
+    </div>
+
     <p class="sr-only" id="live" role="status" aria-live="polite"></p>
 
     <script type="module" src="/src/main.ts"></script>

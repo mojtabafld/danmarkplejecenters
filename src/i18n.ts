@@ -31,6 +31,20 @@ type Entry = string | Plural;
 const DA = {
   'app.title': 'Plejecentre',
   'app.subtitle': 'Hovedstadsområdet',
+  'intro.label': 'Kort rundvisning',
+  'intro.progress': 'Trin {n} af {total}',
+  'intro.next': 'Videre',
+  'intro.start': 'Kom i gang',
+  'intro.skip': 'Spring over',
+  'intro.map.title': 'Hvert plejecenter på kortet',
+  'intro.map.body':
+    '148 plejecentre i 23 kommuner i hovedstadsområdet. Søg på navn, eller vælg en kommune, og se dem alle sammen.',
+  'intro.jobs.title': 'Job på det enkelte center',
+  'intro.jobs.body':
+    'Hvert center har et link til ledige stillinger netop dér — sammen med adresse, telefon og den officielle hjemmeside, så du kan henvende dig direkte.',
+  'intro.saved.title': 'Gem dem du har søgt',
+  'intro.saved.body':
+    'Opret en konto, marker de centre du har skrevet til, og skriv en note: hvornår, hvem du talte med, og hvad de sagde.',
   'app.skipToList': 'Spring til listen over plejecentre',
 
   'header.toDark': 'Skift til mørkt tema',
@@ -186,6 +200,20 @@ type Key = keyof typeof DA;
 const EN: Record<Key, Entry> = {
   'app.title': 'Care Homes',
   'app.subtitle': 'Greater Copenhagen',
+  'intro.label': 'A short tour',
+  'intro.progress': 'Step {n} of {total}',
+  'intro.next': 'Next',
+  'intro.start': 'Get started',
+  'intro.skip': 'Skip',
+  'intro.map.title': 'Every care centre on the map',
+  'intro.map.body':
+    '148 care centres across 23 municipalities in Greater Copenhagen. Search by name, or pick a municipality, and see all of them.',
+  'intro.jobs.title': 'Jobs at each centre',
+  'intro.jobs.body':
+    'Every centre carries a link to the vacancies at that centre — alongside its address, phone number and official website, so you can approach them directly.',
+  'intro.saved.title': 'Keep the ones you applied to',
+  'intro.saved.body':
+    'Create an account, mark the centres you have written to, and leave a note: when you applied, who you spoke to, and what they said.',
   'app.skipToList': 'Skip to the list of care homes',
 
   'header.toDark': 'Switch to dark theme',
@@ -339,6 +367,20 @@ const EN: Record<Key, Entry> = {
 const FA: Record<Key, Entry> = {
   'app.title': 'مراکز مراقبت سالمندان',
   'app.subtitle': 'منطقه کلان شهری کپنهاگ',
+  'intro.label': 'راهنمای کوتاه',
+  'intro.progress': 'گام {n} از {total}',
+  'intro.next': 'بعدی',
+  'intro.start': 'شروع کنیم',
+  'intro.skip': 'رد کردن',
+  'intro.map.title': 'همهٔ مراکز، روی نقشه',
+  'intro.map.body':
+    '۱۴۸ مرکز مراقبت در ۲۳ شهرداری منطقهٔ کپنهاگ بزرگ. با نام جست‌وجو کنید یا یک شهرداری را انتخاب کنید تا همه را ببینید.',
+  'intro.jobs.title': 'کار در هر مرکز',
+  'intro.jobs.body':
+    'روی هر مرکز، پیوند جست‌وجوی آگهی‌های استخدام همان مرکز هست؛ کنار نشانی، تلفن و وب‌سایت رسمی، تا مستقیم با خودشان تماس بگیرید.',
+  'intro.saved.title': 'هرجا درخواست دادید، نشان کنید',
+  'intro.saved.body':
+    'یک حساب بسازید، مراکزی را که به آن‌ها نامه نوشته‌اید نشان کنید و یادداشت بگذارید: چه زمانی، با چه کسی صحبت کردید و چه گفتند.',
   'app.skipToList': 'پرش به فهرست مراکز مراقبت',
 
   'header.toDark': 'تغییر به پوستهٔ تیره',

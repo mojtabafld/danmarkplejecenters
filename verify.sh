@@ -36,7 +36,7 @@ KIT="$(pwd)"
 
 REL="${APP#"$KIT"/}"
 V="$REL/verification"
-PAGES=("$V/harness.html" "$V/panel.html" "$V/states.html")
+PAGES=("$V/harness.html" "$V/panel.html" "$V/states.html" "$V/intro.html")
 
 export DS_REQUIRE_BROWSER=1
 
@@ -77,6 +77,7 @@ for p in "${PAGES[@]}"; do
 done
 run "reduced motion: stopped, nothing lost"  node scripts/verify_reduced_motion.mjs "$V"
 run "keyboard: reachable and operable"     node scripts/verify_keyboard.mjs "$V/harness.html"
+run "modal focus trap                 [intro]" node scripts/verify_focustrap.mjs "$V/intro.html"
 run "token intent (no blue delete)"        node scripts/lint_intent.mjs "$V/harness.html"
 run "no overflow at 280/320/414px"         node scripts/verify_responsive.mjs "$V"
 run "no overflow at 280/320/414px @1.25x"  node scripts/verify_responsive.mjs "$V" --scale=1.25

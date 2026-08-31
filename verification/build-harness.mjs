@@ -640,4 +640,56 @@ const states = `<!doctype html>
 `;
 
 writeFileSync(R('verification/states.html'), states, 'utf8');
-console.log('wrote verification/harness.html, panel.html and states.html');
+
+/* The three-step tour on its own page. It is a fixed overlay in the app, which
+   is exactly how it lays out here -- so this one needs no harness-only CSS. The
+   drawing is the map step; the other two are the same card with a different
+   figure in the same slot. The aria-label is set in script at runtime, so it is
+   spelled out here for the accessibility gate to see. */
+const intro = `<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plejecentre rundvisning</title>
+<link rel="stylesheet" href="./harness.css">
+</head>
+<body>
+<div class="intro">
+  <div class="intro__scrim"></div>
+  <div class="intro__card" role="dialog" aria-modal="true" aria-label="Kort rundvisning" tabindex="-1">
+    <div class="intro__art">
+      <svg class="intro__svg" viewBox="0 0 160 120" fill="none" aria-hidden="true" focusable="false">
+        <rect class="intro__plate" x="6" y="10" width="148" height="100" rx="16"/>
+        <path class="intro__road" d="M6 84C40 84 40 50 78 50s44 26 76 14"/>
+        <path class="intro__road intro__road--late" d="M50 110c0-22 22-24 34-40"/>
+        <circle class="intro__spot" cx="34" cy="88" r="4"/>
+        <circle class="intro__spot intro__spot--late" cx="126" cy="36" r="4"/>
+        <g class="intro__pin" transform="translate(60 20) scale(1.7)">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+        </g>
+      </svg>
+    </div>
+    <div class="intro__text">
+      <h2 class="intro__title">Hvert plejecenter på kortet</h2>
+      <p class="intro__body">148 plejecentre i 23 kommuner i hovedstadsområdet. Søg på navn,
+        eller vælg en kommune, og se dem alle sammen.</p>
+    </div>
+    <div class="intro__dots" aria-hidden="true">
+      <span class="intro__dot" data-on="true"></span>
+      <span class="intro__dot"></span>
+      <span class="intro__dot"></span>
+    </div>
+    <p class="sr-only" aria-live="polite">Trin 1 af 3</p>
+    <div class="intro__actions">
+      <button type="button" class="btn btn--ghost">Spring over</button>
+      <button type="button" class="btn btn--primary">Videre</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+`;
+
+writeFileSync(R('verification/intro.html'), intro, 'utf8');
+console.log('wrote verification/harness.html, panel.html, states.html and intro.html');

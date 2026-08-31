@@ -4,6 +4,7 @@ import './styles/app.css';
 import { Account, type AuthError } from './account';
 import { DetailPanel } from './detail';
 import { Geolocator, type GeoStatus } from './geolocate';
+import { Intro } from './intro';
 import { I18n, LOCALES, LOCALE_META, type Locale, type TranslationKey } from './i18n';
 import { icon, iconDataUri } from './icons';
 import { ResultList } from './list';
@@ -1086,6 +1087,14 @@ render();
 // so hanging the tip off the sign-in alone would mean the people who most
 // need pointing at the control are the only ones who never get pointed at it.
 void account.load().then(() => showSavedHint());
+
+/*
+ * The tour, last of all, so it opens over a page that has already drawn. It
+ * decides for itself whether anybody needs it; on the way out it hands focus
+ * to the search box, which is where the first step points.
+ */
+const intro = new Intro($('#intro'), $('.app'), i18n, () => searchInput.focus());
+intro.openIfUnseen();
 
 /**
  * The return trip from the confirmation link. The server redirects to

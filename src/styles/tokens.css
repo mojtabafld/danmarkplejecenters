@@ -158,6 +158,7 @@
   --z-panel: 35;
   --z-header: 40;
   --z-toast: 50;
+  --z-intro: 60;
 
   /* ---------------------------------------------------------------- TIER 2
      SEMANTIC — light theme. Dark overrides only these.                    */
