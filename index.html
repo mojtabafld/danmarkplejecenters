@@ -166,6 +166,14 @@
                 <span class="chip__mark"></span><span data-i18n="ownership.Privat"></span>
               </button>
 
+              <!-- The saved filter, and the key to the blue dots. The legend on
+                   the map explains those colours but is hidden below the
+                   breakpoint, so on a phone this chip is the only place the blue
+                   is ever named. Its label is set in script because it says
+                   which state it is in. -->
+              <button type="button" class="chip chip--saved" id="savedChip" aria-pressed="false" hidden>
+                <span class="chip__mark"></span><span id="savedChipLabel"></span>
+              </button>
             </div>
           </div>
 
