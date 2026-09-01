@@ -627,16 +627,20 @@ async function adminRoutes(req, res, path, method) {
 
   if (path === '/api/admin/overview' && method === 'GET') {
     const days = 30;
-    const [totals, series, locales, top, userStats, signups, reviewCounts] = await Promise.all([
+    const [totals, series, locales, top, topTotal, userStats, signups, reviewCounts] = await Promise.all([
       traffic.totals(),
       traffic.series(days),
       traffic.locales(days),
       traffic.topPlaces(days),
+      traffic.placeCount(days),
       admin.userTotals(),
       admin.signups(days),
       reviews.counts(),
     ]);
-    send(res, 200, { days, totals, series, locales, top, users: userStats, signups, reviews: reviewCounts });
+    send(res, 200, {
+      days, totals, series, locales, top, topTotal,
+      users: userStats, signups, reviews: reviewCounts,
+    });
     return true;
   }
 
@@ -644,6 +648,18 @@ async function adminRoutes(req, res, path, method) {
     const url = new URL(req.url, 'http://localhost');
     const offset = Math.max(0, Number(url.searchParams.get('offset') ?? 0) || 0);
     send(res, 200, await admin.users({ offset }));
+    return true;
+  }
+
+  /*
+   * The whole ranked list, rather than the eight the overview carries.
+   *
+   * A separate request because it is only wanted when somebody expands the
+   * card, and sending a hundred and fifty rows to draw eight of them would
+   * make every visit to the panel pay for a list most visits never open.
+   */
+  if (path === '/api/admin/places' && method === 'GET') {
+    send(res, 200, { places: await traffic.topPlaces(30, 200) });
     return true;
   }
 

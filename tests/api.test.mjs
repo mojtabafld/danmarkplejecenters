@@ -306,6 +306,8 @@ r = await call('GET', '/api/admin/users');
 check('nor the user list', r.status === 403);
 r = await call('POST', '/api/admin/reviews/1', { decision: 'approve' });
 check('nor decide a review', r.status === 403);
+r = await call('GET', '/api/admin/places');
+check('nor read the full list of what people opened', r.status === 403);
 
 const pending = await db.query("SELECT id FROM reviews WHERE status = 'pending'");
 const reviewId = pending.rows[0].id;
@@ -334,6 +336,9 @@ r = await call('GET', '/api/admin/users');
 check('the user list is readable', r.status === 200 && r.body.users.length >= 2);
 check('and says nothing about passwords',
   !JSON.stringify(r.body).includes('password') && !JSON.stringify(r.body).includes('hash'));
+
+r = await call('GET', '/api/admin/places');
+check('the full ranked list is admin-only and readable', r.status === 200 && Array.isArray(r.body.places));
 
 r = await call('GET', '/api/admin/reviews?status=pending');
 check('the queue holds the waiting comment',
