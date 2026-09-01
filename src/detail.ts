@@ -15,9 +15,20 @@ import type { Plejecenter } from './types';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
+/** Below the breakpoint the card is a bottom sheet, and only then does it drag. */
+const SHEET = window.matchMedia('(max-width: 60rem)');
+const STILL = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+/** How far down, as a share of the card's height, counts as "put it away". */
+const DISMISS_FRACTION = 0.28;
+/** Or a flick: px per millisecond, downward, regardless of how far it got. */
+const DISMISS_VELOCITY = 0.5;
+
 /** The card that opens when a dot or a list row is chosen. */
 export class DetailPanel {
   private lastFocus: HTMLElement | null = null;
+  /** Set while the card is animating out, so a second hide() does not stack. */
+  private leaving: number | null = null;
 
   constructor(
     private root: HTMLElement,
@@ -36,6 +47,74 @@ export class DetailPanel {
         this.onClose();
       }
     });
+
+    this.armDrag();
+  }
+
+  /*
+   * Pull the sheet down to put it away.
+   *
+   * The gesture is an enhancement and never the only way out: the close button
+   * is right there, Escape works, and the grip itself is aria-hidden precisely
+   * so it does not present itself as a second control doing the same job.
+   *
+   * Only below the breakpoint. Above it the card is a column anchored to the
+   * inline start, and dragging that downwards means nothing.
+   */
+  private armDrag(): void {
+    const grip = this.root.querySelector<HTMLElement>('.panel__grip');
+    if (!grip) return;
+
+    let startY = 0;
+    let lastY = 0;
+    let lastT = 0;
+    let travelled = 0;
+    let dragging = false;
+
+    grip.addEventListener('pointerdown', (e) => {
+      if (!SHEET.matches || this.leaving !== null) return;
+      dragging = true;
+      startY = lastY = e.clientY;
+      lastT = e.timeStamp;
+      travelled = 0;
+      this.root.dataset.dragging = 'true';
+      grip.setPointerCapture(e.pointerId);
+    });
+
+    grip.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      // Downwards only. Dragging a bottom sheet upwards past its place is a
+      // rubber band on iOS and an empty gap here, so it simply does not move.
+      travelled = Math.max(0, e.clientY - startY);
+      lastY = e.clientY;
+      lastT = e.timeStamp;
+      this.root.style.translate = `0 ${travelled}px`;
+    });
+
+    const release = (e: PointerEvent): void => {
+      if (!dragging) return;
+      dragging = false;
+      if (grip.hasPointerCapture(e.pointerId)) grip.releasePointerCapture(e.pointerId);
+
+      const height = this.root.getBoundingClientRect().height || 1;
+      const elapsed = Math.max(1, e.timeStamp - lastT);
+      const velocity = (e.clientY - lastY) / elapsed;
+      const gone = travelled > height * DISMISS_FRACTION || velocity > DISMISS_VELOCITY;
+
+      delete this.root.dataset.dragging;
+      if (gone) {
+        // Leave the inline offset in place for one frame so the exit carries on
+        // from where the finger let go rather than snapping back first.
+        this.onClose();
+        return;
+      }
+      // Not far enough: the transition comes back with the attribute, and
+      // clearing the offset springs it home.
+      this.root.style.translate = '';
+    };
+
+    grip.addEventListener('pointerup', release);
+    grip.addEventListener('pointercancel', release);
   }
 
   private fact(iconName: IconName, labelKey: TranslationKey, value: string): string {
@@ -60,6 +139,14 @@ export class DetailPanel {
     this.body.innerHTML = this.markup(p, opts.userAt ?? null, opts.note ?? '');
     this.foot.innerHTML = this.actions(p, opts.canVisit ?? false, opts.note ?? '');
     this.renderVisit(p, opts.visited ?? false, opts.canVisit ?? false);
+    // A card opening while the last one is still leaving cancels the exit:
+    // otherwise the timer below would hide the new one.
+    if (this.leaving !== null) {
+      window.clearTimeout(this.leaving);
+      this.leaving = null;
+    }
+    delete this.root.dataset.leave;
+    this.root.style.translate = '';
     this.root.hidden = false;
 
     // Entrance: set the "before" state, then release it on the next frame so
@@ -75,13 +162,45 @@ export class DetailPanel {
     this.root.querySelector<HTMLElement>('.panel__close')?.focus();
   }
 
+  /**
+   * Put the card away, sliding it out the way it came in.
+   *
+   * The card stays in the DOM until the movement has run, which is the only
+   * way an exit can be animated at all -- `hidden` is instant. Focus goes back
+   * immediately rather than at the end, because a card on its way out should
+   * not be holding the caret.
+   *
+   * The timer is a fallback rather than a nicety: `transitionend` does not
+   * fire if the property never changes -- a card already at its resting
+   * translate, a browser that skipped the frame -- and without it the card
+   * would sit there un-hidden for good.
+   */
   hide(): void {
-    if (this.root.hidden) return;
+    if (this.root.hidden || this.leaving !== null) return;
+
+    this.lastFocus?.focus();
+    this.lastFocus = null;
+
+    if (!SHEET.matches || STILL.matches) {
+      this.finishHide();
+      return;
+    }
+
+    this.root.dataset.leave = 'true';
+    this.root.style.translate = '';
+    this.leaving = window.setTimeout(() => this.finishHide(), 420);
+  }
+
+  private finishHide(): void {
+    if (this.leaving !== null) {
+      window.clearTimeout(this.leaving);
+      this.leaving = null;
+    }
+    delete this.root.dataset.leave;
+    this.root.style.translate = '';
     this.root.hidden = true;
     this.body.innerHTML = '';
     this.foot.innerHTML = '';
-    this.lastFocus?.focus();
-    this.lastFocus = null;
   }
 
   private markup(p: Plejecenter, userAt: { lat: number; lon: number } | null, note: string): string {

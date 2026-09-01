@@ -303,16 +303,28 @@
             aria-labelledby="panelTitle"
             tabindex="-1"
           >
+            <!-- The grip. Decorative on purpose: the close button beside it
+                 is the accessible way out, so a second tab stop doing the same
+                 job would be noise. Dragging it down is an enhancement on top
+                 of that, the way an iOS sheet works. -->
+            <div class="panel__grip" id="panelGrip" aria-hidden="true"></div>
+
             <div class="panel__head" id="panelHead">
               <div>
                 <span class="panel__eyebrow"></span>
                 <div class="panel__titlerow">
-                  <span id="panelVisitSlot"></span>
                   <h2 class="panel__title" id="panelTitle"></h2>
                 </div>
                 <span id="panelJobSlot"></span>
               </div>
-              <button type="button" class="panel__close"></button>
+
+              <!-- Save and close, as a pair. Both are icon buttons acting on
+                   the card as a whole rather than on the name beside them,
+                   which is why they sit together at the end of the head. -->
+              <div class="panel__headacts">
+                <span id="panelVisitSlot"></span>
+                <button type="button" class="panel__close"></button>
+              </div>
             </div>
             <div class="panel__body" id="panelBody"></div>
             <div class="panel__foot" id="panelFoot"></div>
