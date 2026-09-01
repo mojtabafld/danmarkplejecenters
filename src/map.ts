@@ -96,6 +96,9 @@ const POP_MS = 620;
 
 const PULSE_TOTAL = RIPPLE_OFFSET + RIPPLE_STAGGER * RIPPLE_STAGGER_CAP + RIPPLE_WAVE;
 
+/** How long the camera takes to pull back to the whole region. */
+const HOME_MS = 620;
+
 /**
  * Somebody who has asked for less motion gets the state without the show: the
  * filter still narrows the map, the ring still marks the dots, nothing moves.
@@ -189,6 +192,19 @@ export class PlejecenterMap {
   private lastVisited: (id: string) => boolean = () => false;
   /** Frame handle for the saved-places ripple; null when nothing is running. */
   private pulse: number | null = null;
+  /** Timer waiting for the camera to settle before the ripple starts. */
+  private pulseWait: number | null = null;
+  /** The `moveend` listener that same wait is racing, so it can be removed. */
+  private pulseOnMove: (() => void) | null = null;
+  /**
+   * Bumped every time a run is called off.
+   *
+   * A cancelled run has two ways back to life -- its timer and its `moveend`
+   * listener -- and clearing one is not clearing the other. Rather than trust
+   * that every future path remembers to unhook itself, each armed run captures
+   * this number and refuses to start if it has moved on.
+   */
+  private pulseToken = 0;
 
   /** Calls made before the map exists, replayed in order once it does. */
   private queued: Array<(m: MLMap) => void> = [];
@@ -503,28 +519,64 @@ export class PlejecenterMap {
   setSavedFocus(on: boolean): void {
     this.run((m) => {
       this.stopPulse(m);
-      if (!on || REDUCED.matches) return;
+      if (!on) return;
 
-      const start = performance.now();
-      const step = (now: number): void => {
-        const map = this.map;
-        // A basemap swap rebuilds every layer. If the frame lands in that gap
-        // there is nothing to paint, and the run is over rather than wrong.
-        if (!map || !map.getLayer(RIPPLE_LAYERS[0])) {
-          this.pulse = null;
-          return;
-        }
-        const t = now - start;
-        this.paintPulse(map, t);
-        if (t < PULSE_TOTAL) {
-          this.pulse = requestAnimationFrame(step);
-        } else {
-          this.pulse = null;
-          this.restPulse(map);
-        }
+      // The camera comes home first.
+      //
+      // Somebody zoomed into one street who asks for their saved places is
+      // asking to see them, and most of them are somewhere else. Without this
+      // the filter emptied the visible map and the ripple ran off-screen: an
+      // animation nobody watches, on a map that looks broken. Pulling back to
+      // the region puts every saved place in frame before anything moves.
+      const still = REDUCED.matches;
+      m.fitBounds(HOME_BOUNDS, { padding: 48, duration: still ? 0 : HOME_MS });
+      if (still) return;
+
+      // And the ripple waits for it. Rings expanding while the camera is still
+      // flying would slide across the screen as they grow, which reads as a
+      // wobble rather than a pulse.
+      //
+      // `moveend` is the honest signal, but it never arrives if another camera
+      // move interrupts this one -- so a timer backs it up and whichever comes
+      // first wins.
+      const token = this.pulseToken;
+      let started = false;
+      const begin = (): void => {
+        // Not twice, and not at all if the filter was released while the
+        // camera was still flying: the ripple would then run over a map
+        // showing all 148 again, which says the opposite of what it means.
+        if (started || token !== this.pulseToken) return;
+        started = true;
+        this.clearWait(m);
+        this.runPulse();
       };
-      this.pulse = requestAnimationFrame(step);
+      this.pulseOnMove = begin;
+      m.on('moveend', begin);
+      this.pulseWait = window.setTimeout(begin, HOME_MS + 120);
     });
+  }
+
+  /** The ripple itself, once the camera is where it is going to stay. */
+  private runPulse(): void {
+    const start = performance.now();
+    const step = (now: number): void => {
+      const map = this.map;
+      // A basemap swap rebuilds every layer. If the frame lands in that gap
+      // there is nothing to paint, and the run is over rather than wrong.
+      if (!map || !map.getLayer(RIPPLE_LAYERS[0])) {
+        this.pulse = null;
+        return;
+      }
+      const t = now - start;
+      this.paintPulse(map, t);
+      if (t < PULSE_TOTAL) {
+        this.pulse = requestAnimationFrame(step);
+      } else {
+        this.pulse = null;
+        this.restPulse(map);
+      }
+    };
+    this.pulse = requestAnimationFrame(step);
   }
 
   /**
@@ -600,12 +652,27 @@ export class PlejecenterMap {
     }
   }
 
+  /** Drop whatever is still waiting to start a run. */
+  private clearWait(m: MLMap): void {
+    if (this.pulseWait !== null) {
+      window.clearTimeout(this.pulseWait);
+      this.pulseWait = null;
+    }
+    if (this.pulseOnMove) {
+      m.off('moveend', this.pulseOnMove);
+      this.pulseOnMove = null;
+    }
+  }
+
   /** Stop mid-flight, and leave the map exactly as it would have ended. */
   private stopPulse(m: MLMap): void {
+    // Anything already armed is now stale, whichever way it was going to fire.
+    this.pulseToken += 1;
     if (this.pulse !== null) {
       cancelAnimationFrame(this.pulse);
       this.pulse = null;
     }
+    this.clearWait(m);
     this.restPulse(m);
   }
 
@@ -671,7 +738,7 @@ export class PlejecenterMap {
   }
 
   resetView(): void {
-    this.run((m) => m.fitBounds(HOME_BOUNDS, { padding: 48, duration: 620 }));
+    this.run((m) => m.fitBounds(HOME_BOUNDS, { padding: 48, duration: HOME_MS }));
   }
 
   /* ------------------------------------------------------- user location -- */
