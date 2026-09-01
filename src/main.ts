@@ -3,6 +3,7 @@ import './styles/app.css';
 
 import { Account, type AuthError } from './account';
 import { DetailPanel } from './detail';
+import { ReviewSection } from './reviews';
 import { Geolocator, type GeoStatus } from './geolocate';
 import { Intro } from './intro';
 import { I18n, LOCALES, LOCALE_META, type Locale, type TranslationKey } from './i18n';
@@ -871,15 +872,31 @@ function closeNoteEditor(): void {
   noteReturnFocus = null;
 }
 
-function refreshCard(): void {
-  const p = store.selected;
-  if (!p) return;
+/**
+ * Draw one plejecentre's card.
+ *
+ * Every caller goes through here rather than calling detail.show directly.
+ * `show` replaces the card's whole body, which throws away the element the
+ * ratings live in -- so the two have to happen together, and there used to be
+ * four places that each had to remember that.
+ */
+function showCard(p: Plejecenter, extra: { restoreFocusTo?: HTMLElement | null;
+  userAt?: { lat: number; lon: number } | null } = {}): void {
   detail.show(p, {
-    userAt: userPoint(),
+    userAt: extra.userAt !== undefined ? extra.userAt : userPoint(),
     visited: account.isVisited(p.id),
     canVisit: Boolean(account.user),
     note: account.noteFor(p.id),
+    ...(extra.restoreFocusTo !== undefined ? { restoreFocusTo: extra.restoreFocusTo } : {}),
   });
+  const host = document.getElementById('reviewHost');
+  if (host) reviews.open(host, p.id);
+}
+
+function refreshCard(): void {
+  const p = store.selected;
+  if (!p) return;
+  showCard(p);
 }
 
 $('#noteSave').addEventListener('click', () => {
@@ -968,12 +985,7 @@ account.onChange(() => {
   map.setData(store.visible);
   const selected = store.selected;
   if (selected) {
-    detail.show(selected, {
-      userAt: userPoint(),
-      visited: account.isVisited(selected.id),
-      canVisit: Boolean(account.user),
-      note: account.noteFor(selected.id),
-    });
+    showCard(selected);
   }
   lastVisibleKey = '';
   render();
@@ -996,6 +1008,40 @@ const map = new PlejecenterMap($('#map'), theme.current, {
 /* ----------------------------------------------------------------- panel */
 
 const detail = new DetailPanel(panelEl, panelBody, panelFoot, i18n, () => store.select(null));
+
+/**
+ * The counting beacon.
+ *
+ * keepalive so a page closing mid-request still delivers, and every failure
+ * swallowed: a number nobody sees is never worth breaking a page for.
+ */
+async function beacon(payload: { event: string; id?: string; locale?: string }): Promise<void> {
+  try {
+    await fetch('/api/track', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    });
+  } catch {
+    /* counting is never worth an error the reader can see */
+  }
+}
+
+const reviews = new ReviewSection({
+  i18n,
+  onSignIn: () => setAccountOpen(true),
+  gate: () => (account.user ? 'ok' : 'signin'),
+  announce: (message) => {
+    live.textContent = message;
+  },
+  // A new score changes the average shown in the list, so the list is told.
+  onChanged: (placeId, data) => {
+    store.setRating(placeId, data.count ? { average: data.average ?? 0, count: data.count } : null);
+    render();
+  },
+});
 
 /** Remembered so closing the panel returns focus where it came from. */
 let lastTrigger: HTMLElement | null = null;
@@ -1083,13 +1129,10 @@ function render(): void {
     const p = store.selected;
     if (p) {
       detail.renderHead(p, panelHead);
-      detail.show(p, {
-        restoreFocusTo: lastTrigger,
-        userAt: userPoint(),
-        visited: account.isVisited(p.id),
-        canVisit: Boolean(account.user),
-        note: account.noteFor(p.id),
-      });
+      showCard(p, { restoreFocusTo: lastTrigger });
+      // Counted when a card opens, not when a dot is drawn: opening one is the
+      // deliberate act, and it is the only thing the panel's list is read as.
+      void beacon({ event: 'place', id: p.id });
       // On a phone the panel is the answer to the tap. Leaving the list sheet
       // open behind it puts two overlays on the same screen competing for the
       // same thumb. Remember what it was so closing can put it back; only on
@@ -1239,12 +1282,7 @@ function renderGeo(status: GeoStatus): void {
       // The panel gains a distance line once we know where the reader is.
       const selected = store.selected;
       if (selected) {
-        detail.show(selected, {
-          userAt: { lat: status.lat, lon: status.lon },
-          visited: account.isVisited(selected.id),
-          canVisit: Boolean(account.user),
-          note: account.noteFor(selected.id),
-        });
+        showCard(selected, { userAt: { lat: status.lat, lon: status.lon } });
       }
       break;
     }
@@ -1348,6 +1386,26 @@ render();
 // so hanging the tip off the sign-in alone would mean the people who most
 // need pointing at the control are the only ones who never get pointed at it.
 void account.load().then(() => showSavedHint());
+
+/*
+ * The scores for every plejecentre, in one request, and the page view that
+ * says somebody was here. Both are best-effort: the map, the list and the
+ * cards are all complete without either, so a failure is silent by design.
+ */
+void (async () => {
+  try {
+    const res = await fetch('/api/ratings', { credentials: 'same-origin' });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        ratings: Record<string, { average: number; count: number }>;
+      };
+      store.setRatings(data.ratings ?? {});
+    }
+  } catch {
+    /* no scores is a page without scores, not a broken one */
+  }
+})();
+void beacon({ event: 'view', locale: i18n.locale });
 
 /*
  * The tour, last of all, so it opens over a page that has already drawn. It

@@ -1,5 +1,5 @@
 import type { I18n } from './i18n';
-import { icon } from './icons';
+import { icon, star } from './icons';
 import { compare, ownershipGroup } from './format';
 import type { Store } from './store';
 import type { Plejecenter } from './types';
@@ -65,13 +65,23 @@ export class ResultList {
     const beds = p.homes
       ? `<span>${esc(this.i18n.t('result.homes', { n: p.homes }))}</span>`
       : '';
+
+    // The score, only where there is one. A row reading "no ratings" 148 times
+    // is a list about the absence of ratings rather than about plejecentre.
+    const rating = this.store.ratingFor(p.id);
+    const score = rating
+      ? `<span class="result__rating">${star(true)}` +
+        `<span class="result__score">${esc(this.i18n.n(rating.average))}</span>` +
+        `<span class="sr-only">${esc(this.i18n.t('rating.outOf', { n: rating.average }))}, ` +
+        `${esc(this.i18n.t('rating.count', { n: rating.count }))}</span></span>`
+      : '';
     return (
       `<button type="button" class="result" data-id="${esc(p.id)}" data-own="${group}"` +
       ` aria-current="false">` +
       `<span class="result__mark"></span>` +
       `<span class="result__name">${esc(p.name)}</span>` +
       `<span class="result__meta"><span>${esc(p.street)}</span>` +
-      `<span>${esc(p.city)}</span>${beds}</span>` +
+      `<span>${esc(p.city)}</span>${beds}${score}</span>` +
       `</button>`
     );
   }

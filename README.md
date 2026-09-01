@@ -374,14 +374,20 @@ leaves the database, and the delete button really deletes.
 npm test
 ```
 
-46 checks against an in-memory Postgres and a capturing mail transport,
+95 checks against an in-memory Postgres and a capturing mail transport,
 covering sign-up validation, duplicate addresses, the confirmation link (that
 it works once, that a superseded one stops working, that a forged token is
 refused), sign-in being blocked until confirmed, case-insensitive sign-in,
 session forgery, one account being unable to see another's visits, cascade
 deletion, malformed JSON, the SQL-injection case, notes (saved trimmed, replaced rather than duplicated,
 surviving an unmark, deleted by an empty body, capped, and private to a
-session), and sign-up refusing when mail is unconfigured.
+session), sign-up refusing when mail is unconfigured, ratings and moderation
+(a star counting at once, words waiting for approval, an invalid star being
+refused, a signed-out reader seeing the score but not being able to cast one),
+who may reach the admin API (an ordinary account, an unlisted account and a
+listed-but-unconfirmed account are all refused alike), and the counting beacon
+(two views from one visitor being two views and one visitor, an invented place
+id not being counted, and nothing resembling an address reaching the table).
 
 ```bash
 npm run serve:memdb
@@ -389,6 +395,113 @@ npm run serve:memdb
 
 Runs the real server against that same in-memory database on port 8150, which
 is how the browser flow was exercised without a Postgres server anywhere.
+
+---
+
+## Ratings, reviews and moderation
+
+**A star is a number; a paragraph is a publication.** The two are treated
+differently on purpose, and the whole feature follows from that one decision.
+
+- A **rating counts the moment it is cast.** There is nothing in a number
+  between one and five for a moderator to read, and an average that lags behind
+  by a day is worse than no average.
+- A **written comment waits for a person.** It is published under this site's
+  name on the page of a real care home, where its staff and its residents'
+  families will read it. Nothing is published that nobody has read.
+- Rewriting an approved comment **sends it back to the queue.** Otherwise an
+  approved review is a slot that can be quietly refilled with anything.
+- Rejecting **keeps the rating.** The star was never the thing under review,
+  and the person who wrote the text is told plainly that it was not published
+  rather than watching it disappear.
+- **One review per person per plejecentre**, replaced rather than appended: a
+  second visit changes your mind, it does not give you a second vote.
+- **Reviews carry no name.** Attribution would mean either publishing part of
+  an address or inventing a handle. A score and a date say everything a reader
+  needs, and neither can be used to identify who wrote it.
+- Rating requires a **confirmed address**. Saving places for yourself does not;
+  publishing under the site's name does.
+
+The card shows the average, how the votes are spread across the five levels,
+and the approved comments. The spread is not decoration: an average of three
+from two people who said one and five is a different fact from three from six
+people who all said three, and only the spread tells them apart.
+
+The star control is **five real radio inputs**, visually hidden with the stars
+drawn by their labels. Keyboard behaviour, focus order and the screen-reader
+announcement all come from the browser rather than from an ARIA imitation of
+it; arrow keys move between stars because that is what a radio group does.
+
+---
+
+## The admin panel
+
+At **`/admin`**, in the same three languages as the map, on the same theme.
+
+### Who gets in
+
+Administrators are named in an environment variable, not flagged in a table:
+
+| Variable | Example |
+| --- | --- |
+| `ADMIN_EMAILS` | `you@example.com, colleague@example.com` |
+
+A flag in a table has to be granted by something, and that something is either
+a bootstrap rule ("the first account wins", which is a race anybody can win on
+a fresh database) or another admin screen, which is a chicken with no egg. A
+variable on the component is set by whoever already controls the deploy --
+the same person the flag would be trying to identify.
+
+Being listed is permission, not a way in: the address still has to hold a
+confirmed account with a password. Changing the list takes a redeploy.
+`/api/health` reports how many addresses are configured (never which), so
+"nobody can sign in" is distinguishable from "you are not one of them".
+
+Every route under `/api/admin/` is refused with the same 403 whether the caller
+is signed out, signed in as somebody else, or listed but unconfirmed. None of
+those need to learn which one they are.
+
+### What it shows
+
+- **Traffic** -- page views and unique visitors over 30 days, new sign-ups per
+  day, the split between the three languages, and the most-opened plejecentre.
+- **Users** -- every registered account with when it joined, whether it is
+  confirmed, and how many places it has saved and rated. No password material,
+  no session tokens.
+- **Comments** -- the moderation queue, with approve and reject, and the
+  approved and rejected lists.
+
+### How the traffic is counted, and what is not stored
+
+**No analytics service, no cookie, no row per request.** The counters are a
+day, a metric name and a number.
+
+Unique visitors need to know whether this person has been seen today, which a
+running total cannot answer, so there is one row per visitor per day holding a
+hash of the address and browser. What makes that anonymous rather than a
+rename is the salt: it is 32 random bytes this process invents at start-up and
+throws away at midnight. Today's hash and tomorrow's are unrelated, so the
+table cannot say that the person who came on Monday came back on Friday. It
+can only say how many came each day, which is the question being asked. The
+address itself is never written down, and rows are deleted after 400 days.
+
+The cost is worth stating: restarting the process mid-day mints a new salt, so
+visitors already counted that day are counted again. Unique visitors are a
+figure that drifts high across a deploy, not an exact count.
+
+### The charts
+
+Hand-drawn SVG, no charting dependency -- four shapes, each about fifty lines
+of arithmetic, against a library that would cost more than the whole admin
+bundle and bring its own opinions about colour.
+
+The two series hues were **validated rather than chosen**: teal against ochre
+clears the colour-vision separation floor and the 3:1 contrast floor on both
+the light and the dark surface, with the dark steps picked for the dark
+surface rather than flipped from the light ones. Two measures never share a
+chart with two scales; the language split is one stacked bar with a legend and
+labels only where they fit; the ranked list is one hue, because those are the
+same measurement of different things rather than eight categories.
 
 ---
 

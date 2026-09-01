@@ -1,0 +1,411 @@
+/*
+ * The admin panel's own stylesheet.
+ *
+ * It shares the token layer with the map and nothing else. The map's CSS is
+ * about a map; none of it applies to a table of accounts, and importing it to
+ * reuse four button rules would ship the whole thing.
+ *
+ * Chart colours are declared here as their own tokens rather than borrowed
+ * from the category palette, because a series in a chart is not an ownership
+ * category and must not inherit its meaning. The two hues were run through the
+ * palette validator in both themes: teal against ochre clears the
+ * colour-vision separation floor and the contrast floor on both surfaces, and
+ * the dark steps are chosen for the dark surface rather than flipped.
+ */
+:root {
+  --chart-1: #00887b;
+  --chart-2: #c8763f;
+  --chart-3: #987ec7;
+  --chart-area: rgb(0 136 123 / 0.1);
+  --chart-grid: var(--border-subtle);
+}
+:root[data-theme='dark'] {
+  --chart-1: #27a295;
+  --chart-2: #c8763f;
+  --chart-3: #987ec7;
+  --chart-area: rgb(39 162 149 / 0.14);
+  --chart-grid: var(--border-subtle);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: var(--space-5);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+}
+:root[dir='rtl'] body { font-family: var(--font-sans-rtl, var(--font-sans)); }
+
+.admin {
+  max-inline-size: 68rem;
+  margin-inline: auto;
+}
+
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ head -- */
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+.head__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight, normal);
+}
+.head__sub {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-block-end: var(--space-4);
+  border-block-end: var(--border-hairline) solid var(--border-subtle);
+}
+.tab {
+  padding: var(--space-2) var(--space-3);
+  min-block-size: 2.75rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  background: none;
+  border: 0;
+  border-block-end: var(--border-thick) solid transparent;
+  cursor: pointer;
+}
+.tab:hover { color: var(--text-primary); background: var(--interactive-hover-bg); }
+.tab[aria-current='page'] {
+  color: var(--text-brand);
+  border-block-end-color: var(--border-brand);
+}
+.tab:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+/* ----------------------------------------------------------------- tiles -- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+.tile {
+  padding: var(--space-3);
+  background: var(--surface-raised);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+.tile__label {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+/* The hero figure. One per tile, and the only thing on this page allowed to
+   lead. */
+.tile__value {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  font-variant-numeric: tabular-nums;
+}
+.tile__note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* ----------------------------------------------------------------- cards -- */
+
+.card {
+  position: relative;
+  padding: var(--space-4);
+  margin-block-end: var(--space-4);
+  background: var(--surface-raised);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+.card__title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+.card__note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.card__body { margin-block-start: var(--space-3); }
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--space-4);
+}
+.grid2 .card { margin-block-end: 0; }
+.quiet { color: var(--text-secondary); font-size: var(--text-sm); margin: 0; }
+.privacy {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  max-inline-size: 46rem;
+}
+
+/* ---------------------------------------------------------------- charts -- */
+
+.chart { inline-size: 100%; block-size: auto; display: block; }
+/* Recessive: hairline, solid, one step off the surface. Never dashed. */
+.chart .grid { stroke: var(--chart-grid); stroke-width: 1; }
+.chart .tick {
+  fill: var(--text-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  /*
+   * The plot's geometry is left-to-right in every language -- time runs along
+   * the x axis the way the arithmetic laid it out -- so the text has to be
+   * too. Inheriting the page's RTL direction flipped what `text-anchor="end"`
+   * means, and the last date ran off the right edge of the viewBox and was
+   * clipped to its final three letters. The words inside each label still
+   * shape right-to-left; only the anchoring is pinned.
+   */
+  direction: ltr;
+}
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .line--a { stroke: var(--chart-1); }
+.chart .line--b { stroke: var(--chart-2); }
+.chart .area { fill: var(--chart-area); stroke: none; }
+/* A 2px ring in the surface colour, so an end-dot stays legible where the two
+   series cross. */
+.chart .dot { stroke: var(--surface-raised); stroke-width: 2; }
+.chart .dot--a { fill: var(--chart-1); }
+.chart .dot--b { fill: var(--chart-2); }
+.chart .col { fill: var(--chart-1); }
+.chart .hit { fill: transparent; }
+.chart .cross { stroke: var(--border-strong); stroke-width: 1; }
+/*
+ * `hidden` on an SVG element is not the browser's business the way it is on an
+ * HTML one -- the UA stylesheet's [hidden] rule does not reach in here, so the
+ * crosshair sat parked at x=0 looking like a y-axis. The third control in this
+ * project to need its hidden state spelled out.
+ */
+.chart .cross[hidden] { display: none; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.legend__item { display: inline-flex; align-items: center; gap: var(--space-1); }
+.legend__n { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.legend__key {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  border-radius: var(--radius-xs);
+  background: var(--chart-1);
+}
+.legend__key[data-series='1'] { background: var(--chart-2); }
+.legend__key[data-series='2'] { background: var(--chart-3); }
+
+.tip {
+  position: absolute;
+  inset-block-start: 3.5rem;
+  transform: translateX(-50%);
+  padding: var(--space-2);
+  font-size: var(--text-xs);
+  background: var(--surface-raised);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  white-space: nowrap;
+}
+:root[dir='rtl'] .tip { transform: translateX(50%); }
+.tip[hidden] { display: none; }
+.tip__day { margin: 0 0 var(--space-1); font-weight: var(--weight-semibold); }
+.tip__row { display: flex; align-items: center; gap: var(--space-1); margin: 0; }
+
+/* Ranked bars: one hue, the label beside each row carrying the identity. */
+.ranked { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.ranked__row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 12rem) 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+.ranked__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranked__track {
+  block-size: 0.75rem;
+  background: var(--surface-inset);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.ranked__fill { display: block; block-size: 100%; background: var(--chart-1); border-radius: var(--radius-xs); }
+.ranked__value { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+
+/* One stacked bar. The 2px gap between segments is surface colour doing the
+   separating -- never a stroke around each block. */
+.share {
+  display: flex;
+  gap: 2px;
+  block-size: 1.5rem;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.share__seg {
+  display: grid;
+  place-items: center;
+  min-inline-size: 2px;
+  background: var(--chart-1);
+  font-size: var(--text-2xs);
+  color: var(--text-on-brand);
+}
+.share__seg[data-series='1'] { background: var(--chart-2); }
+.share__seg[data-series='2'] { background: var(--chart-3); }
+
+/* ---------------------------------------------------------------- tables -- */
+
+.tablewrap { overflow-x: auto; margin-block-start: var(--space-3); }
+.table { inline-size: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th,
+.table td {
+  padding: var(--space-2);
+  text-align: start;
+  border-block-end: var(--border-hairline) solid var(--border-subtle);
+  white-space: nowrap;
+}
+.table th {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.table .num { text-align: end; font-variant-numeric: tabular-nums; }
+/* Addresses are read character by character, so they are set in a face where
+   a zero and an O are different shapes. */
+.mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: var(--text-xs); }
+
+/* ------------------------------------------------------------ moderation -- */
+
+.filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block-start: var(--space-3); }
+.chipbtn {
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  background: var(--surface-raised);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.chipbtn[aria-pressed='true'] {
+  color: var(--chip-selected-fg);
+  background: var(--chip-selected-bg);
+  border-color: var(--chip-selected-border);
+}
+.chipbtn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.chipbtn__n { font-variant-numeric: tabular-nums; }
+
+.revs { display: grid; gap: var(--space-3); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+.rev {
+  padding: var(--space-3);
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+}
+.rev__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.rev__stars { color: var(--text-primary); font-weight: var(--weight-semibold); }
+.rev__place { font-weight: var(--weight-medium); }
+.rev__body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rev__acts { display: flex; gap: var(--space-2); margin: var(--space-3) 0 0; }
+.rev__state { margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-secondary); }
+
+/* ----------------------------------------------------------------- gate --- */
+
+.gate {
+  max-inline-size: 32rem;
+  margin: var(--space-16) auto;
+  text-align: center;
+}
+.gate__title { margin: 0 0 var(--space-2); font-size: var(--text-xl); }
+.gate__body { margin: 0 0 var(--space-4); color: var(--text-secondary); }
+
+/* --------------------------------------------------------------- buttons -- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.btn--primary { color: var(--text-on-brand); background: var(--action-primary); }
+.btn--primary:hover { background: var(--action-primary-hover); }
+.btn--secondary {
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border-color: var(--border-default);
+}
+.btn--secondary:hover { background: var(--interactive-hover-bg); }
+.btn--ghost { color: var(--text-secondary); background: none; }
+.btn--ghost:hover { color: var(--text-primary); background: var(--interactive-hover-bg); }
+.btn[disabled] { opacity: 0.6; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

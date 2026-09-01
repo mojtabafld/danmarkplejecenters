@@ -128,6 +128,58 @@ CREATE TABLE IF NOT EXISTS notes (
   PRIMARY KEY (user_id, plejecenter_id)
 );
 
+-- One review per person per plejecenter, upserted rather than appended: a
+-- second visit changes your mind, it does not give you a second vote.
+--
+-- The stars and the words are moderated differently on purpose. A star is a
+-- number in an average and counts the moment it is cast; written text is
+-- published under the site's name to everybody, so it waits for a human. That
+-- is why the status column gates the body and never the rating; see reviews.mjs.
+CREATE TABLE IF NOT EXISTS reviews (
+  id             BIGSERIAL PRIMARY KEY,
+  user_id        BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plejecenter_id TEXT NOT NULL,
+  stars          SMALLINT NOT NULL,
+  body           TEXT NOT NULL DEFAULT '',
+  status         TEXT NOT NULL DEFAULT 'pending',
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  decided_at     TIMESTAMPTZ,
+  decided_by     BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE (user_id, plejecenter_id)
+);
+
+CREATE INDEX IF NOT EXISTS reviews_place_idx ON reviews(plejecenter_id);
+CREATE INDEX IF NOT EXISTS reviews_pending_idx ON reviews(created_at) WHERE status = 'pending';
+
+-- Traffic, as counters rather than events.
+--
+-- There is no row per visit and nothing that identifies a person: a day, what
+-- is being counted, and how many. The metric is 'view' for a page load,
+-- 'locale:<code>' for which language it was read in, and 'place:<id>' for a
+-- plejecenter someone opened.
+CREATE TABLE IF NOT EXISTS counters (
+  day    DATE NOT NULL,
+  metric TEXT NOT NULL,
+  n      BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, metric)
+);
+
+-- Unique visitors, and the reason this is one row per visitor per day rather
+-- than a counter: counting distinct people needs to know whether this one has
+-- been seen today, which a running total cannot answer.
+--
+-- What is stored is a hash of the address and browser under a random salt that
+-- this process invents at start-up and throws away at midnight. It cannot be
+-- reversed to an address, and the same visitor tomorrow hashes to something
+-- unrelated, so there is nothing here that follows anybody between days. Rows
+-- older than the retention window are deleted outright.
+CREATE TABLE IF NOT EXISTS visitor_days (
+  day     DATE NOT NULL,
+  visitor TEXT NOT NULL,
+  PRIMARY KEY (day, visitor)
+);
+
 -- Added after the first release, so it has to be an ALTER rather than part of
 -- the CREATE: an existing database already has the table and would skip it.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;

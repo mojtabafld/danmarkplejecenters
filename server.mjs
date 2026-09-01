@@ -16,9 +16,11 @@ import { stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import * as admin from './server/admin.mjs';
 import * as api from './server/api.mjs';
 import * as db from './server/db.mjs';
 import * as mail from './server/mail.mjs';
+import * as traffic from './server/traffic.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('./dist', import.meta.url)));
 const PORT = Number(process.env.PORT) || 8080;
@@ -144,6 +146,22 @@ if (db.connectionString()) {
   // deployment is visible in the runtime log rather than found by whoever
   // tries to register first.
   console.log('database status:', JSON.stringify(db.status()));
+
+  // Traffic rows past the retention window are dropped at start-up and once a
+  // day after that. A deploy is the one moment this process is certain to be
+  // awake, and a daily timer covers an instance that stays up for months.
+  if (db.isReady()) {
+    const sweep = () => traffic.prune().catch((err) => console.error('prune failed:', err.message));
+    sweep();
+    setInterval(sweep, 24 * 3600_000).unref?.();
+  }
+
+  console.log(
+    'admin panel:',
+    admin.isConfigured()
+      ? `${admin.adminEmails().length} address(es) in ADMIN_EMAILS`
+      : 'no ADMIN_EMAILS set, /admin will refuse everybody',
+  );
 } else {
   console.log('no DATABASE_URL, accounts disabled');
 }

@@ -2210,3 +2210,218 @@ a.btn { text-decoration: none; }
   transform-box: fill-box;
   transform-origin: center;
 }
+
+/* -------------------------------------------------------------- ratings -- */
+/*
+ * The rating block inside a plejecentre's card, and the score on a list row.
+ *
+ * The star control is five real radio inputs with the input itself visually
+ * hidden and the star drawn by its label. Keyboard behaviour, focus order and
+ * the screen-reader announcement all come from the browser; the only thing
+ * this stylesheet does is decide what a checked radio looks like.
+ */
+.rv {
+  margin-block-start: var(--space-5);
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-hairline) solid var(--border-subtle);
+}
+.rv__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.rv__subtitle {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+}
+.rv__quiet {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.rv__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-end: var(--space-3);
+}
+.rv__score {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.rv__scoreSide { display: grid; gap: var(--space-1); }
+.rv__count {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* A row of stars is one image with one label, so the svgs are laid out as a
+   line and never spoken individually. */
+.rv__stars { display: inline-flex; }
+.rv__starsInner { display: inline-flex; gap: 0.0625rem; }
+.rv__stars svg { inline-size: 1rem; block-size: 1rem; display: block; }
+.rv__stars--sm svg { inline-size: 0.875rem; block-size: 0.875rem; }
+/* Solid stars carry the value; hollow ones are the scale it is read against. */
+.rv__stars svg[fill='currentColor'] { color: var(--rating-star); }
+.rv__stars svg[fill='none'] { color: var(--rating-star-empty); }
+
+.rv__spread {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+.rv__spreadRow {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr 2rem;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.rv__spreadN { text-align: end; }
+.rv__bar {
+  block-size: 0.375rem;
+  border-radius: var(--radius-pill);
+  background: var(--rating-bar-track);
+  overflow: hidden;
+}
+.rv__barFill {
+  display: block;
+  block-size: 100%;
+  background: var(--rating-bar);
+  border-radius: var(--radius-pill);
+}
+
+.rv__form { display: grid; gap: var(--space-2); }
+.rv__fieldset { margin: 0; padding: 0; border: 0; }
+.rv__legend {
+  padding: 0;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.rv__picks {
+  display: flex;
+  gap: var(--space-1);
+  margin-block-start: var(--space-1);
+}
+.rv__pick {
+  /* 44px of target for a 24px star: the row is the one control on this card
+     somebody taps with a thumb while holding a phone. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.rv__pickMark { display: flex; color: var(--rating-star-empty); }
+.rv__pickMark svg { inline-size: 1.75rem; block-size: 1.75rem; display: block; }
+/*
+ * A star lights up when it, or any star after it, is chosen -- which is what
+ * "four out of five" looks like everywhere. `:has` walks forward from this
+ * label to a later checked input; the sibling combinator alone can only look
+ * backwards, which would light the wrong end of the row.
+ */
+.rv__pick:has(~ .rv__pick input:checked) .rv__pickMark,
+.rv__pick:has(input:checked) .rv__pickMark {
+  color: var(--rating-star);
+}
+.rv__pick:hover .rv__pickMark { color: var(--rating-star); }
+.rv__pick:has(input:focus-visible) {
+  box-shadow: var(--shadow-focus);
+}
+
+.rv__label {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.rv__body {
+  inline-size: 100%;
+  padding: var(--space-2);
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background-color: var(--surface-raised);
+  border: var(--border-hairline) solid var(--field-border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+.rv__body:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.rv__hint,
+.rv__state,
+.rv__msg {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.rv__state[data-state='rejected'] { color: var(--feedback-error-fg); }
+.rv__state[data-state='approved'] { color: var(--text-brand); }
+.rv__msg[data-bad='true'] { color: var(--feedback-error-fg); }
+.rv__msg:empty { display: none; }
+.rv__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rv__gate { margin-block-start: var(--space-2); }
+
+.rv__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rv__item {
+  padding: var(--space-3);
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+}
+.rv__itemHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-1);
+}
+.rv__when { font-size: var(--text-xs); color: var(--text-secondary); }
+.rv__text {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The score on a list row: the number is the message, the star only says
+   what kind of number it is. */
+.result__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+}
+.result__rating svg {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  display: block;
+  color: var(--rating-star);
+}
+.result__score { font-variant-numeric: tabular-nums; }
