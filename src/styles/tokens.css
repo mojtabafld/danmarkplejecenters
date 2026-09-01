@@ -268,6 +268,17 @@
   --glass-hover: rgb(255 255 255 / 0.5);
   --glass-active: rgb(18 22 22 / 0.08);
   --glass-shadow: 0 1px 2px rgb(18 22 22 / 0.08), 0 8px 24px rgb(18 22 22 / 0.14);
+  /*
+   * The thick pane, for panels rather than controls.
+   *
+   * A menu and a sign-in form carry body text, and body text needs 4.5:1 where
+   * an icon needs 3. On the control pane (0.7) the panels' own secondary text
+   * would sit at 3.1:1 against the darkest thing that pane can composite to,
+   * and the password hint, which is tertiary, worse still. At 0.92 the same
+   * text holds 5.5:1 and the hint 4.1:1, and the blur behind it is what still
+   * makes it glass rather than a solid card.
+   */
+  --glass-panel-bg: rgb(255 255 255 / 0.92);
 
   --shadow-xs: 0 1px 2px rgb(18 22 22 / 0.06);
   --shadow-sm: 0 1px 2px rgb(18 22 22 / 0.06), 0 2px 6px rgb(18 22 22 / 0.05);
@@ -441,6 +452,7 @@
   --glass-hover: rgb(255 255 255 / 0.1);
   --glass-active: rgb(255 255 255 / 0.16);
   --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.6);
+  --glass-panel-bg: rgb(30 33 33 / 0.92);
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.5);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.4);
