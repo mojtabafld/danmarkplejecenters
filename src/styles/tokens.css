@@ -239,6 +239,36 @@
   --map-user-halo: var(--p-neutral-0);
 
   /* Elevation */
+  /* ------------------------------------------------------------- glass --
+   *
+   * The floating controls over the map are a material, not a faded control.
+   * That is the whole difference: an `opacity` fades the glyph with the pane,
+   * where glass leaves the glyph opaque and lets the map through the pane
+   * behind it. The saturate is what stops a blurred map going grey underneath.
+   *
+   * `--glass-sheen` is the specular edge: one bright inset line along the top,
+   * which is what reads as a lit surface rather than a translucent rectangle.
+   */
+  --glass-blur: blur(1.25rem) saturate(180%);
+  /*
+   * 0.7, not lower, and the number is a floor rather than a taste.
+   *
+   * The pane sits over a map whose colours are not ours to choose, so the
+   * worst case is the one that decides: a black street under white glass, or a
+   * white one under dark. At 0.7 the darkest a light pane can composite to is
+   * #B7B7B7, which holds the primary text colour at 7.7:1, and the lightest a
+   * dark pane reaches holds it at 5.6:1. At 0.55 those were 4.8 and 3.5 -- and
+   * with the secondary text colour the glyphs had been drawn in, 1.95:1, which
+   * is a control that disappears over the wrong street.
+   */
+  --glass-bg: rgb(255 255 255 / 0.7);
+  --glass-bg-strong: rgb(255 255 255 / 0.86);
+  --glass-border: rgb(255 255 255 / 0.6);
+  --glass-sheen: rgb(255 255 255 / 0.75);
+  --glass-hover: rgb(255 255 255 / 0.5);
+  --glass-active: rgb(18 22 22 / 0.08);
+  --glass-shadow: 0 1px 2px rgb(18 22 22 / 0.08), 0 8px 24px rgb(18 22 22 / 0.14);
+
   --shadow-xs: 0 1px 2px rgb(18 22 22 / 0.06);
   --shadow-sm: 0 1px 2px rgb(18 22 22 / 0.06), 0 2px 6px rgb(18 22 22 / 0.05);
   --shadow-md: 0 2px 4px rgb(18 22 22 / 0.05), 0 8px 20px rgb(18 22 22 / 0.09);
@@ -400,6 +430,17 @@
   --map-user-ring: var(--p-live-300);
   --map-user-accuracy: var(--p-live-300);
   --map-user-halo: var(--p-neutral-1000);
+
+  /* Glass, dark. The pane tints toward the raised surface rather than toward
+     white, and the sheen drops to a hint -- a bright rim that works on white
+     glass reads as a scratch on dark. */
+  --glass-bg: rgb(30 33 33 / 0.7);
+  --glass-bg-strong: rgb(30 33 33 / 0.88);
+  --glass-border: rgb(255 255 255 / 0.14);
+  --glass-sheen: rgb(255 255 255 / 0.16);
+  --glass-hover: rgb(255 255 255 / 0.1);
+  --glass-active: rgb(255 255 255 / 0.16);
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.6);
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.5);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.4);
