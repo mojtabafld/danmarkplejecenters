@@ -193,8 +193,19 @@ export class PlejecenterMap {
    * thing the map is colour-coded to say. The grey ring around it carries
    * "marked" on its own, as a shape rather than a repaint.
    */
+  /**
+   * A saved place is blue; everything else is coloured by who runs it.
+   *
+   * The saved case has to come first, or the operator match would answer for
+   * every dot and the flag would never be read.
+   */
   private markColor(): ExpressionSpecification {
-    return this.groupColor();
+    return [
+      'case',
+      ['==', ['get', 'visited'], true],
+      token('--map-visited-dot'),
+      this.groupColor(),
+    ];
   }
 
   private groupColor(): ExpressionSpecification {

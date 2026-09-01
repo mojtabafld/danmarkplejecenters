@@ -48,6 +48,23 @@
   --p-live-500: #418EEC;
   --p-live-600: #1A73D5;
 
+  /*
+   * Saved-place blue. A second blue on the map is a risk, and it was measured
+   * rather than eyeballed: the first pick sat 15.1 dE from the live-location
+   * blue, which is confusable, and "where you are" and "one you saved" are the
+   * two things on this map that must never be mistaken for each other, since
+   * both are yours.
+   *
+   * These are 28.7 dE from it in light and 33.4 in dark. The two themes pull in
+   * opposite directions -- light goes darker than the live blue, dark goes
+   * paler than it -- because on each basemap that is the direction with room.
+   * Dark sits 20.4 from the plum used for private centres, which is closer than
+   * ideal; the saved dot also carries a ring no other dot has, and the legend
+   * names it.
+   */
+  --p-save-300: #C3D6F7;
+  --p-save-700: #0D3B7A;
+
   --p-clay-100: #FFE0D9;
   --p-clay-300: #FFA89B;
   --p-clay-500: #DC6256;
@@ -232,7 +249,19 @@
      category of plejecenter. 6.27:1 on the light basemap. The dot keeps its
      operator colour: the ring says "marked" by its shape, and repainting the
      dot as well read as disabled. */
-  --map-visited-ring: var(--p-neutral-700);
+  /*
+   * Saved places are blue, and the dot itself rather than only its ring.
+   *
+   * The ring alone was the earlier answer, on the grounds that the three
+   * operator hues already mean something and a fourth colour would argue with
+   * them. It does argue with them -- a saved kommunal centre no longer shows
+   * that it is kommunal on the map -- and that is the trade being made
+   * deliberately: finding your own places at a glance is worth more than
+   * reading their operator off the dot, which the card and the list both still
+   * say.
+   */
+  --map-visited-dot: var(--p-save-700);
+  --map-visited-ring: var(--p-save-700);
   --map-user-dot: var(--p-live-600);
   --map-user-ring: var(--p-live-500);
   --map-user-accuracy: var(--p-live-600);
@@ -436,7 +465,8 @@
   --map-cluster-ring: rgb(18 22 22 / 0.85);
   --map-pin-ring: var(--p-neutral-1000);
   --map-pin-selected-halo: var(--p-brand-300);
-  --map-visited-ring: var(--p-neutral-300);  /* 10.04:1 on the dark basemap */
+  --map-visited-dot: var(--p-save-300);
+  --map-visited-ring: var(--p-save-300);
   --map-user-dot: var(--p-live-400);
   --map-user-ring: var(--p-live-300);
   --map-user-accuracy: var(--p-live-300);

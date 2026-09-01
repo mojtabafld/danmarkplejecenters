@@ -65,6 +65,7 @@ const geoNote = $('#geoNote');
 const geoNoteText = $('#geoNoteText');
 const railEl = $('#rail');
 const stageEl = $('.stage');
+const legendSaved = $('#legendSaved');
 const live = $('#live');
 const langButton = $<HTMLButtonElement>('#langButton');
 const langMenu = $('#langMenu');
@@ -244,6 +245,14 @@ function setAccountOpen(open: boolean): void {
   if (open) accountPanel.querySelector<HTMLElement>('input, button')?.focus();
 }
 
+/**
+ * True while the panel is asking for an address to send a reset link to.
+ *
+ * A flag rather than something on `account`, because nothing has happened on
+ * the server yet -- it is which form is on screen, not what the account is.
+ */
+let forgotMode = false;
+
 function renderAccount(): void {
   // No database bound on the server: leave the feature out rather than offer a
   // button that can only fail.
@@ -262,7 +271,13 @@ function renderAccount(): void {
       `${esc(t(verifiedNotice === 'ok' ? 'verify.ok' : 'verify.failed'))}</p>`
     : '';
 
-  const heading = account.user || account.pendingEmail ? t('account.title') : t('account.why');
+  const heading = account.resetToken
+    ? t('reset.newTitle')
+    : forgotMode || account.resetSentTo
+      ? t('reset.title')
+      : account.user || account.pendingEmail
+        ? t('account.title')
+        : t('account.why');
   // The close button is part of the panel rather than of each state, so it is
   // there whichever state the panel is in.
   const head =
@@ -272,12 +287,17 @@ function renderAccount(): void {
 
   accountPanel.innerHTML =
     head +
-    (account.user
-      ? signedInMarkup()
-      : notice +
-        (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup()));
+    (account.resetToken
+      ? resetMarkup()
+      : forgotMode || account.resetSentTo
+        ? forgotMarkup()
+        : account.user
+          ? signedInMarkup()
+          : notice +
+            (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup()));
 
   paintDock();
+  paintLegendSaved();
   if (!account.user && store.filters.visitedOnly) store.setVisitedOnly(false);
 }
 
@@ -318,6 +338,52 @@ function pendingMarkup(email: string): string {
   );
 }
 
+/**
+ * "I have forgotten it": ask for the address, and say the same thing back
+ * whatever the server found.
+ *
+ * The message names the address without claiming an account exists for it --
+ * "if there is an account for X" -- because the endpoint deliberately answers
+ * identically either way, and a client that phrased it as a fact would give
+ * away exactly what the server is refusing to.
+ */
+function forgotMarkup(): string {
+  if (account.resetSentTo) {
+    return (
+      `<p class="account__who">${esc(t('reset.sent', { email: account.resetSentTo }))}</p>` +
+      `<p class="account__why">${esc(t('verify.checkSpam'))}</p>` +
+      `<div class="account__actions">` +
+      `<button type="button" class="btn btn--secondary" data-act="back">${esc(t('verify.back'))}</button>` +
+      `</div>`
+    );
+  }
+  return (
+    `<form class="account__form" id="accountForm" novalidate>` +
+    `<p class="account__why">${esc(t('reset.why'))}</p>` +
+    `<label class="account__field"><span>${esc(t('account.email'))}</span>` +
+    `<input class="field__input" type="email" name="email" autocomplete="email" required></label>` +
+    `<p class="account__error" id="accountError" role="alert" hidden></p>` +
+    `<div class="account__actions">` +
+    `<button type="submit" class="btn btn--primary" data-act="forgot">${esc(t('reset.send'))}</button>` +
+    `<button type="button" class="btn btn--secondary" data-act="back">${esc(t('verify.back'))}</button>` +
+    `</div></form>`
+  );
+}
+
+/** Arrived by the link in the mail: one field, and the token is already held. */
+function resetMarkup(): string {
+  return (
+    `<form class="account__form" id="accountForm" novalidate>` +
+    `<label class="account__field"><span>${esc(t('reset.newPassword'))}</span>` +
+    `<input class="field__input" type="password" name="password" autocomplete="new-password" required>` +
+    `<span class="account__hint">${esc(t('account.passwordHint', { n: 10 }))}</span></label>` +
+    `<p class="account__error" id="accountError" role="alert" hidden></p>` +
+    `<div class="account__actions">` +
+    `<button type="submit" class="btn btn--primary" data-act="reset">${esc(t('reset.save'))}</button>` +
+    `</div></form>`
+  );
+}
+
 function signedOutMarkup(): string {
   return (
     `<form class="account__form" id="accountForm" novalidate>` +
@@ -330,7 +396,9 @@ function signedOutMarkup(): string {
     `<div class="account__actions">` +
     `<button type="submit" class="btn btn--primary" data-act="signin">${esc(t('account.signIn'))}</button>` +
     `<button type="button" class="btn btn--secondary" data-act="signup">${esc(t('account.signUp'))}</button>` +
-    `</div></form>`
+    `</div>` +
+    `<button type="button" class="account__link" data-act="forgotstart">${esc(t('account.forgot'))}</button>` +
+    `</form>`
   );
 }
 
@@ -382,8 +450,46 @@ accountButton.addEventListener('click', () => setAccountOpen(accountPanel.hidden
 
 accountPanel.addEventListener('submit', (e) => {
   e.preventDefault();
-  void submitCredentials('signin');
+  if (account.resetToken) void submitReset();
+  else if (forgotMode) void submitForgot();
+  else void submitCredentials('signin');
 });
+
+/** Ask for the link, and say so whatever the server found. */
+async function submitForgot(): Promise<void> {
+  const form = accountPanel.querySelector<HTMLFormElement>('#accountForm');
+  const email = (new FormData(form!).get('email') as string | null)?.trim() ?? '';
+  const err = await account.forgot(email);
+  if (err) {
+    showAuthError(err);
+    return;
+  }
+  forgotMode = false;   // resetSentTo now decides what the panel shows
+  renderAccount();
+}
+
+/** Set the new password from the link, then hand back to sign-in. */
+async function submitReset(): Promise<void> {
+  const form = accountPanel.querySelector<HTMLFormElement>('#accountForm');
+  const password = (new FormData(form!).get('password') as string | null) ?? '';
+  const err = await account.resetPassword(password);
+  // The token is spent either way, so it must not survive in the address bar
+  // to be pasted, shared or reloaded into a dead form.
+  history.replaceState(null, '', location.pathname);
+  if (err) {
+    // A spent or expired token has already cleared itself, so the panel is
+    // back on the sign-in form and the message belongs there.
+    renderAccount();
+    showAuthError(err);
+    return;
+  }
+  renderAccount();
+  const note = document.createElement('p');
+  note.className = 'account__note';
+  note.setAttribute('role', 'status');
+  note.textContent = t('reset.done');
+  accountPanel.append(note);
+}
 
 accountPanel.addEventListener('click', (e) => {
   const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
@@ -401,7 +507,17 @@ accountPanel.addEventListener('click', (e) => {
     // Show the saved ones on the map, and get out of the way to reveal them.
     store.setVisitedOnly(true);
     setAccountOpen(false);
-  } else if (act === 'back') account.clearPending();
+  } else if (act === 'forgotstart') {
+    forgotMode = true;
+    renderAccount();
+    accountPanel.querySelector<HTMLInputElement>('input[name=email]')?.focus();
+  } else if (act === 'back') {
+    // One "back" for both detours: whichever the panel is in, it returns to
+    // the sign-in form.
+    forgotMode = false;
+    account.clearReset();
+    account.clearPending();
+  }
   else if (act === 'resend') {
     const email = (e.target as HTMLElement).closest<HTMLElement>('[data-email]')?.dataset.email ?? '';
     void account.resend(email).then(() => {
@@ -548,6 +664,16 @@ function setDockOpen(open: boolean): void {
   if (open) dockSearchInput.focus();
 }
 
+/**
+ * The legend's saved row, shown only once there is something saved.
+ *
+ * A legend explaining a colour that is not on the map is worse than no row at
+ * all -- and signed out there are no saved places, so the blue never appears.
+ */
+function paintLegendSaved(): void {
+  legendSaved.hidden = !account.user || account.visited.size === 0;
+}
+
 /** Icon only, so the label is the accessible name and the title on hover. */
 function paintDock(): void {
   /*
@@ -624,6 +750,7 @@ function syncDock(): void {
   // The search segment's face depends on the filters, so it is repainted with
   // them rather than only when the dock is opened or the language changes.
   paintDock();
+  paintLegendSaved();
 }
 
 /**
@@ -1232,6 +1359,21 @@ intro.openIfUnseen();
  * /?verified=1 or 0; this turns that into a sentence and then removes the
  * parameter, so a reload or a shared URL does not repeat the message.
  */
+/*
+ * Arrived by a reset link. The token comes out of the address bar and into
+ * memory immediately: it is a key to the account, and leaving it in the URL
+ * leaves it in the history, in a shared link and in whatever the browser syncs.
+ */
+{
+  const token = new URLSearchParams(location.search).get('reset');
+  if (token) {
+    history.replaceState(null, '', location.pathname);
+    account.resetToken = token;
+    renderAccount();
+    setAccountOpen(true);
+  }
+}
+
 {
   const verified = new URLSearchParams(location.search).get('verified');
   if (verified !== null) {

@@ -136,6 +136,53 @@ export async function sendVerification(to, url) {
   });
 }
 
+/** The reset message, in all three languages for the same reason as above. */
+function resetBody(url) {
+  const text = [
+    'Vælg en ny adgangskode til din konto:',
+    'Choose a new password for your account:',
+    'یک گذرواژهٔ تازه برای حساب خود انتخاب کنید:',
+    '',
+    url,
+    '',
+    'Linket udløber om en time. / The link expires in one hour. / این پیوند تا یک ساعت معتبر است.',
+    'Hvis du ikke har bedt om en ny adgangskode, kan du se bort fra denne mail;',
+    'din nuværende adgangskode virker stadig.',
+    'If you did not ask for a new password, you can ignore this message;',
+    'your current password still works.',
+    'اگر شما درخواست گذرواژهٔ تازه نداده‌اید، این پیام را نادیده بگیرید؛',
+    'گذرواژهٔ کنونی شما همچنان کار می‌کند.',
+  ].join('\n');
+
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const html =
+    `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:16px;line-height:1.5;color:#1E2121">` +
+    `<p>Vælg en ny adgangskode til din konto:</p>` +
+    `<p>Choose a new password for your account:</p>` +
+    `<p dir="rtl">یک گذرواژهٔ تازه برای حساب خود انتخاب کنید:</p>` +
+    `<p style="margin:24px 0"><a href="${esc(url)}" ` +
+    `style="display:inline-block;padding:12px 20px;background:#006D63;color:#fff;` +
+    `text-decoration:none;border-radius:10px">Vælg ny / Choose new / انتخاب</a></p>` +
+    `<p style="font-size:13px;color:#575F5F">${esc(url)}</p>` +
+    `<p style="font-size:13px;color:#575F5F">Linket udløber om en time. ` +
+    `The link expires in one hour. <span dir="rtl">این پیوند تا یک ساعت معتبر است.</span></p>` +
+    `<p style="font-size:13px;color:#575F5F">Hvis du ikke har bedt om det, kan du se bort fra denne mail. ` +
+    `If you did not ask for this, you can ignore this message.</p>` +
+    `</div>`;
+  return { text, html };
+}
+
+export async function sendReset(to, url) {
+  const { text, html } = resetBody(url);
+  await mailer().sendMail({
+    from: FROM(),
+    to,
+    subject: 'Ny adgangskode / New password / گذرواژهٔ تازه',
+    text,
+    html,
+  });
+}
+
 /**
  * Which of the expected variables the process can actually see.
  *

@@ -209,6 +209,8 @@ export async function handle(req, res, { secure }) {
     if (path === '/api/auth/signup' && method === 'POST') return await signup(req, res, secure);
     if (path === '/api/auth/resend' && method === 'POST') return await resend(req, res);
     if (path === '/verify' && method === 'GET') return await verify(req, res, url);
+    if (path === '/api/auth/forgot' && method === 'POST') return await forgot(req, res);
+    if (path === '/api/auth/reset' && method === 'POST') return await resetPassword(req, res);
     if (path === '/api/auth/signin' && method === 'POST') return await signin(req, res, secure);
     if (path === '/api/auth/signout' && method === 'POST') return await signout(req, res, secure);
     if (path === '/api/auth/me' && method === 'GET') return await me(req, res);
@@ -308,6 +310,72 @@ async function verify(req, res, url) {
     'cache-control': 'no-store',
   });
   res.end();
+  return true;
+}
+
+/**
+ * Ask for a reset link.
+ *
+ * Always answers the same way, whether or not the address has an account. The
+ * reply to "I forgot my password" must not be a way to find out who is
+ * registered here -- and this is a site about care homes, where the list of
+ * people with accounts is not a neutral fact about them.
+ *
+ * That means the rate limit has to count every attempt rather than only the
+ * ones that found somebody, or the difference in behaviour would leak the
+ * same thing the identical response is hiding.
+ */
+async function forgot(req, res) {
+  const who = clientKey(req);
+  if (overLimit('forgot', who, 5)) { send(res, 429, { error: 'too_many' }); return true; }
+  countAttempt('forgot', who);
+
+  const { email } = await readJson(req);
+  if (!auth.isPlausibleEmail(email ?? '')) { send(res, 400, { error: 'bad_email' }); return true; }
+  if (!mail.isConfigured()) { send(res, 409, { error: 'mail_unavailable' }); return true; }
+
+  const record = await auth.findUser(email);
+  if (record) {
+    const token = await auth.createResetToken(record.id);
+    const link = `${publicOrigin(req)}/?reset=${encodeURIComponent(token)}`;
+    try {
+      await mail.sendReset(record.email, link);
+    } catch (err) {
+      // Never logged with the address: the log would then be enough to take
+      // over the account.
+      console.error('reset mail failed:', err?.message);
+    }
+  }
+  send(res, 200, { sent: true });
+  return true;
+}
+
+/**
+ * Set a new password from a reset link.
+ *
+ * The token is checked before the password is, so a valid-looking password
+ * against a dead link cannot be used to tell a real token from an expired one
+ * by which error comes back.
+ */
+async function resetPassword(req, res) {
+  const who = clientKey(req);
+  if (overLimit('reset', who, 10)) { send(res, 429, { error: 'too_many' }); return true; }
+  countAttempt('reset', who);
+
+  const { token, password } = await readJson(req);
+  const userId = await auth.consumeResetToken(token);
+  if (!userId) { send(res, 400, { error: 'bad_token' }); return true; }
+
+  const problem = auth.passwordProblem(password);
+  if (problem) {
+    // The token is spent either way -- consumeResetToken deletes it -- so say
+    // so plainly rather than leaving somebody typing into a dead form.
+    send(res, 400, { error: problem, min: auth.PASSWORD_MIN, spent: true });
+    return true;
+  }
+
+  await auth.setPassword(userId, password);
+  send(res, 200, { reset: true });
   return true;
 }
 

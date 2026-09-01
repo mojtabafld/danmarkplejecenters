@@ -19,6 +19,7 @@ export type AuthError =
   | 'too_long'
   | 'email_taken'
   | 'bad_credentials'
+  | 'bad_token'
   | 'too_many'
   | 'offline'
   | 'server_error';
@@ -58,6 +59,13 @@ export class Account {
   pendingEmail: string | null = null;
   /** The address sign-in refused because it is not confirmed yet. */
   unverifiedEmail: string | null = null;
+  /** Set once a reset link has been asked for: the panel says so and stops. */
+  resetSentTo: string | null = null;
+  /**
+   * A reset token from the link in the mail, if this page was opened by one.
+   * Its presence is what puts the panel into "choose a new password".
+   */
+  resetToken: string | null = null;
 
   private listeners = new Set<Listener>();
 
@@ -191,6 +199,62 @@ export class Account {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Ask for a reset link.
+   *
+   * Reports success whatever the server found, because the server answers the
+   * same way whether or not the address has an account -- saying more here
+   * would put back the account-enumeration the endpoint is careful to avoid.
+   */
+  async forgot(email: string): Promise<AuthError | null> {
+    let status: number;
+    let data: Record<string, unknown>;
+    try {
+      ({ status, data } = await call('POST', '/api/auth/forgot', { email }));
+    } catch {
+      return 'offline';
+    }
+    if (status === 200) {
+      this.resetSentTo = email;
+      this.emit();
+      return null;
+    }
+    return (data.error as AuthError) ?? 'failed';
+  }
+
+  /** Set a new password from the link. Ends every session, so it signs out. */
+  async resetPassword(password: string): Promise<AuthError | null> {
+    const token = this.resetToken;
+    if (!token) return 'bad_token';
+    let status: number;
+    let data: Record<string, unknown>;
+    try {
+      ({ status, data } = await call('POST', '/api/auth/reset', { token, password }));
+    } catch {
+      return 'offline';
+    }
+    if (status === 200) {
+      // The token is spent and every session with it, so whoever was signed in
+      // here is not any more.
+      this.resetToken = null;
+      this.user = null;
+      this.visited.clear();
+      this.notes.clear();
+      this.emit();
+      return null;
+    }
+    // A spent token cannot be retried, so the form goes away with it.
+    if (data.spent === true || data.error === 'bad_token') this.resetToken = null;
+    this.emit();
+    return (data.error as AuthError) ?? 'failed';
+  }
+
+  clearReset(): void {
+    this.resetSentTo = null;
+    this.resetToken = null;
+    this.emit();
   }
 
   clearPending(): void {

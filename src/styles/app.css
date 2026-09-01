@@ -959,6 +959,10 @@ a.btn { text-decoration: none; }
   min-inline-size: 0;
 }
 
+/* An author `display` beats the browser's `[hidden]` -- the lesson the tour
+   overlay taught this codebase the hard way. */
+.legend__row[hidden] { display: none; }
+
 .legend__mark {
   inline-size: 0.625rem;
   block-size: 0.625rem;
@@ -1936,6 +1940,31 @@ a.btn { text-decoration: none; }
 .account__field .field__input { padding-inline: var(--space-3); }
 
 .account__hint { font-weight: var(--weight-regular); color: var(--text-tertiary); }
+
+/*
+ * "Forgotten your password?" -- a real button, not an anchor. It does not
+ * navigate; it swaps the form in place, and a link that goes nowhere is a lie
+ * to anyone reading the page with a screen reader.
+ */
+.account__link {
+  justify-self: start;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--action-primary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+/* No underline at rest. It keeps one on hover and on keyboard focus, where an
+   underline is doing a different job -- confirming what is about to be
+   activated rather than advertising that something is. */
+.account__link:hover,
+.account__link:focus-visible {
+  color: var(--action-primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
 
 .account__note {
   margin: 0;
