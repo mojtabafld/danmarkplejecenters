@@ -1954,11 +1954,17 @@ a.btn { text-decoration: none; }
   color: var(--action-primary);
   background: transparent;
   border: 0;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
   cursor: pointer;
 }
-.account__link:hover { color: var(--action-primary-hover); }
+/* No underline at rest. It keeps one on hover and on keyboard focus, where an
+   underline is doing a different job -- confirming what is about to be
+   activated rather than advertising that something is. */
+.account__link:hover,
+.account__link:focus-visible {
+  color: var(--action-primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
 
 .account__note {
   margin: 0;
