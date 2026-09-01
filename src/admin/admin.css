@@ -277,6 +277,19 @@ body {
 .ranked__fill { display: block; block-size: 100%; background: var(--chart-1); border-radius: var(--radius-xs); }
 .ranked__value { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 
+/*
+ * Opened, the list can run to every plejecentre anybody has looked at, so it
+ * scrolls inside the card rather than pushing the privacy note and the rest of
+ * the page below the fold. Collapsed there is nothing to scroll and no reason
+ * for a scroll container, so the cap only applies when it is open.
+ */
+.ranked__wrap[data-open='true'] {
+  max-block-size: 24rem;
+  overflow-y: auto;
+  padding-inline-end: var(--space-1);
+}
+.ranked__more { margin-block-start: var(--space-3); }
+
 /* One stacked bar. The 2px gap between segments is surface colour doing the
    separating -- never a stroke around each block. */
 .share {

@@ -211,6 +211,22 @@ export async function topPlaces(days = 30, limit = 8) {
 }
 
 /**
+ * How many distinct plejecentre were opened at all in the window.
+ *
+ * The panel needs this before it needs the list: the control that expands the
+ * ranked card has to know whether there is anything behind it, and saying so
+ * costs one count rather than a hundred and fifty rows nobody asked for.
+ */
+export async function placeCount(days = 30) {
+  const { rows } = await db.query(
+    `SELECT count(DISTINCT metric)::int AS n FROM counters
+      WHERE metric LIKE 'place:%' AND day >= $1::date`,
+    [daysAgo(days - 1)],
+  );
+  return rows[0]?.n ?? 0;
+}
+
+/**
  * Totals for the tiles at the top of the panel.
  *
  * Five separate queries rather than five scalar subqueries in one SELECT, for

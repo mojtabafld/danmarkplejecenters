@@ -57,6 +57,8 @@ export type AdminKey =
   | 'showApproved'
   | 'showRejected'
   | 'stars'
+  | 'showAll'
+  | 'showFewer'
   | 'privacy';
 
 type Dict = Record<AdminKey, string>;
@@ -111,6 +113,8 @@ const DA: Dict = {
   showApproved: 'Godkendte',
   showRejected: 'Afviste',
   stars: '{n} ud af 5',
+  showAll: 'Vis alle ({n})',
+  showFewer: 'Vis færre',
   privacy:
     'Trafiktal er anonyme: ingen IP-adresser, ingen cookies. Besøgende tælles med et dagligt roterende ' +
     'hashsalt, så tallene ikke kan følge nogen fra dag til dag.',
@@ -166,6 +170,8 @@ const EN: Dict = {
   showApproved: 'Approved',
   showRejected: 'Rejected',
   stars: '{n} out of 5',
+  showAll: 'Show all ({n})',
+  showFewer: 'Show fewer',
   privacy:
     'Traffic figures are anonymous: no IP addresses, no cookies. Visitors are counted with a salt that ' +
     'rotates daily, so the numbers cannot follow anyone from one day to the next.',
@@ -221,6 +227,8 @@ const FA: Dict = {
   showApproved: 'تأییدشده',
   showRejected: 'ردشده',
   stars: '{n} از ۵',
+  showAll: 'نمایش همه ({n})',
+  showFewer: 'نمایش کمتر',
   privacy:
     'آمار ترافیک ناشناس است: بدون نشانی IP و بدون کوکی. بازدیدکنندگان با نمکی که هر روز عوض می‌شود شمرده ' +
     'می‌شوند، بنابراین این اعداد نمی‌توانند کسی را از روزی به روز دیگر دنبال کنند.',

@@ -39,6 +39,8 @@ type Overview = {
   series: Array<{ day: string; views: number; visitors: number }>;
   locales: Array<{ locale: string; n: number }>;
   top: Array<{ place: string; n: number }>;
+  /** How many distinct plejecentre were opened; the top list is a slice of it. */
+  topTotal: number;
   users: { total: number; verified: number; week: number };
   signups: Array<{ day: string; n: number }>;
   reviews: { total: number; pending: number; approved: number; rejected: number; average: number | null };
@@ -178,16 +180,39 @@ function trafficView(d: Overview): string {
       ),
     ) +
     `</div>` +
-    card(
-      t('topTitle'),
-      '',
-      rankedBars(
-        d.top.map((r) => ({ label: PLACE_NAME.get(r.place) ?? r.place, value: r.n })),
-        { fmt: n, empty: t('noData') },
-      ),
-    ) +
+    card(t('topTitle'), '', topBody(d)) +
     `<p class="privacy">${esc(t('privacy'))}</p>`
   );
+}
+
+/**
+ * The ranked list, and the control that opens the rest of it.
+ *
+ * The overview carries the top eight; everything past that is fetched only if
+ * somebody asks for it. The bars stay comparable across the two states because
+ * the scale comes from the first row either way, and the first row does not
+ * change when the tail arrives.
+ */
+function topBody(d: Overview): string {
+  const rows = (topAll ?? d.top).map((r) => ({
+    label: PLACE_NAME.get(r.place) ?? r.place,
+    value: r.n,
+  }));
+  const shown = topOpen ? rows : rows.slice(0, d.top.length);
+  const list =
+    `<div class="ranked__wrap" data-open="${topOpen}" id="topList">` +
+    rankedBars(shown, { fmt: n, empty: t('noData') }) +
+    `</div>`;
+
+  // No control when there is nothing behind it. A button that expands to the
+  // same eight rows is a button that lies.
+  const total = topMore ?? d.topTotal;
+  const more = total <= d.top.length ? '' :
+    `<button type="button" class="btn btn--secondary ranked__more" id="topToggle" ` +
+    `aria-expanded="${topOpen}" aria-controls="topList">` +
+    `${esc(topOpen ? t('showFewer') : t('showAll', { n: n(total) }))}</button>`;
+
+  return list + more;
 }
 
 /* ----------------------------------------------------------------- users -- */
@@ -283,6 +308,11 @@ let userRows: UserRow[] = [];
 let userTotal = 0;
 let queueStatus = 'pending';
 let queueRows: QueueRow[] = [];
+/** The full ranked list, once somebody has asked for it. */
+let topAll: Array<{ place: string; n: number }> | null = null;
+/** How many there are in total, which is what the button has to say. */
+let topMore: number | null = null;
+let topOpen = false;
 
 function refused(noAdmins: boolean): void {
   root.innerHTML =
@@ -329,6 +359,14 @@ async function loadUsers(offset = 0): Promise<void> {
   userRows = offset === 0 ? data.users : [...userRows, ...data.users];
 }
 
+async function loadPlaces(): Promise<void> {
+  const res = await api('/api/admin/places');
+  if (!res.ok) return;
+  const data = (await res.json()) as { places: Array<{ place: string; n: number }> };
+  topAll = data.places;
+  topMore = data.places.length;
+}
+
 async function loadQueue(): Promise<void> {
   const res = await api(`/api/admin/reviews?status=${encodeURIComponent(queueStatus)}`);
   if (!res.ok) return;
@@ -350,6 +388,15 @@ function wire(): void {
   for (const btn of root.querySelectorAll<HTMLButtonElement>('.tab')) {
     btn.addEventListener('click', () => void go(btn.dataset.tab ?? 'traffic'));
   }
+
+  root.querySelector<HTMLButtonElement>('#topToggle')?.addEventListener('click', async () => {
+    topOpen = !topOpen;
+    if (topOpen && topAll === null) await loadPlaces();
+    await paint();
+    // Focus follows the control, which has just been re-rendered: without this
+    // the keyboard lands back at the top of the document on every press.
+    root.querySelector<HTMLButtonElement>('#topToggle')?.focus();
+  });
 
   root.querySelector<HTMLButtonElement>('#moreUsers')?.addEventListener('click', async () => {
     await loadUsers(userRows.length);
