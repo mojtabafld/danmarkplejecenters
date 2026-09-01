@@ -1016,9 +1016,10 @@ a.btn { text-decoration: none; }
   max-block-size: calc(100% - var(--space-6));
   inline-size: min(23rem, calc(100% - var(--space-6)));
   display: grid;
-  /* head, scrolling body, pinned foot. The actions live in the foot so that
-     "get me directions" is never the thing you have to scroll to find. */
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* grip, head, scrolling body, pinned foot. Four children, four rows: leave
+     one out and the body lands in an `auto` track and collapses, which is
+     exactly how the rail's list once ended up 1px tall. */
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   background: var(--panel-bg);
   border: var(--border-hairline) solid var(--panel-border);
   border-radius: var(--panel-radius);
@@ -1045,9 +1046,52 @@ a.btn { text-decoration: none; }
 }
 .panel[hidden] { display: none; }
 .panel[data-enter='pending'] {
-  opacity: 0;
+  opacity: var(--enter-opacity, 0);
   translate: var(--enter-x) var(--enter-y);
-  scale: var(--panel-enter-scale);
+  scale: var(--enter-scale, var(--panel-enter-scale));
+}
+
+/*
+ * On the way out, the sheet leaves the way it arrived. `hide()` holds the card
+ * in the DOM until this has run, so the dismissal is a movement rather than a
+ * disappearance.
+ */
+.panel[data-leave='true'] {
+  /* On its way out it must not swallow a tap meant for the map underneath. */
+  pointer-events: none;
+  opacity: var(--enter-opacity, 0);
+  translate: var(--enter-x) var(--enter-y);
+  scale: var(--enter-scale, var(--panel-enter-scale));
+}
+
+/* While a finger has hold of it, the card follows the finger exactly: a
+   transition here would make it lag behind the drag. */
+.panel[data-dragging='true'] { transition: none; }
+
+/*
+ * The grip: an iOS-style bar you can pull down to put the card away.
+ *
+ * Hidden until the card is a bottom sheet -- on a wide screen it is a column
+ * anchored to the inline start, and pulling that downwards means nothing.
+ * `touch-action: none` is what lets the drag be read at all: without it the
+ * browser claims the vertical gesture for scrolling before a pointermove ever
+ * arrives.
+ */
+.panel__grip {
+  display: none;
+  padding-block: var(--space-3) var(--space-1);
+  touch-action: none;
+  cursor: grab;
+}
+.panel__grip:active { cursor: grabbing; }
+.panel__grip::before {
+  content: '';
+  display: block;
+  inline-size: 2.25rem;
+  block-size: 0.3125rem;
+  margin-inline: auto;
+  border-radius: var(--radius-pill);
+  background: var(--border-default);
 }
 
 /* Anchored on the right in Persian, so it arrives from the right. */
@@ -1461,11 +1505,30 @@ a.btn { text-decoration: none; }
     inset-block: auto var(--space-3);
     inset-inline: var(--space-3);
     inline-size: auto;
-    /* A bottom-anchored card rises into place; a sideways slide would fight
-       the edge it is attached to. */
+    /*
+     * A sheet, not a card that lifts. It starts entirely below the screen and
+     * slides up to its place, which is what "expand from the bottom" means and
+     * what every sheet on the phone in your hand does. No scale and no fade
+     * with it: those read as a card appearing, and this one arrives.
+     */
     --enter-x: 0;
-    --enter-y: var(--panel-enter-rise);
+    --enter-y: calc(100% + var(--space-3));
+    --enter-scale: 1;
+    --enter-opacity: 1;
     --panel-origin: bottom;
+  }
+
+  /*
+   * The same, said again at the specificity Persian needs.
+   *
+   * `:root[dir='rtl'] .panel` sets a horizontal shift so the desktop card
+   * arrives from the correct side, and it outranks the `.panel` above --
+   * a media query adds no specificity, so the sideways offset survived into
+   * the sheet and Persian got a card sliding up and across at once, which is
+   * the one thing the bottom anchor is supposed to rule out.
+   */
+  :root[dir='rtl'] .panel {
+    --enter-x: 0;
 
     /* Tall enough that the contact rows -- phone, e-mail, website -- are all
        on screen without scrolling, which is what people open the card for.
@@ -1499,6 +1562,8 @@ a.btn { text-decoration: none; }
     .panel__head { padding-block: var(--space-3) var(--space-2); }
     .panel__foot { padding: var(--space-2) var(--space-4) var(--space-3); }
   }
+
+  .panel__grip { display: block; }
 
   .map__legend { display: none; }
   .map__tools { inset-block-start: var(--space-2); inset-inline-end: var(--space-2); }
