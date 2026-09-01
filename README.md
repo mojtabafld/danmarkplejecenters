@@ -94,9 +94,10 @@ spec:
 
 | Setting | Value |
 |---|---|
-| Type | Static Site |
+| Type | Web Service (not a static site: accounts need a process) |
 | Build command | `npm run build` |
-| Output directory | `dist` |
+| Run command | `npm start` |
+| HTTP port | `8080` |
 | HTTP routes | `/` |
 
 **From the command line**, using the spec as-is:
@@ -120,8 +121,13 @@ Some notes that matter for this app specifically:
 - **Outbound network access to the tile CDN** is required at runtime, from the
   visitor's browser rather than from the server. If it is blocked the app says
   so on screen and the list, addresses, phone numbers and routes keep working.
-- **No environment variables, no secrets, no database.** The register data is
-  compiled into the bundle at build time, and the basemap needs no API key.
+- **The register data needs no configuration.** It is compiled into the bundle
+  at build time, and the basemap needs no API key. Everything else added since
+  -- accounts, mail, and the admin panel -- is configured by environment
+  variables, and each degrades on its own: without `DATABASE_URL` the API
+  answers 409 and the map still works, without SMTP nobody can register, and
+  without `ADMIN_EMAILS` `/admin` refuses everybody. See **Wiring the
+  database**, **Confirming the address** and **The admin panel** below.
 - **A catchall to `index.html`** is set in the spec. There is no client-side
   router, but it means a stray deep link or a refresh lands on the app rather
   than a 404.
