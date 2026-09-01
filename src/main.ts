@@ -311,9 +311,20 @@ function signedInMarkup(): string {
       `${icon('bookmarkCheck')}${esc(t('visit.showSaved', { n: saved }))}</button>`
     : `<p class="account__why">${esc(t('visit.none'))}</p>`;
 
+  // Only for the handful of addresses named in ADMIN_EMAILS, and only as a
+  // shortcut: /admin is guarded on the server, so this link saves an
+  // administrator typing a path rather than granting anything. A link rather
+  // than a button, because it goes to a page -- middle-click and open-in-tab
+  // both work, which is what somebody moving between the two wants.
+  const adminRow = account.user?.admin
+    ? `<a class="btn btn--secondary account__admin" href="/admin">` +
+      `${icon('gauge')}${esc(t('account.adminPanel'))}</a>`
+    : '';
+
   return (
     `<p class="account__who">${esc(t('account.signedInAs', { email: account.user!.email }))}</p>` +
     savedRow +
+    adminRow +
     `<div class="account__actions">` +
     `<button type="button" class="btn btn--secondary" data-act="signout">${esc(t('account.signOut'))}</button>` +
     `<button type="button" class="btn btn--danger" data-act="delete">${esc(t('account.deleteAccount'))}</button>` +

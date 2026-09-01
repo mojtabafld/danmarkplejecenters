@@ -1916,6 +1916,17 @@ a.btn { text-decoration: none; }
   min-block-size: var(--control-lg);
 }
 
+/* The way through to the back office, for the addresses that have one. Full
+   width like the saved-places button above it, and secondary: it is a door,
+   not the thing this panel is for. */
+.account__admin {
+  display: flex;
+  inline-size: 100%;
+  min-block-size: var(--control-lg);
+  margin-block-start: var(--space-2);
+  text-decoration: none;
+}
+
 .account__why,
 .account__who {
   margin: 0;
