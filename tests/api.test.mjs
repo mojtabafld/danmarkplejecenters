@@ -300,6 +300,8 @@ cookie = savedCookie;
 /* ------------------------------------------------------------- moderation -- */
 console.log('\nmoderation and the admin panel');
 
+r = await call('GET', '/api/auth/me');
+check('an ordinary account is told it is not an administrator', r.body.user.admin === false);
 r = await call('GET', '/api/admin/overview');
 check('an ordinary account cannot read the admin overview', r.status === 403);
 r = await call('GET', '/api/admin/users');
@@ -331,6 +333,9 @@ r = await call('GET', '/api/admin/overview');
 check('a listed, verified administrator gets the overview', r.status === 200);
 check('which counts the accounts', r.body.users.total >= 2);
 check('and knows one comment is waiting', r.body.reviews.pending === 1);
+
+r = await call('GET', '/api/auth/me');
+check('and an administrator is told that it is one', r.body.user.admin === true);
 
 r = await call('GET', '/api/admin/users');
 check('the user list is readable', r.status === 200 && r.body.users.length >= 2);

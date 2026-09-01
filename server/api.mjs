@@ -432,7 +432,13 @@ async function signout(req, res, secure) {
 
 async function me(req, res) {
   const user = await currentUser(req);
-  send(res, 200, { user: user ? { email: user.email } : null });
+  // Whether this account is an administrator, so the account panel can offer
+  // the way in. It is a convenience and never a permission: every route under
+  // /api/admin/ asks the same question again for itself, and the panel is
+  // still refused to anybody who reaches it another way.
+  send(res, 200, {
+    user: user ? { email: user.email, admin: await admin.isAdmin(user) } : null,
+  });
   return true;
 }
 

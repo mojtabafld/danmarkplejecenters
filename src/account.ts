@@ -7,7 +7,17 @@
  * work. The map, the search and the cards never depend on any of it.
  */
 
-export type AccountUser = { email: string };
+export type AccountUser = {
+  email: string;
+  /**
+   * True when this address is listed in ADMIN_EMAILS on the server.
+   *
+   * The server answers this, and it is only ever used to decide whether to
+   * offer the link: the panel itself is guarded server-side, so a browser that
+   * lies about this reaches a page that refuses it.
+   */
+  admin?: boolean;
+};
 
 export type AuthError =
   | 'no_database'
