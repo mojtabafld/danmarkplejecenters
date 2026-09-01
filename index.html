@@ -283,6 +283,12 @@
             <p class="legend__row" data-own="Privat">
               <span class="legend__mark" style="background: var(--own-mark)"></span><span data-i18n="ownership.PrivatLong"></span>
             </p>
+
+            <!-- Only once there is something saved: a legend explaining a
+                 colour that is not on the map is worse than no row at all. -->
+            <p class="legend__row" id="legendSaved" hidden>
+              <span class="legend__mark" style="background: var(--map-visited-dot)"></span><span data-i18n="map.legendSaved"></span>
+            </p>
           </section>
 
           <p class="map__credit">

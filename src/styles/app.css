@@ -959,6 +959,10 @@ a.btn { text-decoration: none; }
   min-inline-size: 0;
 }
 
+/* An author `display` beats the browser's `[hidden]` -- the lesson the tour
+   overlay taught this codebase the hard way. */
+.legend__row[hidden] { display: none; }
+
 .legend__mark {
   inline-size: 0.625rem;
   block-size: 0.625rem;

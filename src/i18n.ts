@@ -101,6 +101,7 @@ const DA = {
   'map.reset': 'Vis hele hovedstadsområdet igen',
   'map.legend': 'Signaturforklaring',
   'map.legendTitle': 'Driftsform',
+  'map.legendSaved': 'Gemt af dig',
   'map.credit': 'Kort:',
   'map.fallback':
     'Baggrundskortet kunne ikke hentes fra OpenStreetMap-tjenesten. Placeringerne er stadig korrekte, og listen med adresser, telefonnumre og ruter virker uændret.',
@@ -272,6 +273,7 @@ const EN: Record<Key, Entry> = {
   'map.reset': 'Show the whole region again',
   'map.legend': 'Legend',
   'map.legendTitle': 'Operator',
+  'map.legendSaved': 'Saved by you',
   'map.credit': 'Map:',
   'map.fallback':
     'The background map could not be loaded from the OpenStreetMap service. The locations are still correct, and the list with addresses, phone numbers and routes works as normal.',
@@ -441,6 +443,7 @@ const FA: Record<Key, Entry> = {
   'map.reset': 'نمایش دوبارهٔ کل منطقه',
   'map.legend': 'راهنمای نقشه',
   'map.legendTitle': 'نوع اداره',
+  'map.legendSaved': 'ذخیرهٔ شما',
   'map.credit': 'نقشه:',
   'map.fallback':
     'نقشهٔ پس‌زمینه از سرویس OpenStreetMap بارگیری نشد. موقعیت‌ها همچنان درست هستند و فهرست نشانی‌ها، شماره‌های تلفن و مسیرها بدون تغییر کار می‌کند.',

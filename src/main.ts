@@ -65,6 +65,7 @@ const geoNote = $('#geoNote');
 const geoNoteText = $('#geoNoteText');
 const railEl = $('#rail');
 const stageEl = $('.stage');
+const legendSaved = $('#legendSaved');
 const live = $('#live');
 const langButton = $<HTMLButtonElement>('#langButton');
 const langMenu = $('#langMenu');
@@ -278,6 +279,7 @@ function renderAccount(): void {
         (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup()));
 
   paintDock();
+  paintLegendSaved();
   if (!account.user && store.filters.visitedOnly) store.setVisitedOnly(false);
 }
 
@@ -548,6 +550,16 @@ function setDockOpen(open: boolean): void {
   if (open) dockSearchInput.focus();
 }
 
+/**
+ * The legend's saved row, shown only once there is something saved.
+ *
+ * A legend explaining a colour that is not on the map is worse than no row at
+ * all -- and signed out there are no saved places, so the blue never appears.
+ */
+function paintLegendSaved(): void {
+  legendSaved.hidden = !account.user || account.visited.size === 0;
+}
+
 /** Icon only, so the label is the accessible name and the title on hover. */
 function paintDock(): void {
   /*
@@ -624,6 +636,7 @@ function syncDock(): void {
   // The search segment's face depends on the filters, so it is repainted with
   // them rather than only when the dock is opened or the language changes.
   paintDock();
+  paintLegendSaved();
 }
 
 /**
