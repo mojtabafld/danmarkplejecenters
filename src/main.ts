@@ -1046,6 +1046,7 @@ NARROW.addEventListener('change', (e) => {
 
 let lastVisibleKey = '';
 let lastSelected: string | null = null;
+let lastVisitedOnly = false;
 
 
 function userPoint(): { lat: number; lon: number } | null {
@@ -1064,6 +1065,15 @@ function render(): void {
     map.setData(items);
     renderTally(items);
     announce(items);
+  }
+
+  // Narrowing to saved places is the one filter that empties the map rather
+  // than thinning it, so the dots that survive say so: a ripple leaves each of
+  // them, once. Only on the change -- typing in the search box while the filter
+  // is on must not set the whole map off again.
+  if (store.filters.visitedOnly !== lastVisitedOnly) {
+    lastVisitedOnly = store.filters.visitedOnly;
+    map.setSavedFocus(lastVisitedOnly);
   }
 
   if (store.selectedId !== lastSelected) {

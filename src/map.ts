@@ -33,6 +33,76 @@ const SRC = 'plejecentre';
 const USER_SRC = 'user-location';
 
 /**
+ * The saved ring's radius, at the zoom steps the ring itself uses. Shared,
+ * because the ripple has to leave from exactly where the ring is drawn -- a
+ * wave that starts anywhere else reads as a second, unrelated mark.
+ */
+const RING_STOPS: ReadonlyArray<readonly [number, number]> = [
+  [9, 9],
+  [12, 11],
+  [15, 14],
+];
+
+/**
+ * The ring, optionally scaled by an expression.
+ *
+ * The scale is folded into each zoom stop rather than multiplied over the
+ * whole thing, because a `zoom` interpolation is only legal at the top of an
+ * expression. Wrapped in arithmetic it is not an error you can see -- MapLibre
+ * refuses the paint value and keeps the old one, so the ripple simply sat at
+ * its starting radius and pulsed in place. Measuring the rendered frames is
+ * what caught it: the moving pixels never got further than 12px from the dot.
+ */
+function ringRadius(scale?: ExpressionSpecification): ExpressionSpecification {
+  const out: unknown[] = ['interpolate', ['linear'], ['zoom']];
+  for (const [zoom, radius] of RING_STOPS) {
+    out.push(zoom, scale ? ['*', radius, scale] : radius);
+  }
+  return out as ExpressionSpecification;
+}
+
+const RING_RADIUS = ringRadius();
+
+/**
+ * The ripple that runs when the map narrows to saved places.
+ *
+ * Two rings rather than one, the second trailing the first, because a single
+ * expanding circle reads as a glitch while two read as a pulse. Per-dot delay
+ * on top of that, so the map answers as a wave rather than a flashbulb -- and
+ * capped, so a hundred saved places still finish inside a second.
+ */
+const RIPPLE_LAYERS = ['pin-ripple-a', 'pin-ripple-b'] as const;
+const RIPPLE_WAVE = 1100;
+const RIPPLE_OFFSET = 520;
+const RIPPLE_STAGGER = 45;
+const RIPPLE_STAGGER_CAP = 20;
+const RIPPLE_GROWTH = 2.2;
+/**
+ * A ring alone is a hairline, and a hairline crossing a map is not a signal --
+ * measured against a still frame, the first attempt moved a pixel by 15 parts
+ * in 255, which is to say it was invisible. The wave carries a wash inside it
+ * as well as an edge, and both fade on the way out.
+ */
+const RIPPLE_PEAK = 0.9;
+const RIPPLE_FILL = 0.12;
+const RIPPLE_STROKE = 3.5;
+
+/** No cross-fade: see the note where the ripple layers are added. */
+const INSTANT = { duration: 0, delay: 0 };
+
+/** The ring's own answer: one soft swell, out and back. */
+const POP = 0.16;
+const POP_MS = 620;
+
+const PULSE_TOTAL = RIPPLE_OFFSET + RIPPLE_STAGGER * RIPPLE_STAGGER_CAP + RIPPLE_WAVE;
+
+/**
+ * Somebody who has asked for less motion gets the state without the show: the
+ * filter still narrows the map, the ring still marks the dots, nothing moves.
+ */
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+/**
  * A circle on the ground, as a polygon. The accuracy radius is a distance in
  * metres, so it has to scale with zoom the way the map does; a fixed pixel
  * radius would claim 50m precision at street level and 50km at region level.
@@ -64,19 +134,27 @@ function toFeatureCollection(
   items: Plejecenter[],
   isVisited: (id: string) => boolean,
 ): GeoJSON.FeatureCollection {
+  // Saved places are numbered as they go in. The ripple reads that number to
+  // stagger itself; without it every ring would leave at the same instant,
+  // which is a flash rather than a wave.
+  let vIndex = 0;
   return {
     type: 'FeatureCollection',
-    features: items.map((p) => ({
-      type: 'Feature',
-      id: p.id,
-      geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
-      properties: {
+    features: items.map((p) => {
+      const visited = isVisited(p.id);
+      return {
+        type: 'Feature',
         id: p.id,
-        name: p.name,
-        group: ownershipGroup(p),
-        visited: isVisited(p.id),
-      },
-    })),
+        geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+        properties: {
+          id: p.id,
+          name: p.name,
+          group: ownershipGroup(p),
+          visited,
+          vIndex: visited ? vIndex++ : 0,
+        },
+      };
+    }),
   };
 }
 
@@ -109,6 +187,8 @@ export class PlejecenterMap {
   private userMarker: maplibregl.Marker | null = null;
   private lastUserFix: { lat: number; lon: number; accuracy: number; label: string } | null = null;
   private lastVisited: (id: string) => boolean = () => false;
+  /** Frame handle for the saved-places ripple; null when nothing is running. */
+  private pulse: number | null = null;
 
   /** Calls made before the map exists, replayed in order once it does. */
   private queued: Array<(m: MLMap) => void> = [];
@@ -274,6 +354,34 @@ export class PlejecenterMap {
       },
     });
 
+    // The ripple rings. They live here rather than being added on demand so
+    // they survive a basemap swap, and they rest at zero opacity: the layer is
+    // always present, and only the paint moves.
+    for (const id of RIPPLE_LAYERS) {
+      map.addLayer({
+        id,
+        type: 'circle',
+        source: SRC,
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'visited'], true]],
+        paint: {
+          'circle-color': token('--map-visited-dot'),
+          'circle-opacity': 0,
+          'circle-radius': RING_RADIUS,
+          'circle-stroke-width': RIPPLE_STROKE,
+          'circle-stroke-color': token('--map-visited-ring'),
+          'circle-stroke-opacity': 0,
+          // MapLibre cross-fades a changed paint property over 300ms by
+          // default. That is right for a value that changes once and wrong for
+          // one driven frame by frame, which would spend its whole life
+          // catching up. These take their values immediately.
+          'circle-radius-transition': INSTANT,
+          'circle-opacity-transition': INSTANT,
+          'circle-stroke-width-transition': INSTANT,
+          'circle-stroke-opacity-transition': INSTANT,
+        },
+      });
+    }
+
     map.addLayer({
       id: 'pins',
       type: 'circle',
@@ -297,7 +405,8 @@ export class PlejecenterMap {
       filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'visited'], true]],
       paint: {
         'circle-color': 'rgba(0,0,0,0)',
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 9, 12, 11, 15, 14],
+        'circle-radius': RING_RADIUS,
+        'circle-radius-transition': INSTANT,
         'circle-stroke-width': 2,
         'circle-stroke-color': token('--map-visited-ring'),
       },
@@ -377,6 +486,140 @@ export class PlejecenterMap {
     this.run((m) => {
       (m.getSource(SRC) as GeoJSONSource).setData(toFeatureCollection(items, this.lastVisited));
     });
+  }
+
+  /* ------------------------------------------------------- saved ripple -- */
+
+  /**
+   * Called when the map narrows to saved places, and again when it opens back
+   * up. Narrowing sends a ripple out from every saved dot; opening up stops it.
+   *
+   * The point is not decoration. Filtering to saved places removes most of the
+   * dots, and a map that loses a hundred marks in one frame reads as a map that
+   * broke. The ripple says the opposite: these are the ones that are left, and
+   * they are here on purpose. It runs once and stops -- a map that pulses
+   * forever is a map nobody can read a street name on.
+   */
+  setSavedFocus(on: boolean): void {
+    this.run((m) => {
+      this.stopPulse(m);
+      if (!on || REDUCED.matches) return;
+
+      const start = performance.now();
+      const step = (now: number): void => {
+        const map = this.map;
+        // A basemap swap rebuilds every layer. If the frame lands in that gap
+        // there is nothing to paint, and the run is over rather than wrong.
+        if (!map || !map.getLayer(RIPPLE_LAYERS[0])) {
+          this.pulse = null;
+          return;
+        }
+        const t = now - start;
+        this.paintPulse(map, t);
+        if (t < PULSE_TOTAL) {
+          this.pulse = requestAnimationFrame(step);
+        } else {
+          this.pulse = null;
+          this.restPulse(map);
+        }
+      };
+      this.pulse = requestAnimationFrame(step);
+    });
+  }
+
+  /**
+   * One frame of it, as paint expressions.
+   *
+   * Everything per-dot is expressed rather than looped: `vIndex` is on the
+   * feature, so the delay, the growth and the fade are all evaluated by the
+   * renderer. What changes each frame is a single number, `t`.
+   */
+  private paintPulse(m: MLMap, t: number): void {
+    const delay: ExpressionSpecification = [
+      '*',
+      RIPPLE_STAGGER,
+      ['min', RIPPLE_STAGGER_CAP, ['get', 'vIndex']],
+    ];
+
+    RIPPLE_LAYERS.forEach((id, i) => {
+      if (!m.getLayer(id)) return;
+      // Where this dot's ring is in its life, from 0 to 1. Outside that range
+      // the ring is not born yet or is already spent, and draws nothing.
+      const local: ExpressionSpecification = [
+        '/',
+        ['-', ['-', t, i * RIPPLE_OFFSET], delay],
+        RIPPLE_WAVE,
+      ];
+      const p: ExpressionSpecification = ['max', 0, ['min', 1, local]];
+      // Out fast, then settling -- a ring that expands linearly reads as
+      // mechanical, and one that eases out reads as something arriving.
+      const eased: ExpressionSpecification = ['-', 1, ['^', ['-', 1, p], 3]];
+
+      // A short ramp on the way in, so the ring appears rather than blinks.
+      const alive: ExpressionSpecification = ['all', ['>', local, 0], ['<', local, 1]];
+      const ramp: ExpressionSpecification = ['min', 1, ['*', 6, p]];
+
+      m.setPaintProperty(id, 'circle-radius', ringRadius(['+', 1, ['*', RIPPLE_GROWTH, eased]]));
+      m.setPaintProperty(id, 'circle-stroke-width', [
+        '*',
+        RIPPLE_STROKE,
+        ['-', 1, ['*', 0.55, eased]],
+      ]);
+      // The fade runs on `p`, not on the eased radius. Fading with the easing
+      // put the ring at its faintest exactly when it was at its widest, which
+      // is the one moment it has anything to say.
+      m.setPaintProperty(id, 'circle-stroke-opacity', [
+        'case',
+        alive,
+        ['*', RIPPLE_PEAK, ['*', ramp, ['^', ['-', 1, p], 1.2]]],
+        0,
+      ]);
+      // The wash recedes faster than the edge, so what travels outward is a
+      // ring rather than a growing blob.
+      m.setPaintProperty(id, 'circle-opacity', [
+        'case',
+        alive,
+        ['*', RIPPLE_FILL, ['*', ramp, ['^', ['-', 1, p], 2.6]]],
+        0,
+      ]);
+    });
+
+    // The ring's own swell: out and back on a sine, which returns to exactly
+    // where it started without needing to be put back.
+    if (m.getLayer('pin-visited')) {
+      const q: ExpressionSpecification = [
+        'max',
+        0,
+        ['min', 1, ['/', ['-', t, delay], POP_MS]],
+      ];
+      m.setPaintProperty(
+        'pin-visited',
+        'circle-radius',
+        ringRadius(['+', 1, ['*', POP, ['sin', ['*', Math.PI, q]]]]),
+      );
+    }
+  }
+
+  /** Stop mid-flight, and leave the map exactly as it would have ended. */
+  private stopPulse(m: MLMap): void {
+    if (this.pulse !== null) {
+      cancelAnimationFrame(this.pulse);
+      this.pulse = null;
+    }
+    this.restPulse(m);
+  }
+
+  private restPulse(m: MLMap): void {
+    for (const id of RIPPLE_LAYERS) {
+      if (!m.getLayer(id)) continue;
+      m.setPaintProperty(id, 'circle-radius', RING_RADIUS);
+      m.setPaintProperty(id, 'circle-stroke-width', RIPPLE_STROKE);
+      m.setPaintProperty(id, 'circle-stroke-opacity', 0);
+      m.setPaintProperty(id, 'circle-opacity', 0);
+    }
+    if (m.getLayer('pin-visited')) {
+      m.setPaintProperty('pin-visited', 'circle-radius', RING_RADIUS);
+    }
   }
 
   setSelected(id: string | null): void {
