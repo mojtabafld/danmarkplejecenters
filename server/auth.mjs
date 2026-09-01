@@ -182,6 +182,51 @@ export async function findUser(email) {
   return rows[0] ?? null;
 }
 
+/*
+ * Password reset. The same shape as email verification, with three deliberate
+ * differences.
+ *
+ * One hour, not a day: a reset link is a key to the account, where a
+ * verification link only proves an address works. Its own table, so consuming
+ * one cannot mark an unverified address verified. And setting the password
+ * ends every session the account has -- if the reset was asked for because
+ * somebody else had got in, leaving their session alive would defeat the
+ * whole exercise.
+ */
+const RESET_HOURS = 1;
+
+export async function createResetToken(userId) {
+  const token = randomBytes(32).toString('base64url');
+  await db.query('DELETE FROM reset_tokens WHERE user_id = $1', [userId]);
+  await db.query(
+    'INSERT INTO reset_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+    [hashToken(token), userId, new Date(Date.now() + RESET_HOURS * 3600e3)],
+  );
+  return token;
+}
+
+/**
+ * Consume a reset token. Returns the user id, or null.
+ *
+ * The DELETE decides, as with the email token: it returns a row only if one was
+ * actually removed, so the same link cannot be used twice.
+ */
+export async function consumeResetToken(token) {
+  if (!token) return null;
+  const { rows } = await db.query(
+    'DELETE FROM reset_tokens WHERE token_hash = $1 AND expires_at > now() RETURNING user_id',
+    [hashToken(token)],
+  );
+  return rows[0]?.user_id ?? null;
+}
+
+/** Set a new password and end every session the account has. */
+export async function setPassword(userId, password) {
+  const hash = await hashPassword(password);
+  await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
+  await db.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+}
+
 export async function deleteUser(userId) {
   await db.query('DELETE FROM users WHERE id = $1', [userId]);
 }

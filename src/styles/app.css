@@ -1941,6 +1941,25 @@ a.btn { text-decoration: none; }
 
 .account__hint { font-weight: var(--weight-regular); color: var(--text-tertiary); }
 
+/*
+ * "Forgotten your password?" -- a real button, not an anchor. It does not
+ * navigate; it swaps the form in place, and a link that goes nowhere is a lie
+ * to anyone reading the page with a screen reader.
+ */
+.account__link {
+  justify-self: start;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--action-primary);
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+.account__link:hover { color: var(--action-primary-hover); }
+
 .account__note {
   margin: 0;
   padding: var(--space-2) var(--space-3);

@@ -97,6 +97,19 @@ CREATE TABLE IF NOT EXISTS email_tokens (
 
 CREATE INDEX IF NOT EXISTS email_tokens_user_id_idx ON email_tokens(user_id);
 
+-- Password resets get their own table rather than sharing email_tokens.
+-- Consuming an email token marks the address verified as a side effect, which
+-- is exactly wrong here: somebody who never confirmed their address must not
+-- be able to confirm it by asking for a password reset.
+CREATE TABLE IF NOT EXISTS reset_tokens (
+  token_hash TEXT PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS reset_tokens_user_id_idx ON reset_tokens(user_id);
+
 CREATE TABLE IF NOT EXISTS visits (
   user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   plejecenter_id TEXT NOT NULL,
