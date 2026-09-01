@@ -313,12 +313,18 @@
               <div>
                 <span class="panel__eyebrow"></span>
                 <div class="panel__titlerow">
-                  <span id="panelVisitSlot"></span>
                   <h2 class="panel__title" id="panelTitle"></h2>
                 </div>
                 <span id="panelJobSlot"></span>
               </div>
-              <button type="button" class="panel__close"></button>
+
+              <!-- Save and close, as a pair. Both are icon buttons acting on
+                   the card as a whole rather than on the name beside them,
+                   which is why they sit together at the end of the head. -->
+              <div class="panel__headacts">
+                <span id="panelVisitSlot"></span>
+                <button type="button" class="panel__close"></button>
+              </div>
             </div>
             <div class="panel__body" id="panelBody"></div>
             <div class="panel__foot" id="panelFoot"></div>

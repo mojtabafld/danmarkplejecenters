@@ -1119,6 +1119,14 @@ a.btn { text-decoration: none; }
 }
 .panel__titlerow .panel__title { min-inline-size: 0; }
 
+/* Save and close, as a pair at the end of the head. Both are --control-md, so
+   they sit together without either being resized. */
+.panel__headacts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /*
  * Icon only, so it must carry a real hit area: --control-md is 36px, well over
  * the 24px floor, and the icon inside stays optically small.
@@ -1391,51 +1399,6 @@ a.btn { text-decoration: none; }
 [data-own='Kommunal'] { --own-fg: var(--cat-kommunal-fg); --own-bg: var(--cat-kommunal-bg); --own-mark: var(--cat-kommunal-mark); }
 [data-own='Selvejende'] { --own-fg: var(--cat-selvejende-fg); --own-bg: var(--cat-selvejende-bg); --own-mark: var(--cat-selvejende-mark); }
 [data-own='Privat'] { --own-fg: var(--cat-privat-fg); --own-bg: var(--cat-privat-bg); --own-mark: var(--cat-privat-mark); }
-/* The name and its mark on one line, the mark first so it reads as belonging
-   to the name rather than to the card. */
-.panel__titlerow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-inline-size: 0;
-}
-.panel__titlerow .panel__title { min-inline-size: 0; }
-
-/*
- * Icon only, so it must carry a real hit area: --control-md is 36px, well over
- * the 24px floor, and the icon inside stays optically small.
- */
-.panel__visit {
-  display: grid;
-  place-items: center;
-  flex: none;
-  inline-size: var(--control-md);
-  block-size: var(--control-md);
-  padding: 0;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: var(--border-hairline) solid var(--border-default);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out),
-              border-color var(--duration-fast) var(--ease-out),
-              color var(--duration-fast) var(--ease-out);
-}
-.panel__visit svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
-.panel__visit:hover { background: var(--interactive-hover-bg); color: var(--text-primary); }
-.panel__visit:active { background: var(--interactive-active-bg); }
-
-/* Marked: filled, so the difference is weight and shape as well as colour. */
-.panel__visit[aria-pressed='true'] {
-  color: var(--text-on-brand);
-  background: var(--action-primary);
-  border-color: var(--action-primary);
-}
-.panel__visit[aria-pressed='true']:hover {
-  background: var(--action-primary-hover);
-  border-color: var(--action-primary-hover);
-}
-
 .panel__eyebrow { color: var(--own-fg, var(--text-secondary)); background: var(--own-bg, var(--surface-sunken)); }
 .result__mark { background: var(--own-mark, var(--border-strong)); }
 
