@@ -252,6 +252,131 @@ await call('PUT', "/api/visits/x'; DROP TABLE visits; --");
 const survived = await db.query('SELECT count(*)::int AS n FROM visits');
 check('an id with SQL in it is stored, not executed', survived.rows[0].n === 2);
 
+/* ---------------------------------------------------------- ratings -- */
+/*
+ * The rule under test throughout: a star counts immediately, words wait for a
+ * human. Everything else here follows from that.
+ */
+console.log('\nratings and reviews');
+cookie = '';
+client = '10.0.0.6';
+await call('POST', '/api/auth/signup', { email: 'rater@example.dk', password: 'a-long-enough-pass' });
+await fetch(lastLink());
+await call('POST', '/api/auth/signin', { email: 'rater@example.dk', password: 'a-long-enough-pass' });
+
+r = await call('PUT', '/api/reviews/plejehjem-1', { stars: 4 });
+check('a rating with no words is stored', r.status === 200 && r.body.mine.stars === 4);
+check('and is approved on the spot, because there is nothing to moderate',
+  r.body.mine.status === 'approved');
+check('and counts towards the average at once', r.body.count === 1 && r.body.average === 4);
+check('and the spread puts it in the right bucket',
+  JSON.stringify(r.body.spread) === JSON.stringify([0, 0, 0, 1, 0]));
+
+r = await call('PUT', '/api/reviews/plejehjem-1', { stars: 4, body: 'Venlig modtagelse.' });
+check('adding words sends the review to the queue', r.body.mine.status === 'pending');
+check('and the words are not published while it waits', r.body.reviews.length === 0);
+check('but the star still counts', r.body.count === 1 && r.body.average === 4);
+
+r = await call('PUT', '/api/reviews/plejehjem-1', { stars: 2, body: 'Venlig modtagelse.' });
+check('changing only the stars does not re-queue the same text',
+  r.body.mine.status === 'pending' && r.body.average === 2);
+
+r = await call('PUT', '/api/reviews/plejehjem-1', { stars: 9 });
+check('a sixth star is refused', r.status === 400 && r.body.error === 'bad_stars');
+r = await call('PUT', '/api/reviews/plejehjem-1', { stars: 2.5 });
+check('and so is half a star', r.status === 400);
+
+r = await call('GET', '/api/reviews/plejehjem-1');
+check('the score is readable without an account', r.status === 200 && r.body.count === 1);
+
+const savedCookie = cookie;
+cookie = '';
+r = await call('GET', '/api/reviews/plejehjem-1');
+check('signed out, the reply carries no trace of whose review it is', r.body.mine === null);
+r = await call('PUT', '/api/reviews/plejehjem-1', { stars: 5 });
+check('and signing out means you cannot rate', r.status === 401);
+cookie = savedCookie;
+
+/* ------------------------------------------------------------- moderation -- */
+console.log('\nmoderation and the admin panel');
+
+r = await call('GET', '/api/admin/overview');
+check('an ordinary account cannot read the admin overview', r.status === 403);
+r = await call('GET', '/api/admin/users');
+check('nor the user list', r.status === 403);
+r = await call('POST', '/api/admin/reviews/1', { decision: 'approve' });
+check('nor decide a review', r.status === 403);
+
+const pending = await db.query("SELECT id FROM reviews WHERE status = 'pending'");
+const reviewId = pending.rows[0].id;
+
+process.env.ADMIN_EMAILS = 'chief@example.dk';
+r = await call('GET', '/api/admin/overview');
+check('naming somebody else as the administrator does not promote this account',
+  r.status === 403);
+
+cookie = '';
+client = '10.0.0.7';
+await call('POST', '/api/auth/signup', { email: 'chief@example.dk', password: 'a-long-enough-pass' });
+const chiefLink = lastLink();
+r = await call('GET', '/api/admin/overview');
+check('a listed administrator who has not confirmed their address is still refused',
+  r.status === 403);
+
+await fetch(chiefLink);
+await call('POST', '/api/auth/signin', { email: 'chief@example.dk', password: 'a-long-enough-pass' });
+r = await call('GET', '/api/admin/overview');
+check('a listed, verified administrator gets the overview', r.status === 200);
+check('which counts the accounts', r.body.users.total >= 2);
+check('and knows one comment is waiting', r.body.reviews.pending === 1);
+
+r = await call('GET', '/api/admin/users');
+check('the user list is readable', r.status === 200 && r.body.users.length >= 2);
+check('and says nothing about passwords',
+  !JSON.stringify(r.body).includes('password') && !JSON.stringify(r.body).includes('hash'));
+
+r = await call('GET', '/api/admin/reviews?status=pending');
+check('the queue holds the waiting comment',
+  r.status === 200 && r.body.reviews.length === 1 && r.body.reviews[0].body === 'Venlig modtagelse.');
+r = await call('GET', '/api/admin/reviews?status=nonsense');
+check('an invented status is refused rather than guessed at', r.status === 400);
+
+r = await call('POST', `/api/admin/reviews/${reviewId}`, { decision: 'sideways' });
+check('an invented decision is refused', r.status === 400);
+r = await call('POST', '/api/admin/reviews/not-a-number', { decision: 'approve' });
+check('and so is an id that is not one', r.status === 400);
+
+r = await call('POST', `/api/admin/reviews/${reviewId}`, { decision: 'approve' });
+check('approving works', r.status === 200);
+r = await call('POST', `/api/admin/reviews/${reviewId}`, { decision: 'reject' });
+check('and cannot be quietly undone by a second decision', r.status === 409);
+
+cookie = '';
+r = await call('GET', '/api/reviews/plejehjem-1');
+check('the approved comment is now public', r.body.reviews.length === 1);
+check('and carries no author', !JSON.stringify(r.body.reviews[0]).includes('@'));
+
+/* ---------------------------------------------------------------- traffic -- */
+console.log('\ncounting');
+client = '10.0.0.8';
+r = await call('POST', '/api/track', { event: 'view', locale: 'da' });
+check('the beacon answers 204 and nothing else', r.status === 204 && r.body === null);
+await call('POST', '/api/track', { event: 'view', locale: 'da' });
+await call('POST', '/api/track', { event: 'place', id: 'plejehjem-1' });
+await call('POST', '/api/track', { event: 'place', id: '../../etc/passwd' });
+await call('POST', '/api/track', { event: 'nonsense' });
+
+const views = await db.query("SELECT n FROM counters WHERE metric = 'view'");
+check('two views from one visitor are two views', Number(views.rows[0].n) === 2);
+const uniques = await db.query('SELECT count(*)::int AS n FROM visitor_days');
+check('but one visitor', uniques.rows[0].n === 1);
+const places = await db.query("SELECT metric FROM counters WHERE metric LIKE 'place:%'");
+check('a place id that is not one is not counted',
+  places.rows.length === 1 && places.rows[0].metric === 'place:plejehjem-1');
+const cols = await db.query('SELECT * FROM visitor_days');
+check('and nothing in the visitor table resembles an address',
+  !JSON.stringify(cols.rows).includes('10.0.0.8'));
+
 /* --------------------------------------------------- mail not configured -- */
 mail.setTransport(null);
 cookie = '';

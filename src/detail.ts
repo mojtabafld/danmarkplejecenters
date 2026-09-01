@@ -264,6 +264,10 @@ export class DetailPanel {
       );
     }
 
+    // The ratings arrive over the network, so the card leaves them a home and
+    // ReviewSection fills it in. Opening a card must not wait on a request.
+    parts.push('<div class="rv__host" id="reviewHost"></div>');
+
     return `<span class="sr-only" data-own="${group}"></span>` + parts.join('');
   }
 

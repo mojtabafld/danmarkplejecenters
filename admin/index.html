@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Never indexed. This page is a back office, and a search engine that
+         finds it will keep asking for it long after it has answered 403. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Administration</title>
+    <script>
+      /*
+       * The same pre-paint theme decision the map makes, by the same two steps
+       * and the same storage key, so moving between the two pages never
+       * flashes. Sets only the attribute; the colours live in the token layer.
+       */
+      (function () {
+        var t = null;
+        try {
+          var v = localStorage.getItem('plejekort.theme');
+          if (v === 'dark' || v === 'light') t = v;
+        } catch (e) {
+          /* private mode: the device decides */
+        }
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        document
+          .querySelector('meta[name="color-scheme"]')
+          .setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="admin" id="admin"></div>
+    <script type="module" src="../src/admin/main.ts"></script>
+  </body>
+</html>

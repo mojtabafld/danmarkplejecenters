@@ -262,6 +262,21 @@
    */
   --map-visited-dot: var(--p-save-700);
   --map-visited-ring: var(--p-save-700);
+
+  /*
+   * Stars.
+   *
+   * Ochre rather than the brand green, because a star that is the same colour
+   * as every other control reads as a control. This one is a value being
+   * reported, and it belongs to the same family as the "selvejende" mark --
+   * which is why the empty star is a plain border colour and not a faded
+   * ochre: filled against hollow is the difference, and washing out the colour
+   * would make it a matter of degree.
+   */
+  --rating-star: var(--p-ochre-500);
+  --rating-star-empty: var(--border-strong);
+  --rating-bar: var(--p-ochre-500);
+  --rating-bar-track: var(--surface-inset);
   --map-user-dot: var(--p-live-600);
   --map-user-ring: var(--p-live-500);
   --map-user-accuracy: var(--p-live-600);
@@ -467,6 +482,11 @@
   --map-pin-selected-halo: var(--p-brand-300);
   --map-visited-dot: var(--p-save-300);
   --map-visited-ring: var(--p-save-300);
+
+  --rating-star: var(--p-ochre-300);
+  --rating-star-empty: var(--border-strong);
+  --rating-bar: var(--p-ochre-300);
+  --rating-bar-track: var(--surface-inset);
   --map-user-dot: var(--p-live-400);
   --map-user-ring: var(--p-live-300);
   --map-user-accuracy: var(--p-live-300);

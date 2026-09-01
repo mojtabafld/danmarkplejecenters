@@ -63,6 +63,9 @@ const PATHS: Record<string, string> = {
   crosshair:
     '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>' +
     '<path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>',
+  star:
+    '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 ' +
+    '5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
 };
 
 export type IconName = keyof typeof PATHS;
@@ -70,6 +73,17 @@ export type IconName = keyof typeof PATHS;
 /** Returns an inline SVG string. Decorative by default — label the parent. */
 export function icon(name: IconName): string {
   return `<svg ${WRAP}>${PATHS[name]}</svg>`;
+}
+
+/**
+ * A star, hollow or solid.
+ *
+ * The only icon in the set drawn filled, and it has to be: a row of stars is
+ * read by how many are solid, not by their outlines. Shape alone still says it
+ * -- solid against hollow -- so it survives being printed in one colour.
+ */
+export function star(filled: boolean): string {
+  return `<svg ${WRAP.replace('fill="none"', `fill="${filled ? 'currentColor' : 'none'}"`)}>${PATHS.star}</svg>`;
 }
 
 /** A data: URI of the same icon, for CSS backgrounds (the select caret). */

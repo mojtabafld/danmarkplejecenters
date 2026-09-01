@@ -5,9 +5,12 @@
  * framework, and no user-supplied string ever reaching SQL except as a bound
  * parameter.
  */
-import * as db from './db.mjs';
+import * as admin from './admin.mjs';
 import * as auth from './auth.mjs';
+import * as db from './db.mjs';
 import * as mail from './mail.mjs';
+import * as reviews from './reviews.mjs';
+import * as traffic from './traffic.mjs';
 
 const COOKIE = 'plejekort_session';
 const MAX_BODY = 4 * 1024;
@@ -183,6 +186,9 @@ export async function handle(req, res, { secure }) {
       // difference between guessing and knowing.
       mailVars: mail.configuredVars(),
       publicUrl: (process.env.PUBLIC_URL ?? '').trim() !== '',
+      // Whether an administrator could sign in at all. The addresses
+      // themselves are never in the reply: this endpoint is public.
+      admins: admin.adminEmails().length,
     });
     return true;
   }
@@ -223,6 +229,15 @@ export async function handle(req, res, { secure }) {
     if (path.startsWith('/api/visits/') && (method === 'PUT' || method === 'DELETE')) {
       return await changeVisit(req, res, decodeURIComponent(path.slice('/api/visits/'.length)), method);
     }
+    if (path === '/api/track' && method === 'POST') return await track(req, res);
+    if (path === '/api/ratings' && method === 'GET') return await allRatings(req, res);
+    if (path.startsWith('/api/reviews/')) {
+      const id = decodeURIComponent(path.slice('/api/reviews/'.length));
+      if (method === 'GET') return await placeReviews(req, res, id);
+      if (method === 'PUT') return await putReview(req, res, id);
+      if (method === 'DELETE') return await deleteReview(req, res, id);
+    }
+    if (path.startsWith('/api/admin/')) return await adminRoutes(req, res, path, method);
 
     send(res, 404, { error: 'not_found' });
     return true;
@@ -507,5 +522,155 @@ async function changeVisit(req, res, id, method) {
     await db.query('DELETE FROM visits WHERE user_id = $1 AND plejecenter_id = $2', [user.id, id]);
     send(res, 200, { visited: false });
   }
+  return true;
+}
+
+/* --------------------------------------------------------------- reviews -- */
+
+/**
+ * One plejecentre's ratings and approved reviews. Public: the score is the
+ * point of the feature, and a score nobody can read without an account is not
+ * one. Signed in, the reply also carries your own review whatever state it is
+ * in, so the form can show you what you said.
+ */
+async function placeReviews(req, res, id) {
+  if (!id || id.length > 64) { send(res, 400, { error: 'bad_id' }); return true; }
+  const user = await currentUser(req);
+  send(res, 200, await reviews.forPlace(id, user?.id ?? null));
+  return true;
+}
+
+/** Every plejecentre's score in one reply, for the list and the map. */
+async function allRatings(req, res) {
+  send(res, 200, { ratings: await reviews.summaries() });
+  return true;
+}
+
+async function putReview(req, res, id) {
+  const user = await currentUser(req);
+  if (!requireUser(res, user)) return true;
+  if (!id || id.length > 64) { send(res, 400, { error: 'bad_id' }); return true; }
+
+  // Rating is cheap to do and cheap to undo, so the limit is loose; it is here
+  // to stop a script rewriting a thousand reviews a minute, not to ration
+  // somebody changing their mind.
+  const who = clientKey(req);
+  if (overLimit('review', who, 60)) { send(res, 429, { error: 'too_many' }); return true; }
+  countAttempt('review', who);
+
+  // An unverified account can save places for itself; publishing under the
+  // site's name is a different thing, and it waits for the address to be
+  // confirmed. Otherwise anybody with a typo'd address can post as anybody.
+  if (!(await auth.isVerified(user.id))) { send(res, 403, { error: 'unverified' }); return true; }
+
+  const { stars, body } = await readJson(req);
+  if (!reviews.validStars(stars)) { send(res, 400, { error: 'bad_stars' }); return true; }
+  if (typeof body !== 'string' && body !== undefined) {
+    send(res, 400, { error: 'bad_body' });
+    return true;
+  }
+  const saved = await reviews.put(user.id, id, stars, body ?? '');
+  send(res, 200, { mine: saved, ...(await reviews.forPlace(id, user.id)) });
+  return true;
+}
+
+async function deleteReview(req, res, id) {
+  const user = await currentUser(req);
+  if (!requireUser(res, user)) return true;
+  await reviews.remove(user.id, id);
+  send(res, 200, await reviews.forPlace(id, user.id));
+  return true;
+}
+
+/* --------------------------------------------------------------- traffic -- */
+
+/**
+ * The counting beacon. Deliberately fire-and-forget from the browser's side
+ * and deliberately cheap here: it answers 204 with no body, so it can never
+ * become a way to read anything back out.
+ */
+async function track(req, res) {
+  const { event, id, locale } = await readJson(req);
+  try {
+    if (event === 'view') {
+      await traffic.view({
+        ip: clientKey(req),
+        agent: req.headers['user-agent'],
+        locale: String(locale ?? ''),
+      });
+    } else if (event === 'place' && typeof id === 'string') {
+      await traffic.place(id);
+    }
+  } catch (err) {
+    // Counting must never break the page it is counting.
+    console.error('track failed:', err?.message);
+  }
+  res.writeHead(204, { 'cache-control': 'no-store' }).end();
+  return true;
+}
+
+/* ----------------------------------------------------------------- admin -- */
+
+/**
+ * Everything under /api/admin/. One guard at the top rather than one per
+ * handler, because a route added later would otherwise be public by omission.
+ */
+async function adminRoutes(req, res, path, method) {
+  const user = await currentUser(req);
+  if (!(await admin.isAdmin(user))) {
+    // The same answer whether the caller is signed out, signed in as somebody
+    // else, or an administrator who has not verified their address: none of
+    // those need to learn which one they are.
+    send(res, 403, { error: 'forbidden' });
+    return true;
+  }
+
+  if (path === '/api/admin/overview' && method === 'GET') {
+    const days = 30;
+    const [totals, series, locales, top, userStats, signups, reviewCounts] = await Promise.all([
+      traffic.totals(),
+      traffic.series(days),
+      traffic.locales(days),
+      traffic.topPlaces(days),
+      admin.userTotals(),
+      admin.signups(days),
+      reviews.counts(),
+    ]);
+    send(res, 200, { days, totals, series, locales, top, users: userStats, signups, reviews: reviewCounts });
+    return true;
+  }
+
+  if (path === '/api/admin/users' && method === 'GET') {
+    const url = new URL(req.url, 'http://localhost');
+    const offset = Math.max(0, Number(url.searchParams.get('offset') ?? 0) || 0);
+    send(res, 200, await admin.users({ offset }));
+    return true;
+  }
+
+  if (path === '/api/admin/reviews' && method === 'GET') {
+    const url = new URL(req.url, 'http://localhost');
+    const status = url.searchParams.get('status') ?? 'pending';
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      send(res, 400, { error: 'bad_status' });
+      return true;
+    }
+    send(res, 200, { reviews: await reviews.queue(status), counts: await reviews.counts() });
+    return true;
+  }
+
+  if (path.startsWith('/api/admin/reviews/') && method === 'POST') {
+    const id = path.slice('/api/admin/reviews/'.length);
+    if (!/^\d{1,19}$/.test(id)) { send(res, 400, { error: 'bad_id' }); return true; }
+    const { decision } = await readJson(req);
+    if (decision !== 'approve' && decision !== 'reject') {
+      send(res, 400, { error: 'bad_decision' });
+      return true;
+    }
+    const done = await reviews.decide(id, decision, user.id);
+    send(res, done ? 200 : 409, done ? { ok: true } : { error: 'already_decided' });
+    return true;
+  }
+
+  send(res, 404, { error: 'not_found' });
   return true;
 }

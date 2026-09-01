@@ -49,6 +49,29 @@ export class Store {
   selectedId: string | null = null;
   visible: Plejecenter[] = ALL;
 
+  /**
+   * Scores, by plejecentre id. Held here rather than fetched per row: the list
+   * draws 148 of them, and the alternative is 148 requests to render a page.
+   */
+  ratings = new Map<string, { average: number; count: number }>();
+
+  setRatings(all: Record<string, { average: number; count: number }>): void {
+    this.ratings = new Map(Object.entries(all));
+    this.emit();
+  }
+
+  /** One score, after somebody rates. Null when they removed theirs and it
+   * was the only one. */
+  setRating(id: string, value: { average: number; count: number } | null): void {
+    if (value && value.count > 0) this.ratings.set(id, value);
+    else this.ratings.delete(id);
+    this.emit();
+  }
+
+  ratingFor(id: string): { average: number; count: number } | null {
+    return this.ratings.get(id) ?? null;
+  }
+
   private listeners = new Set<Listener>();
 
   subscribe(fn: Listener): void {

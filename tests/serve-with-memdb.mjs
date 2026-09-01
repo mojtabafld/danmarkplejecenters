@@ -56,7 +56,15 @@ const server = createServer(async (req, res) => {
   const inside = target === ROOT || target.startsWith(ROOT + sep);
   let file = inside ? target : join(ROOT, 'index.html');
   try {
-    if (!(await stat(file)).isFile()) file = join(ROOT, 'index.html');
+    const info = await stat(file);
+    // A directory serves its index.html, the way the real server does, so
+    // /admin reaches the admin bundle here too rather than the map.
+    if (info.isDirectory()) {
+      const index = join(file, 'index.html');
+      file = (await stat(index)).isFile() ? index : join(ROOT, 'index.html');
+    } else if (!info.isFile()) {
+      file = join(ROOT, 'index.html');
+    }
   } catch {
     file = join(ROOT, 'index.html');
   }

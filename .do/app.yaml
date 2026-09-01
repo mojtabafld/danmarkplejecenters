@@ -42,6 +42,14 @@ services:
         scope: RUN_TIME
         value: https://plejefinder.online
 
+      # Who may open /admin. Comma-separated addresses; each still has to hold
+      # a confirmed account with a password, so being listed is permission
+      # rather than a way in. Left empty, /admin refuses everybody, which is
+      # the right default for a component nobody has claimed yet.
+      - key: ADMIN_EMAILS
+        scope: RUN_TIME
+        value: ""
+
       # Mail, for verifying addresses. Discrete variables rather than a URL,
       # because a mailbox password containing @ : or / silently truncates a
       # connection string and the failure then looks like a wrong host.
