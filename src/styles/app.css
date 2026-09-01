@@ -1677,6 +1677,16 @@ a.btn { text-decoration: none; }
 
 .langpick__code { font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-wide); }
 
+/*
+ * The language menu and the account panel -- sign-in and signed-in both -- are
+ * the same element wearing different contents, so one rule puts all three on
+ * glass.
+ *
+ * The thick pane, not the control one. These carry sentences: an address you
+ * read, a password rule, an e-mail you check. The blur and the sheen are the
+ * same as the dock's, so they belong to the same set; the tint is heavier
+ * because the text on them has to clear 4.5:1 rather than an icon's 3.
+ */
 .langpick__menu {
   position: absolute;
   z-index: var(--z-toast);
@@ -1684,10 +1694,12 @@ a.btn { text-decoration: none; }
   inset-inline-end: 0;
   min-inline-size: 11rem;
   padding: var(--space-1);
-  background: var(--menu-bg);
-  border: var(--border-hairline) solid var(--menu-border);
+  background: var(--glass-panel-bg);
+  border: var(--border-hairline) solid var(--glass-border);
   border-radius: var(--menu-radius);
-  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
 }
 .langpick__menu[hidden] { display: none; }
 
