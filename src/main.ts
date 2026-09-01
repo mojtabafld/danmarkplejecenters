@@ -66,8 +66,6 @@ const geoNoteText = $('#geoNoteText');
 const railEl = $('#rail');
 const stageEl = $('.stage');
 const legendSaved = $('#legendSaved');
-const savedChip = $<HTMLButtonElement>('#savedChip');
-const savedChipLabel = $('#savedChipLabel');
 const live = $('#live');
 const langButton = $<HTMLButtonElement>('#langButton');
 const langMenu = $('#langMenu');
@@ -673,21 +671,7 @@ function setDockOpen(open: boolean): void {
  * all -- and signed out there are no saved places, so the blue never appears.
  */
 function paintLegendSaved(): void {
-  const has = Boolean(account.user) && account.visited.size > 0;
-  legendSaved.hidden = !has;
-
-  /*
-   * The same condition for the chip in the sheet, and for the same reason: a
-   * filter that can only ever return nothing reads as broken, and a key to a
-   * colour that is not on the map explains nothing.
-   *
-   * Its label carries its state, because the strike-through its neighbours use
-   * would say the wrong thing here -- see the note by `.chip--saved`.
-   */
-  savedChip.hidden = !has;
-  const on = store.filters.visitedOnly;
-  savedChip.setAttribute('aria-pressed', String(on));
-  savedChipLabel.textContent = t(on ? 'visit.filter' : 'map.legendSaved');
+  legendSaved.hidden = !account.user || account.visited.size === 0;
 }
 
 /** Icon only, so the label is the accessible name and the title on hover. */
@@ -801,10 +785,6 @@ dockSearchBtn.addEventListener('click', () => {
     return;
   }
   setDockOpen(!dockOpen);
-});
-
-savedChip.addEventListener('click', () => {
-  store.setVisitedOnly(!store.filters.visitedOnly);
 });
 
 dockSavedBtn.addEventListener('click', () => {
