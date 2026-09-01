@@ -499,27 +499,6 @@ a.btn { text-decoration: none; }
 /* Off is stated in words too, never by colour alone. */
 .chip[aria-pressed='false'] { text-decoration: line-through; }
 
-/*
- * The saved chip is a different kind of filter, and needs different rules.
- *
- * Its three neighbours start on and are struck through when a type is excluded.
- * This one starts off and means "narrow to the ones I saved", so a strike would
- * say "saved centres are hidden" -- the opposite. And its mark is not only a
- * state indicator but the key to the blue dots on the map, so muting it would
- * put out the one light a phone has: the legend that explains those colours is
- * hidden below the breakpoint.
- *
- * It still states its state in words rather than by colour: the label itself
- * changes between "saved by you" and "only saved".
- */
-.chip--saved { --own-mark: var(--map-visited-dot); }
-.chip--saved[aria-pressed='false'] { text-decoration: none; }
-.chip--saved[aria-pressed='false'] .chip__mark { opacity: 1; }
-
-/* `.chip` is inline-flex, and an author display beats the browser's [hidden].
-   The third control in this file to need saying so out loud. */
-.chip[hidden] { display: none; }
-
 /* ----------------------------------------------------------------- list -- */
 /*
  * The list is not part of the interface any more, but it is still the only way
