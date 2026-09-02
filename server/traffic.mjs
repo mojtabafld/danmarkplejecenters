@@ -241,18 +241,21 @@ export async function totals() {
     const { rows } = await db.query(sql, params);
     return Number(rows[0]?.n ?? 0);
   };
-  const [viewsAll, viewsToday, viewsWeek, visitorsToday, visitorDaysWeek] = await Promise.all([
+  const [viewsAll, viewsToday, viewsWeek, visitorsToday] = await Promise.all([
     one(`SELECT coalesce(sum(n), 0)::int AS n FROM counters WHERE metric = 'view'`),
     one(`SELECT coalesce(sum(n), 0)::int AS n FROM counters WHERE metric = 'view' AND day = $1::date`, [day]),
     one(`SELECT coalesce(sum(n), 0)::int AS n FROM counters WHERE metric = 'view' AND day >= $1::date`, [week]),
     one('SELECT count(*)::int AS n FROM visitor_days WHERE day = $1::date', [day]),
-    one('SELECT count(*)::int AS n FROM visitor_days WHERE day >= $1::date', [week]),
   ]);
+  // There is deliberately no weekly visitor figure. Counting rows across seven
+  // days answers person-days, not people -- somebody who came on three days
+  // counts three -- and the daily salt makes the real question unanswerable by
+  // design. A number that would be read as one thing and mean another is worth
+  // less than the query it costs.
   return {
     views_all: viewsAll,
     views_today: viewsToday,
     views_week: viewsWeek,
     visitors_today: visitorsToday,
-    visitor_days_week: visitorDaysWeek,
   };
 }

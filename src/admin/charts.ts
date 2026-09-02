@@ -56,7 +56,7 @@ function ticks(max: number): number[] {
  */
 export function lineChart(
   points: Point[],
-  opts: { labelA: string; labelB?: string; fmt: Fmt; rtl: boolean },
+  opts: { labelA: string; labelB?: string; fmt: Fmt },
 ): string {
   const W = 720;
   const H = 260;

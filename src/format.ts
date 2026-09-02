@@ -114,11 +114,3 @@ export function jobsHref(p: Plejecenter): string {
     : `"${p.name}" ${p.city} ledige stillinger`;
   return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 }
-
-/**
- * A ready-to-edit unsolicited application.
- *
- * Danish care homes hire on uopfordrede ansøgninger to a degree that makes the
- * address in the register a real route in, so the message opens with the
- * subject and the greeting already filled and the plejecenter named.
- */

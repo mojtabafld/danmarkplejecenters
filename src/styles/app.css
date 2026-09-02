@@ -158,8 +158,44 @@ a { color: var(--text-link); }
   min-inline-size: 0;
   padding-inline: var(--space-4);
   padding-block: var(--space-2);
-  background: var(--header-bg);
-  border-block-end: var(--border-hairline) solid var(--header-border);
+  /*
+   * Glass, like the dock and the panels -- but painted by a pseudo-element
+   * rather than by the header itself, and that is not a stylistic choice.
+   *
+   * `backdrop-filter` makes an element a containing block for every
+   * `position: fixed` descendant. The sign-in panel, its scrim and the note
+   * dialog all live inside this header, and all three are fixed: with the
+   * filter on the header, the scrim measured 420x55 instead of covering the
+   * screen and the sign-in panel centred itself inside a 56px strip. Moving
+   * the filter to ::before keeps the material and leaves the header an
+   * ordinary box, so those three go on measuring themselves against the
+   * viewport.
+   *
+   * `position: relative` here is safe for the same reason the filter was not:
+   * it is a containing block for absolute descendants only, and the one
+   * absolute child -- the language menu -- already anchors to .langpick.
+   *
+   * One honest limit: the header is a row in the app's grid rather than a
+   * layer over the map, so there is nothing behind it for the blur to work
+   * on. What it gains is the material, the hairline edge and the specular
+   * line, not a view through.
+   */
+  position: relative;
+  border-block-end: var(--border-hairline) solid var(--glass-border);
+}
+
+.masthead::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Behind the header's own content, inside the header's stacking context. */
+  z-index: -1;
+  /* The heavy tint, not the control one: the title and the subtitle are text
+     and have to clear 4.5:1. */
+  background: var(--glass-panel-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 -1px 0 var(--glass-sheen);
 }
 
 .masthead__mark {
@@ -269,8 +305,17 @@ a.btn { text-decoration: none; }
   grid-template-rows: auto minmax(0, 1fr);
   min-inline-size: 0;
   min-block-size: 0;
-  background: var(--rail-bg);
-  border-inline-end: var(--border-hairline) solid var(--rail-border);
+  /*
+   * Glass here earns its keep on a phone, where the rail leaves the column and
+   * becomes a sheet sitting on top of the map -- the list of plejecentre then
+   * reads over a blurred city rather than over a flat panel. Beside the map on
+   * a desktop there is nothing behind it but the page, and it degrades to the
+   * material without the view, which is the same trade the header makes.
+   */
+  background: var(--glass-panel-bg);
+  border-inline-end: var(--border-hairline) solid var(--glass-border);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
 }
 
 .rail__lead {
@@ -1024,10 +1069,22 @@ a.btn { text-decoration: none; }
      one out and the body lands in an `auto` track and collapses, which is
      exactly how the rail's list once ended up 1px tall. */
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  background: var(--panel-bg);
-  border: var(--border-hairline) solid var(--panel-border);
+  /*
+   * The card floats over the map on every screen, so this is the one of the
+   * three where the blur has a city behind it to work on.
+   *
+   * Still the heavy tint. This card is the densest text in the product -- an
+   * address, a phone number, somebody's written review -- and it is read over
+   * whatever the map happens to be showing underneath, which is not a
+   * background anybody chose. 0.92 keeps that text at a contrast that does not
+   * depend on where the reader happened to pan to.
+   */
+  background: var(--glass-panel-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: var(--border-hairline) solid var(--glass-border);
   border-radius: var(--panel-radius);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
   overflow: hidden;
 
   /*
@@ -1387,7 +1444,6 @@ a.btn { text-decoration: none; }
 .noteedit__text::placeholder { color: var(--text-tertiary); }
 .noteedit__text:hover { border-color: var(--field-border-hover); }
 
-.btn--note { inline-size: 100%; min-block-size: var(--control-lg); }
 
 .panel__actions { display: grid; gap: var(--space-2); align-content: start; }
 .panel__actions .btn { inline-size: 100%; min-block-size: var(--control-lg); block-size: auto; }
@@ -1427,7 +1483,10 @@ a.btn { text-decoration: none; }
     border-start-start-radius: var(--radius-xl);
     border-start-end-radius: var(--radius-xl);
     padding-block-end: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-    box-shadow: var(--shadow-lg);
+    /* The specular line goes on the top edge, which is the one edge of the
+       sheet a reader sees. On a desktop that edge is the top of a full-height
+       column and a bright line there reads as a seam, so it lives here. */
+    box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
     transition: translate var(--duration-base) var(--ease-out);
   }
 

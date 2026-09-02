@@ -28,13 +28,11 @@ const dayFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' 
 const dateFmt = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
 
 type Overview = {
-  days: number;
   totals: {
     views_all: number;
     views_today: number;
     views_week: number;
     visitors_today: number;
-    visitor_days_week: number;
   };
   series: Array<{ day: string; views: number; visitors: number }>;
   locales: Array<{ locale: string; n: number }>;
@@ -161,12 +159,8 @@ function trafficView(d: Overview): string {
     card(
       t('trafficTitle'),
       t('trafficNote'),
-      lineChart(points, {
-        labelA: t('views'),
-        labelB: t('visitors'),
-        fmt: n,
-        rtl: DIR[locale] === 'rtl',
-      }) + `<div class="tip" id="tip" hidden></div>`,
+      lineChart(points, { labelA: t('views'), labelB: t('visitors'), fmt: n }) +
+        `<div class="tip" id="tip" hidden></div>`,
       legend,
     ) +
     `<div class="grid2">` +
