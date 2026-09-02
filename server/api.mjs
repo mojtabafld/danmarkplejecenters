@@ -644,7 +644,7 @@ async function adminRoutes(req, res, path, method) {
       reviews.counts(),
     ]);
     send(res, 200, {
-      days, totals, series, locales, top, topTotal,
+      totals, series, locales, top, topTotal,
       users: userStats, signups, reviews: reviewCounts,
     });
     return true;

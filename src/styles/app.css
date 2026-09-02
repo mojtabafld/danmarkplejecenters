@@ -1387,7 +1387,6 @@ a.btn { text-decoration: none; }
 .noteedit__text::placeholder { color: var(--text-tertiary); }
 .noteedit__text:hover { border-color: var(--field-border-hover); }
 
-.btn--note { inline-size: 100%; min-block-size: var(--control-lg); }
 
 .panel__actions { display: grid; gap: var(--space-2); align-content: start; }
 .panel__actions .btn { inline-size: 100%; min-block-size: var(--control-lg); block-size: auto; }
