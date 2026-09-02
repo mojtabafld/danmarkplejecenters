@@ -5,7 +5,7 @@
   "description": "Interactive map of plejecentre (care homes) across Greater Copenhagen, on OpenStreetMap data.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "vite",
