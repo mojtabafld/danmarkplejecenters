@@ -118,6 +118,20 @@ function cleanEmail(raw) {
  * gap the primary register leaves empty, never to overwrite it.
  */
 async function copenhagenPhones() {
+  try {
+    return await copenhagenPhonesInner();
+  } catch (err) {
+    // This is a nice-to-have and nothing else: it fills in phone numbers the
+    // register leaves blank for Copenhagen's municipal homes. A national build
+    // of 929 rows must not die because one optional municipal website is
+    // having a bad afternoon -- which is exactly what happened, with an
+    // ECONNREFUSED that threw away a complete extract.
+    console.warn(`  kk.dk unavailable (${err?.cause?.code ?? err.message}); continuing without backfill.`);
+    return new Map();
+  }
+}
+
+async function copenhagenPhonesInner() {
   const base = 'https://boligertilaeldre.kk.dk/plejehjem/find-plejehjem';
   const slugs = new Set();
   for (let page = 0; page < 8; page++) {
@@ -131,7 +145,12 @@ async function copenhagenPhones() {
 
   const byAddress = new Map();
   for (const slug of slugs) {
-    const res = await fetch(`${base}/${slug}/kontakt`);
+    let res;
+    try {
+      res = await fetch(`${base}/${slug}/kontakt`);
+    } catch {
+      continue; // One unreachable page costs one phone number, not the build.
+    }
     if (!res.ok) continue;
     const text = (await res.text()).replace(/<[^>]+>/g, '\n');
     const lines = text
@@ -188,11 +207,32 @@ function parseCsv(text, delimiter = ';') {
 
 /* ------------------------------------------------------------- geocoding */
 
+/**
+ * One address lookup, and the retry that makes nine hundred of them survivable.
+ *
+ * A national build asks DAWA a few thousand times. At that volume a dropped
+ * connection is not a possibility, it is a scheduled event, and an unhandled
+ * one throws away every row geocoded before it. So a network failure is
+ * retried once after a moment, and a second failure gives up on that lookup
+ * alone: the row is reported as unresolved and the build carries on, which is
+ * the same outcome as an address the register spelled wrong.
+ */
 async function dawa(params) {
   const url = `${DAWA}?${new URLSearchParams({ ...params, struktur: 'mini' })}`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  return res.json();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (err) {
+      if (attempt === 1) {
+        console.warn(`    lookup failed (${err?.cause?.code ?? err.message}); the row will be reported.`);
+        return [];
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  return [];
 }
 
 /**
@@ -470,4 +510,13 @@ console.log(`  Sjælland ${byRegion.sjaelland}  ·  Fyn ${byRegion.fyn}  ·  Jyl
 console.log(`  phone: ${withPhone}/${records.length} (${backfilled} backfilled from kk.dk)`);
 console.log(`  email: ${withEmail}/${records.length}`);
 
-if (failures.length) process.exit(1);
+/*
+ * 3, not 1, and the difference matters to whatever is running this.
+ *
+ * 1 is what Node exits with when it throws, so a build that dies on its first
+ * request and a build that wrote 895 good rows and could not place 34 both
+ * looked identical -- and the workflow, told that 1 meant "partial success",
+ * reported a crash as a green run with no data in it. A code of its own says
+ * the one thing that cannot be inferred: the file was written.
+ */
+if (failures.length) process.exit(3);
