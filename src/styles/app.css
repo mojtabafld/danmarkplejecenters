@@ -946,89 +946,75 @@ a.btn { text-decoration: none; }
 .dockpick__item[data-empty='true'] .dockpick__name,
 .dockpick__item[data-empty='true'] .dockpick__count { color: var(--text-tertiary); }
 
+/* =========================================================== attention === */
 /*
- * The balloon over the landsdel icon.
+ * The landsdel icon asking to be noticed, once, shortly after the map settles.
  *
- * Glass, like everything else that floats over the map, and the thick pane
- * rather than the control one: it is a sentence, and text has to clear 4.5:1
- * against whatever street happens to be behind it where an icon only has to
- * clear 3.
+ * A ring leaving the button and a breath in the glyph, three times, and then
+ * nothing. It replaces a balloon that said the same thing in a sentence over
+ * the middle of the map at the moment somebody was first reading it.
  *
- * It sits in the same relative box as the menu, so it is anchored to the
- * segment rather than to the bar and stays over the icon when the dock grows a
- * search field underneath it. It cannot be open at the same time as the menu --
- * script hides it the moment the picker is touched -- so the two never stack.
+ * Everything here is `scale` and `opacity` on a pseudo-element and on the
+ * glyph's own box. Nothing animated is in the layout, so the dock cannot
+ * change size or position while a thumb is already travelling towards it --
+ * a control that moves as you reach for it is worse than one you never
+ * noticed.
+ *
+ * The ring is drawn in the same colour the segment turns when it is holding a
+ * filter, so the motion is the button hinting at its own pressed state rather
+ * than a decoration borrowed from somewhere else.
  */
-.dockhint {
-  position: absolute;
-  z-index: var(--z-toast);
-  inset-block-end: calc(100% + var(--space-2));
-  /* Centred on the segment, and free to be wider than it: the segment is one
-     icon and this is a sentence. */
-  inset-inline: 50% auto;
-  translate: -50% 0;
-  inline-size: max-content;
-  /* Never wider than the viewport it floats over, with the dock's own margins
-     left clear on both sides. */
-  max-inline-size: min(17rem, calc(100vw - var(--space-8)));
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-  line-height: var(--leading-snug);
-  color: var(--text-primary);
-  background: var(--glass-panel-bg);
-  border: var(--border-hairline) solid var(--glass-border);
-  border-radius: var(--radius-md);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
-  text-align: center;
-  pointer-events: none;
-  /* Arrives and leaves on the same curve. The rise is small on purpose: this
-     is a label appearing, not a card being dealt. */
-  opacity: 1;
-  transition: opacity var(--duration-slow) var(--ease-out),
-              translate var(--duration-slow) var(--ease-out);
+.dock__seg[data-attention='true'] {
+  /* The ring is positioned against the button. The button is a grid item with
+     no position of its own, so it needs one before ::after can sit on it. */
+  position: relative;
 }
-/* An author `display` beats the browser's `[hidden]`, as the dock's segments
-   and the intro both found out. */
-.dockhint[hidden] { display: none; }
 
-/* `translate` does the centring, so the RTL mirror has to be undone: the
-   logical inset already flips, and flipping the translate too would carry the
-   balloon a full width off the icon. */
-[dir='rtl'] .dockhint { translate: 50% 0; }
-
-/* The state it is put into for one frame before it is shown, and returned to
-   when its four seconds are up. The RTL rule is more specific, so it wins
-   without needing a :not() to fence the other one off. */
-.dockhint[data-away='true'] { opacity: 0; translate: -50% var(--space-2); }
-[dir='rtl'] .dockhint[data-away='true'] { translate: 50% var(--space-2); }
-
-/* The pointer, centred under the balloon and therefore on the icon. */
-.dockhint::after {
+.dock__seg[data-attention='true']::after {
   content: '';
   position: absolute;
-  inset-block-start: 100%;
-  inset-inline-start: 50%;
-  margin-inline-start: calc(var(--space-2) * -1);
-  margin-block-start: calc(var(--border-hairline) * -1);
-  border: var(--space-2) solid transparent;
-  border-block-start-color: var(--glass-panel-bg);
-  /* The tail is a triangle of the pane's colour, not of the pane itself: a
-     backdrop-filter cannot be given a triangular shape, so it borrows the tint
-     and lets the blur stop at the balloon's edge. */
-  filter: drop-shadow(0 1px 0 var(--glass-border));
+  /* Starts inside the button's own edge and grows past it. Insetting rather
+     than scaling from zero keeps the ring reading as a ring throughout. */
+  inset: 0;
+  border: var(--border-thick) solid var(--action-primary);
+  border-radius: var(--radius-pill);
+  /* Never in the way of the press it is inviting. */
+  pointer-events: none;
+  animation: dock-attention-ring 1600ms var(--ease-out) 3;
+}
+
+/* The glyph breathes with it, a little behind, so the two read as one gesture
+   rather than a ring that happens to be over an icon. */
+.dock__seg[data-attention='true'] .dock__icon {
+  animation: dock-attention-glyph 1600ms var(--ease-out) 3;
+}
+
+@keyframes dock-attention-ring {
+  0% { opacity: 0; scale: 0.7; }
+  /* Brightest early and fading all the way out: a ring that vanishes at its
+     widest reads as something leaving the button, which is the direction the
+     eye should be pulled from. */
+  18% { opacity: 0.55; }
+  100% { opacity: 0; scale: 1.45; }
+}
+
+@keyframes dock-attention-glyph {
+  0%, 100% { scale: 1; }
+  18% { scale: 1.12; }
+  40% { scale: 1; }
 }
 
 /*
- * Somebody who has asked for less movement gets the balloon without the rise:
- * it still appears and still leaves, because the words are the point, but it
- * does not travel to do it.
+ * Asked for less movement, given none.
+ *
+ * The script already declines to start it, so this is the belt to that
+ * braces: a stylesheet that outlives a script change should not be the thing
+ * that puts motion in front of somebody who asked for none.
  */
 @media (prefers-reduced-motion: reduce) {
-  .dockhint { transition: opacity var(--duration-fast) var(--ease-out); }
-  .dockhint[data-away='true'] { translate: -50% 0; }
-  [dir='rtl'] .dockhint[data-away='true'] { translate: 50% 0; }
+  .dock__seg[data-attention='true']::after,
+  .dock__seg[data-attention='true'] .dock__icon { animation: none; }
+  .dock__seg[data-attention='true']::after { content: none; }
 }
 
 /* ================================================================ dock === */
