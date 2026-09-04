@@ -59,6 +59,39 @@ export function readRegions() {
   return groups;
 }
 
+/**
+ * The spelling this project stores, for a name the register may spell its own
+ * way.
+ *
+ * The register writes a municipality more than one way -- Aarhus and Århus,
+ * a genitive here and a plain form there, "Bornholms Regionskommune" for the
+ * one that is not a kommune at all. Left alone those are separate strings, and
+ * the first national build proved it: 99 municipalities in a country that has
+ * 98, which in the interface is one kommune appearing twice in the list.
+ *
+ * The landsdel table already holds one canonical spelling of each, so that is
+ * the one written down. Unknown names come back unchanged; the build refuses
+ * them separately.
+ */
+export function canonicalNames() {
+  const byKey = new Map();
+  const names = Object.values(readRegions()).flat();
+
+  // The genitive both ways, so "København" and "Københavns" reach the same
+  // canonical spelling. Variants go in first and never overwrite an exact
+  // name: if some future pair of municipalities collides on a variant, the
+  // real name must win rather than be renamed into its neighbour.
+  for (const n of names) {
+    const k = fold(n);
+    for (const variant of [k.replace(/s$/, ''), `${k}s`]) {
+      if (!byKey.has(variant)) byKey.set(variant, n);
+    }
+  }
+  for (const n of names) byKey.set(fold(n), n);
+
+  return (municipality) => byKey.get(fold(municipality)) ?? municipality;
+}
+
 /** A lookup with the same forgiveness as the one in src/regions.ts. */
 export function regionLookup() {
   const byName = new Map();

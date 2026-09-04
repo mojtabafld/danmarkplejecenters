@@ -24,7 +24,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import { regionLookup } from './landsdele.mjs';
+import { canonicalNames, regionLookup } from './landsdele.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(HERE, '../src/data/plejecentre.ts');
@@ -41,6 +41,16 @@ const DAWA = 'https://api.dataforsyningen.dk/adgangsadresser';
  * the data.
  */
 const regionOf = regionLookup();
+
+/**
+ * The spelling to write down, for a municipality the register spells its way.
+ *
+ * The first national build reported 99 municipalities in a country that has
+ * 98: the register uses more than one spelling for the same place, and two
+ * spellings are two entries in the kommune list. The landsdel table's spelling
+ * is the one that gets stored.
+ */
+const canonical = canonicalNames();
 
 /**
  * How many geocoding requests are in flight at once.
@@ -185,7 +195,49 @@ async function dawa(params) {
   return res.json();
 }
 
-async function geocode(street, houseNo, postcode) {
+/**
+ * Undo the three ways the register mangles an address, before asking DAWA.
+ *
+ * These are not guesses about what an address might be; each is a shape the
+ * national extract actually produced, and each is reversible without inventing
+ * anything. The first national run lost 34 of 929 rows and half of them were
+ * these three:
+ *
+ *   "Erritsø Bygade A" + "85A"   the house letter is in the street as well as
+ *                                the number. Eight rows. Dropping the trailing
+ *                                letter is safe only when the number already
+ *                                ends in that same letter, which is the check.
+ *   "Skovvangsvej 99A" + "99A"   the whole house number, twice.
+ *   postcode "4250 Fuglebjerg"   the postal town in the postcode column. Six
+ *                                rows. Four digits is unambiguous.
+ *
+ * Anything that does not match a shape is passed through untouched, so a row
+ * this does not understand fails loudly as before rather than being bent into
+ * the wrong address.
+ */
+function tidyAddress(street, houseNo, postcode) {
+  let st = (street ?? '').replace(/\s+/g, ' ').trim();
+  const no = (houseNo ?? '').replace(/\s+/g, ' ').trim();
+
+  // The house number repeated at the end of the street name.
+  if (no && st.toUpperCase().endsWith(` ${no.toUpperCase()}`)) {
+    st = st.slice(0, -(no.length + 1)).trim();
+  }
+
+  // A lone capital at the end of the street that is the number's own letter.
+  const tail = /\s([A-ZÆØÅ])$/.exec(st);
+  if (tail && new RegExp(`^\\d+\\s*${tail[1]}$`, 'i').test(no)) {
+    st = st.slice(0, -2).trim();
+  }
+
+  // Four digits anywhere in the postcode column; the rest is the postal town.
+  const pc = /\b(\d{4})\b/.exec(String(postcode ?? ''));
+
+  return [st, no, pc ? pc[1] : (postcode ?? '').trim()];
+}
+
+async function geocode(rawStreet, rawHouseNo, rawPostcode) {
+  const [street, houseNo, postcode] = tidyAddress(rawStreet, rawHouseNo, rawPostcode);
   const m = /^\s*(\d+)\s*([A-Za-zÆØÅæøå])?/.exec(houseNo ?? '');
   const candidates = [
     (houseNo ?? '').replace(/\s+/g, ''),
@@ -362,7 +414,7 @@ await pool(selected, CONCURRENCY, async (r) => {
     street: streetFull,
     postcode,
     city: hit.postnrnavn,
-    municipality: kommuneName(r['Kommune']),
+    municipality: canonical(kommuneName(r['Kommune'])),
     phone,
     email: cleanEmail(r['Email']),
     web: web || null,

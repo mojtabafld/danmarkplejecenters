@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import { readRegions, regionLookup, fold } from '../scripts/landsdele.mjs';
+import { canonicalNames, readRegions, regionLookup, fold } from '../scripts/landsdele.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA = resolve(HERE, '../src/data/plejecentre.ts');
@@ -57,6 +57,7 @@ check(
 );
 
 const regionOf = regionLookup();
+const canonical = canonicalNames();
 
 // The three spellings the source register is known to vary on. Each is a real
 // failure this lookup has to absorb, not a hypothetical.
@@ -97,6 +98,21 @@ check(
     ? `not in the table in src/regions.ts: ${unplaceable.join(', ')}\n` +
       '         Add each to SJAELLAND, FYN or JYLLAND there.'
     : '',
+);
+
+// Denmark has 98 municipalities, so more than 98 distinct names in the data
+// means the register spelled one of them two ways and the kommune list would
+// offer the same place twice. The first national build produced exactly that:
+// 99 of 98.
+check(
+  'holds no more municipality names than Denmark has municipalities',
+  municipalities.length <= 98,
+  `${municipalities.length} distinct names`,
+);
+check(
+  'and each is spelled the way the landsdel table spells it',
+  municipalities.every((m) => canonical(m) === m),
+  municipalities.filter((m) => canonical(m) !== m).map((m) => `${m} -> ${canonical(m)}`).join(', '),
 );
 
 const counts = { sjaelland: 0, fyn: 0, jylland: 0 };

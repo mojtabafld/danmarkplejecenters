@@ -63,11 +63,31 @@ jobs:
       - name: Rebuild from Plejehjemsoversigten and DAWA
         id: build
         run: |
+          set +e
           if [ "${{ inputs.allow_expired_cert }}" = "true" ]; then
             echo "::warning::Certificate verification is being skipped for the register download."
             npm run build:data -- --allow-expired-cert
           else
             npm run build:data
+          fi
+          code=$?
+          set -e
+          # The script's two failure codes mean different things and this is
+          # the one place that has to tell them apart.
+          #
+          #   2  nothing was downloaded or nothing was written. A hard stop.
+          #   1  the file WAS written, and some rows could not be geocoded.
+          #
+          # A national extract always has a few of the second kind: the
+          # register's address columns are free text and a handful are simply
+          # unusable -- an empty street, two streets in one field, a postcode
+          # column holding a town name. Those rows are named in the log above
+          # and are absent from the map, which is the honest outcome. Throwing
+          # away the other nine hundred over them would not be.
+          if [ "$code" -eq 1 ]; then
+            echo "::warning::Some rows could not be geocoded and are not on the map. See the list above."
+          elif [ "$code" -ne 0 ]; then
+            exit "$code"
           fi
 
       # When the download is refused for a bad certificate, the next question
