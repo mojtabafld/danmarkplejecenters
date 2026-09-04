@@ -1,4 +1,5 @@
 import type { I18n, TranslationKey } from './i18n';
+import { KOMMUNE_COUNT, TOTAL_COUNT } from './regions';
 
 const KEY = 'plejekort.intro';
 
@@ -269,7 +270,9 @@ export class Intro {
     const text = this.root.querySelector('#introText')!;
     text.innerHTML =
       `<h2 class="intro__title" id="introTitle">${esc(t(title))}</h2>` +
-      `<p class="intro__body">${esc(t(body))}</p>`;
+      // The counts come from the data. A step that does not mention them is
+      // unaffected -- an unused placeholder is simply never substituted.
+      `<p class="intro__body">${esc(t(body, { n: this.i18n.n(TOTAL_COUNT), k: this.i18n.n(KOMMUNE_COUNT) }))}</p>`;
 
     this.root.querySelector('#introDots')!.innerHTML = STEPS.map(
       (_, i) => `<span class="intro__dot"${i === this.step ? ' data-on="true"' : ''}></span>`,
