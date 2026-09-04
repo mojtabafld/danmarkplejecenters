@@ -17,7 +17,6 @@ import {
   REGIONS,
   REGION_BOX,
   REGION_COUNT,
-  TOTAL_COUNT,
   boxOf,
   type Region,
 } from './regions';
@@ -94,10 +93,9 @@ const dockFields = $('#dockFields');
 const dockSearchInput = $<HTMLInputElement>('#dockSearch');
 const dockClear = $<HTMLButtonElement>('#dockClear');
 const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
-const regionEl = $('#regionpick');
-const regionButton = $<HTMLButtonElement>('#regionButton');
+const regionEl = $('#dockpick');
+const regionButton = $<HTMLButtonElement>('#dockRegion');
 const regionMenu = $('#regionMenu');
-const regionName = $('#regionName');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -119,8 +117,7 @@ accountButton.insertAdjacentHTML('afterbegin', icon('user'));
 $('#geoNoteClose').insertAdjacentHTML('beforeend', icon('x'));
 $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
-$('#regionIcon').innerHTML = icon('map');
-$('#regionCaret').innerHTML = icon('chevronDown');
+$('#dockRegionIcon').innerHTML = icon('map');
 $('#dockFieldIcon').innerHTML = icon('search');
 dockClear.insertAdjacentHTML('beforeend', icon('x'));
 $('#dockSavedIcon').innerHTML = icon('bookmark');
@@ -250,59 +247,77 @@ document.addEventListener('click', (e) => {
 /**
  * Which part of the country the map is showing.
  *
- * The same disclosure pattern as the language menu, and for the same reason
- * set out there: four mutually exclusive choices do not need `role="menu"` and
- * the roving-tabindex contract that comes with it. A button with
- * `aria-expanded` over a list of ordinary buttons is operable with no script
- * at all, and the arrow keys below are a convenience rather than a promise.
+ * The names are Danish in all three languages and are never translated. They
+ * are places, and the app already treats places that way: a plejecenter's name
+ * and its kommune stay Danish in Persian too, because a translated Danish place
+ * name cannot be searched for, asked about, or read out to a bus driver. There
+ * is no Persian word for Sjælland that anybody in Denmark would recognise.
  *
- * Denmark is null, not a fourth region. It is the absence of the filter, so
- * the store cannot end up in a state where "all of it" is a thing that has to
- * be kept in step with the three parts.
+ * Three choices, not four. "All of Denmark" is the resting state rather than an
+ * option in the list: it is the absence of the filter, and pressing the part
+ * that is already chosen is what returns to it -- the same gesture the search
+ * segment already uses to drop the filter it is holding.
  */
-const REGION_KEY = {
-  sjaelland: 'region.sjaelland',
-  fyn: 'region.fyn',
-  jylland: 'region.jylland',
-} as const;
-
-function regionLabel(r: Region | null): string {
-  return r ? t(REGION_KEY[r]) : t('region.all');
-}
+const REGION_NAME: Record<Region, string> = {
+  sjaelland: 'Sjælland',
+  fyn: 'Fyn',
+  jylland: 'Jylland',
+};
 
 function renderRegionMenu(): void {
   const current = store.filters.region;
-  regionName.textContent = regionLabel(current);
   regionMenu.setAttribute('aria-label', t('region.menu'));
-
-  const row = (r: Region | null, n: number): string => {
-    const on = r === current;
-    const empty = n === 0;
-    return (
-      `<li><button type="button" class="regionpick__item"` +
-      ` aria-current="${on ? 'true' : 'false'}" data-empty="${empty}"` +
-      ` data-region="${r ?? ''}"` +
-      // A part with nothing in it says so in words as well as with a nought,
-      // because "0" beside a place name is easy to read as a loading state.
-      (empty ? ` title="${esc(t('region.empty'))}"` : '') +
-      `><span class="regionpick__tick">${icon('check')}</span>` +
-      `<span class="regionpick__label">${esc(regionLabel(r))}</span>` +
-      `<span class="regionpick__count">${esc(i18n.n(n))}</span>` +
-      `</button></li>`
-    );
-  };
 
   regionMenu.innerHTML =
     '<ul>' +
-    row(null, TOTAL_COUNT) +
-    REGIONS.map((r) => row(r, REGION_COUNT[r])).join('') +
+    REGIONS.map((r) => {
+      const on = r === current;
+      const n = REGION_COUNT[r];
+      return (
+        `<li><button type="button" class="dockpick__item"` +
+        ` aria-current="${on ? 'true' : 'false'}" data-empty="${n === 0}"` +
+        ` data-region="${r}"` +
+        (n === 0 ? ` title="${esc(t('region.empty'))}"` : '') +
+        `><span class="dockpick__tick">${icon('check')}</span>` +
+        // lang and dir on the name: it is Danish inside a page that may be
+        // Persian, so it gets the right font and is not laid out right-to-left.
+        `<span class="dockpick__name" lang="da" dir="ltr">${esc(REGION_NAME[r])}</span>` +
+        `<span class="dockpick__count">${esc(i18n.n(n))}</span>` +
+        `</button></li>`
+      );
+    }).join('') +
     '</ul>';
+
+  paintRegionSegment();
+}
+
+/**
+ * The segment's face and its name.
+ *
+ * The button carries no text, so everything it has to say is said in the
+ * accessible name and the tooltip: which part is chosen, or that none is. The
+ * filled state is the same one the search segment wears when it is holding a
+ * filter, because it means the same thing.
+ */
+function paintRegionSegment(): void {
+  const current = store.filters.region;
+  const label = current
+    ? `${t('region.label')}: ${REGION_NAME[current]}`
+    : `${t('region.label')}: ${t('region.all')}`;
+  regionButton.setAttribute('aria-label', label);
+  regionButton.title = label;
+  regionButton.dataset.filtered = String(current !== null);
 }
 
 function setRegionMenuOpen(open: boolean): void {
   regionMenu.hidden = !open;
   regionButton.setAttribute('aria-expanded', String(open));
-  if (open) regionMenu.querySelector<HTMLElement>('[aria-current="true"]')?.focus();
+  if (open) {
+    (
+      regionMenu.querySelector<HTMLElement>('[aria-current="true"]') ??
+      regionMenu.querySelector<HTMLElement>('[data-region]')
+    )?.focus();
+  }
 }
 
 /**
@@ -311,8 +326,7 @@ function setRegionMenuOpen(open: boolean): void {
  * Fitted to the plejecentre that are actually in it, not to a box drawn round
  * the landmass -- so the view is as tight as the data allows and stays right
  * when the extract grows. The geographic box is the fallback for a part with
- * nothing in it, which is the only case where there is nothing to frame; it is
- * what makes choosing an empty Fyn land on Fyn rather than nowhere.
+ * nothing in it, which is the only case where there is nothing to frame.
  */
 function flyToRegion(r: Region | null): void {
   const places = store.inRegion(r);
@@ -335,7 +349,10 @@ regionMenu.addEventListener('click', (e) => {
   if (!item) return;
   setRegionMenuOpen(false);
   regionButton.focus();
-  chooseRegion((item.dataset.region || null) as Region | null);
+  const picked = item.dataset.region as Region;
+  // Pressing the part already showing is how you get the whole country back,
+  // since it is not in the list. Same gesture as the search segment's.
+  chooseRegion(picked === store.filters.region ? null : picked);
 });
 
 regionMenu.addEventListener('keydown', (e) => {
