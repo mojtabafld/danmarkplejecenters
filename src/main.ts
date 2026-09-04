@@ -96,6 +96,7 @@ const regionEl = $('#dockpick');
 const regionButton = $<HTMLButtonElement>('#dockRegion');
 const regionMenu = $('#regionMenu');
 const regionHint = $('#regionHint');
+const dockSplit = $('#dockSplit');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -900,12 +901,15 @@ function paintDock(): void {
    * button whose whole job is to reach them would be a dead end rather than an
    * invitation. That is the one case it stays away for.
    *
-   * The divider is not hidden with it any more. It separates searching from the
-   * two controls that change what the map is showing, and the landsdel picker
-   * is one of those and is always present, so there is always something on
-   * both sides of it.
+   * There are two dividers now and they behave differently. The first sits
+   * between the search and the picker, both of which are always present, so it
+   * is always between two things and never hides. The second sits in front of
+   * the bookmark and hides with it.
    */
   dockSavedBtn.hidden = !account.available;
+  // The divider in front of it goes with it: a dock that ends on a line with
+  // nothing after it looks like a control failed to load.
+  dockSplit.hidden = !account.available;
 
   /*
    * The search segment has three jobs, and wears a different face for each.

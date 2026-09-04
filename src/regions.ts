@@ -226,6 +226,16 @@ export const REGION_COUNT: Record<Region, number> = { sjaelland: 0, fyn: 0, jyll
 /** Everything, which is what "Danmark" counts. */
 export const TOTAL_COUNT = PLEJECENTRE.length;
 
+/**
+ * How many municipalities the shipped extract reaches.
+ *
+ * Counted rather than written down, because it is the kind of number that
+ * goes stale silently: the tour told new readers "148 plejecentre i 23
+ * kommuner" for a while after the extract became national, which is the first
+ * thing a job seeker reads and was wrong by a factor of six.
+ */
+export const KOMMUNE_COUNT = new Set(PLEJECENTRE.map((p) => p.municipality)).size;
+
 for (const p of PLEJECENTRE) {
   const r = regionOfMunicipality(p.municipality);
   if (r) REGION_COUNT[r] += 1;

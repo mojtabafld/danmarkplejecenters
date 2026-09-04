@@ -30,7 +30,7 @@ type Entry = string | Plural;
 /* eslint-disable @typescript-eslint/naming-convention */
 const DA = {
   'app.title': 'Plejecentre',
-  'app.subtitle': 'Hovedstadsområdet',
+  'app.subtitle': 'Hele landet',
   'intro.label': 'Kort rundvisning',
   'intro.progress': 'Trin {n} af {total}',
   'intro.next': 'Videre',
@@ -38,7 +38,7 @@ const DA = {
   'intro.skip': 'Spring over',
   'intro.map.title': 'Hvert plejecenter på kortet',
   'intro.map.body':
-    '148 plejecentre i 23 kommuner i hovedstadsområdet. Søg på navn, eller vælg en kommune, og se dem alle sammen.',
+    '{n} plejecentre i alle {k} kommuner i hele landet. Søg på navn, eller vælg en kommune, og se dem alle sammen.',
   'intro.jobs.title': 'Job på det enkelte center',
   'intro.jobs.body':
     'Hvert center har et link til ledige stillinger netop dér — sammen med adresse, telefon og den officielle hjemmeside, så du kan henvende dig direkte.',
@@ -242,7 +242,7 @@ type Key = keyof typeof DA;
 
 const EN: Record<Key, Entry> = {
   'app.title': 'Care Homes',
-  'app.subtitle': 'Greater Copenhagen',
+  'app.subtitle': 'Nationwide',
   'intro.label': 'A short tour',
   'intro.progress': 'Step {n} of {total}',
   'intro.next': 'Next',
@@ -250,7 +250,7 @@ const EN: Record<Key, Entry> = {
   'intro.skip': 'Skip',
   'intro.map.title': 'Every care centre on the map',
   'intro.map.body':
-    '148 care centres across 23 municipalities in Greater Copenhagen. Search by name, or pick a municipality, and see all of them.',
+    '{n} care centres across all {k} municipalities in Denmark. Search by name, or pick a municipality, and see all of them.',
   'intro.jobs.title': 'Jobs at each centre',
   'intro.jobs.body':
     'Every centre carries a link to the vacancies at that centre — alongside its address, phone number and official website, so you can approach them directly.',
@@ -452,7 +452,7 @@ const EN: Record<Key, Entry> = {
 
 const FA: Record<Key, Entry> = {
   'app.title': 'مراکز مراقبت سالمندان',
-  'app.subtitle': 'منطقه کلان شهری کپنهاگ',
+  'app.subtitle': 'در سراسر دانمارک',
   'intro.label': 'راهنمای کوتاه',
   'intro.progress': 'گام {n} از {total}',
   'intro.next': 'بعدی',
@@ -460,7 +460,7 @@ const FA: Record<Key, Entry> = {
   'intro.skip': 'رد کردن',
   'intro.map.title': 'همهٔ مراکز، روی نقشه',
   'intro.map.body':
-    '۱۴۸ مرکز مراقبت در ۲۳ شهرداری منطقهٔ کپنهاگ بزرگ. با نام جست‌وجو کنید یا یک شهرداری را انتخاب کنید تا همه را ببینید.',
+    '{n} مرکز مراقبت در هر {k} شهرداری دانمارک. با نام جست‌وجو کنید یا یک شهرداری را انتخاب کنید تا همه را ببینید.',
   'intro.jobs.title': 'کار در هر مرکز',
   'intro.jobs.body':
     'روی هر مرکز، پیوند جست‌وجوی آگهی‌های استخدام همان مرکز هست؛ کنار نشانی، تلفن و وب‌سایت رسمی، تا مستقیم با خودشان تماس بگیرید.',
