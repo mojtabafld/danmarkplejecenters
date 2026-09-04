@@ -19,6 +19,7 @@ import {
   REGION_BOX,
   REGION_COUNT,
   boxOf,
+  type Box,
   type Region,
 } from './regions';
 import { ThemeController, token } from './theme';
@@ -331,9 +332,12 @@ function setRegionMenuOpen(open: boolean): void {
  * when the extract grows. The geographic box is the fallback for a part with
  * nothing in it, which is the only case where there is nothing to frame.
  */
+function regionBox(r: Region | null): Box {
+  return boxOf(store.inRegion(r)) ?? (r ? REGION_BOX[r] : DENMARK_BOX);
+}
+
 function flyToRegion(r: Region | null): void {
-  const places = store.inRegion(r);
-  map.fitBox(boxOf(places) ?? (r ? REGION_BOX[r] : DENMARK_BOX));
+  map.fitBox(regionBox(r));
 }
 
 function chooseRegion(r: Region | null): void {
@@ -1365,8 +1369,11 @@ function render(): void {
   if (store.filters.visitedOnly !== lastVisitedOnly) {
     lastVisitedOnly = store.filters.visitedOnly;
     // What is on screen with the filter on: the saved places, already narrowed
-    // by any landsdel or kommune also chosen. The camera frames exactly that.
-    map.setSavedFocus(lastVisitedOnly, store.visible);
+    // by any landsdel or kommune also chosen. The camera frames the part of
+    // the country those are in -- and, when the filter comes off again, the
+    // map the reader is handed back: everything the picker is still showing,
+    // which with no part chosen is the whole of Denmark.
+    map.setSavedFocus(lastVisitedOnly, store.visible, regionBox(store.filters.region));
   }
 
   if (store.selectedId !== lastSelected) {
