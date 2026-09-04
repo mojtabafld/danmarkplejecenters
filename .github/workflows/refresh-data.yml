@@ -71,6 +71,22 @@ jobs:
             npm run build:data
           fi
 
+      # When the download is refused for a bad certificate, the next question
+      # is always "bad how?" -- a lapsed renewal on the real government host is
+      # a different thing from a certificate for somebody else's domain, and
+      # only one of them is a risk worth weighing. Printing the chain turns
+      # that into something a person can decide with rather than guess at.
+      - name: Describe the certificate that was refused
+        if: failure() && steps.build.conclusion == 'failure'
+        run: |
+          echo "Certificate presented by admin.plejehjemsoversigten.dk:"
+          echo | openssl s_client -connect admin.plejehjemsoversigten.dk:443 \
+                   -servername admin.plejehjemsoversigten.dk 2>/dev/null \
+            | openssl x509 -noout -subject -issuer -dates -ext subjectAltName \
+            || echo "  could not read the certificate"
+          echo
+          echo "Today: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
       # The whole point of the run. A build that geocodes 950 rows and changes
       # nothing means the extract is already current, which is worth saying
       # rather than leaving as an empty commit.
