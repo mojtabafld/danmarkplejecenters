@@ -13,11 +13,10 @@
 name: Refresh plejecentre data
 
 on:
-  # Runs as soon as this branch is pushed, so the data can be fetched without
-  # first merging the workflow that fetches it.
-  push:
-    branches: [claude/danmark-pleje-landing-load-utnagk]
-  # And on demand from any branch once this is on main.
+  # By hand only. It ran on push while this workflow was being bootstrapped --
+  # a dispatch needs the workflow to exist somewhere first -- but a refresh is
+  # not something a commit should decide, and while the register's certificate
+  # is expired every automatic run would fail on it anyway.
   workflow_dispatch:
     inputs:
       allow_expired_cert:

@@ -23,7 +23,7 @@ const SOURCE = resolve(HERE, '../src/regions.ts');
 /** Must match `fold()` in src/regions.ts, for the reasons documented there. */
 export function fold(name) {
   return String(name)
-    .replace(/\s+Kommune\s*$/i, '')
+    .replace(/\s+(?:Regions)?kommune\s*$/i, '')
     .trim()
     .toLowerCase()
     .replace(/å/g, 'aa')

@@ -85,7 +85,12 @@ const JYLLAND = [
  * Three differences show up between sources, and all three are spelling rather
  * than meaning:
  *
- *   " Kommune"  the register appends it on some rows and not others.
+ *   " Kommune"  the register appends it on some rows and not others -- and for
+ *                Bornholm the word is "Regionskommune", because Bornholm is not
+ *                a municipality inside a region, it is both at once. That one
+ *                name is why this is a pattern rather than a string: stripping
+ *                " Kommune" leaves "Bornholms Regionskommune" untouched, which
+ *                is exactly the row the national extract stopped on.
  *   å versus aa  both spellings are in use for the same place, officially --
  *                Aarhus and Århus, Tårnby and Taarnby, Faaborg and Fåborg.
  *                Folding å to aa makes the pair one key.
@@ -96,7 +101,7 @@ const JYLLAND = [
  */
 function fold(name: string): string {
   return name
-    .replace(/\s+Kommune\s*$/i, '')
+    .replace(/\s+(?:Regions)?kommune\s*$/i, '')
     .trim()
     .toLowerCase()
     .replace(/å/g, 'aa')

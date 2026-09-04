@@ -69,6 +69,17 @@ const ADDRESS_FIXES = {
 /* ------------------------------------------------------- field validation */
 
 /**
+ * The municipality name as this project stores it: without the trailing word.
+ *
+ * "Regions" is in the pattern because of exactly one row. Bornholm is a
+ * regionskommune -- a municipality and a region at once -- so the register
+ * writes "Bornholms Regionskommune", and a plain " Kommune" trim leaves it
+ * whole. That is the row the first national build stopped on.
+ */
+const kommuneName = (raw) => (raw ?? '').replace(/\s+(?:Regions)?kommune\s*$/i, '').trim();
+
+
+/**
  * The register's Phone and Email columns are free text, and ~58 rows nationally
  * carry the literal placeholder "Besøg hjemmeside" instead of a value. Others
  * hold two numbers separated by a slash or the word "eller". A placeholder
@@ -280,7 +291,7 @@ console.log(`  ${selected.length} active rows across Denmark`);
 const unplaceable = [
   ...new Set(
     selected
-      .map((r) => (r['Kommune'] ?? '').replace(' Kommune', '').trim())
+      .map((r) => kommuneName(r['Kommune']))
       .filter((m) => m && !regionOf(m)),
   ),
 ];
@@ -351,7 +362,7 @@ await pool(selected, CONCURRENCY, async (r) => {
     street: streetFull,
     postcode,
     city: hit.postnrnavn,
-    municipality: r['Kommune'].replace(' Kommune', '').trim(),
+    municipality: kommuneName(r['Kommune']),
     phone,
     email: cleanEmail(r['Email']),
     web: web || null,

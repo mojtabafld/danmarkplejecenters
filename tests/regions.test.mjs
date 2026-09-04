@@ -63,6 +63,13 @@ const regionOf = regionLookup();
 check('reads the genitive the register writes', regionOf('Københavns') === 'sjaelland');
 check('reads the plain form too', regionOf('København') === 'sjaelland');
 check('reads it with the word Kommune attached', regionOf('Odense Kommune') === 'fyn');
+// Bornholm is a regionskommune -- a municipality and a region at once -- so the
+// register writes a word that a plain " Kommune" trim does not touch. The first
+// national build stopped on exactly this row.
+check(
+  'reads Bornholm, which is a Regionskommune rather than a Kommune',
+  regionOf('Bornholms Regionskommune') === 'sjaelland',
+);
 check('treats aa and å as the same letter', regionOf('Århus') === regionOf('Aarhus'));
 check('and does not strip a final s that belongs to the name', regionOf('Assens') === 'fyn');
 check('answers null for a name that is not a municipality', regionOf('Atlantis') === null);
