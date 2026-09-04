@@ -87,7 +87,6 @@ const savedHint = $('#savedHint');
 const dock = $('#dock');
 const dockSearchBtn = $<HTMLButtonElement>('#dockSearchBtn');
 const dockSearchIcon = $('#dockSearchIcon');
-const dockSplit = $('#dockSplit');
 const dockSavedBtn = $<HTMLButtonElement>('#dockSaved');
 const dockFields = $('#dockFields');
 const dockSearchInput = $<HTMLInputElement>('#dockSearch');
@@ -96,6 +95,7 @@ const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
 const regionEl = $('#dockpick');
 const regionButton = $<HTMLButtonElement>('#dockRegion');
 const regionMenu = $('#regionMenu');
+const regionHint = $('#regionHint');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -310,6 +310,8 @@ function paintRegionSegment(): void {
 }
 
 function setRegionMenuOpen(open: boolean): void {
+  // Whoever opens the menu has found the control the balloon was pointing at.
+  if (open) hideRegionHint();
   regionMenu.hidden = !open;
   regionButton.setAttribute('aria-expanded', String(open));
   if (open) {
@@ -341,6 +343,57 @@ function chooseRegion(r: Region | null): void {
   renderRegionMenu();
   flyToRegion(r);
 }
+
+/* ------------------------------------------------------------ the balloon */
+
+/**
+ * A one-off note over the landsdel icon, because an icon cannot say what it
+ * filters by.
+ *
+ * Four seconds, which is about twice as long as the sentence takes to read --
+ * long enough to be caught out of the corner of an eye, short enough that it is
+ * gone before it is in the way. It cannot be interacted with (`pointer-events:
+ * none`) so it never intercepts a press meant for the icon underneath it, and
+ * it leaves early the moment anybody touches the picker, because at that point
+ * they have found the thing it was pointing at.
+ */
+const HINT_AFTER = 900;
+const HINT_LIFE = 4000;
+const HINT_FADE = 400;
+
+let regionHintTimers: number[] = [];
+
+function clearHintTimers(): void {
+  for (const t of regionHintTimers) window.clearTimeout(t);
+  regionHintTimers = [];
+}
+
+function hideRegionHint(): void {
+  clearHintTimers();
+  if (regionHint.hidden) return;
+  regionHint.dataset.away = 'true';
+  // Kept in the tree for the length of the fade, then taken out of it: an
+  // element at opacity 0 is still read aloud and still focusable.
+  regionHintTimers.push(window.setTimeout(() => { regionHint.hidden = true; }, HINT_FADE));
+}
+
+function showRegionHint(): void {
+  // Never over the open menu, and never on a screen where the dock itself has
+  // gone away behind a detail card.
+  if (!regionMenu.hidden || regionEl.dataset.away === 'true') return;
+  regionHint.hidden = false;
+  regionHint.dataset.away = 'true';
+  // One frame at the away state so the transition has somewhere to come from;
+  // setting both in the same frame is a change the browser never animates.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { regionHint.dataset.away = 'false'; });
+  });
+  regionHintTimers.push(window.setTimeout(hideRegionHint, HINT_LIFE));
+}
+
+// After the map has had a moment to draw itself. Arriving at the same instant
+// as the map would put it on top of a page still assembling.
+regionHintTimers.push(window.setTimeout(showRegionHint, HINT_AFTER));
 
 regionButton.addEventListener('click', () => setRegionMenuOpen(regionMenu.hidden));
 
@@ -846,9 +899,13 @@ function paintDock(): void {
    * at all. Without a database the server disables accounts outright, and a
    * button whose whole job is to reach them would be a dead end rather than an
    * invitation. That is the one case it stays away for.
+   *
+   * The divider is not hidden with it any more. It separates searching from the
+   * two controls that change what the map is showing, and the landsdel picker
+   * is one of those and is always present, so there is always something on
+   * both sides of it.
    */
   dockSavedBtn.hidden = !account.available;
-  dockSplit.hidden = !account.available;
 
   /*
    * The search segment has three jobs, and wears a different face for each.
@@ -1260,7 +1317,10 @@ function setRailOffscreen(off: boolean): void {
   // that is open.
   dock.dataset.away = String(off);
   regionEl.dataset.away = String(off);
-  if (off) setRegionMenuOpen(false);
+  if (off) {
+    setRegionMenuOpen(false);
+    hideRegionHint();
+  }
   paintDockLift();
 }
 

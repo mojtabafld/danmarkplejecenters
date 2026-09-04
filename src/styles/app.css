@@ -234,6 +234,71 @@ a { color: var(--text-link); }
 
 .masthead__spacer { flex: 1 1 auto; min-inline-size: 0; }
 
+/*
+ * The header on a small phone.
+ *
+ * The title was being cut off, and the type alone could not fix it: at 320px
+ * the controls and the gaps leave the titles 84px, and the Persian title wants
+ * 148, so type small enough to fit would have been 9px. The space has to come
+ * back before the type is touched.
+ *
+ * Three things give it back -- a tighter gap between the header's six children,
+ * narrower side padding, and a smaller brand mark -- which together return
+ * about 36px to the titles. Only then does the type shrink, and only as far as
+ * it has to: the size grows with the viewport between 320px and 416px, at which
+ * point it is back to the full 16px and this rule stops applying.
+ *
+ * The subtitle drops to 12px, where it always fitted; it comes down with the
+ * title so the pair keeps its proportions rather than converging on one size.
+ */
+@media (max-width: 26rem) {
+  .masthead { gap: var(--space-2); padding-inline: var(--space-3); }
+  /* The mark's box as well as its glyph. Shrinking only the glyph left the
+     36px box exactly where it was, which is what the first attempt at this
+     did and why it bought less room than it looked like it should. */
+  .masthead__mark { inline-size: var(--control-sm); block-size: var(--control-sm); }
+  .masthead__mark svg { inline-size: var(--icon-md); block-size: var(--icon-md); }
+  /* The language and account buttons keep their 24px target and lose only the
+     air around the label inside them. */
+  .masthead .langpick__button { padding-inline: var(--space-1) var(--space-2); }
+
+  /*
+   * 13px at 320, 16px at 416, straight line between. The floor is --text-sm:
+   * below that a heading stops reading as one, and a title that has to be
+   * smaller than its own subtitle is telling you the layout is wrong rather
+   * than the font size.
+   */
+  .masthead__title { font-size: clamp(var(--text-sm), 3px + 3.125vw, var(--text-md)); }
+  .masthead__sub { font-size: var(--text-xs); }
+
+  /*
+   * And if it still does not fit, it wraps rather than being cut.
+   *
+   * This is the last resort and it only ever fires for the Persian title on
+   * the narrowest phones -- it is four words where the Danish is one, and no
+   * readable size fits it in 320px. A second line costs a few pixels of header;
+   * an ellipsis costs the reader the end of the sentence. The Danish and
+   * English titles are single words and fit on one line at every width, so
+   * they never reach this.
+   */
+  .masthead__title { white-space: normal; }
+  /*
+   * The subtitle wraps too, and may hyphenate to do it.
+   *
+   * Danish builds long compounds -- "Hovedstadsomraadet" is one word and no
+   * amount of readable type fits it in 320px -- and Danish hyphenates them, so
+   * the browser is allowed to, using the dictionary for whatever `lang` the
+   * page is in. `break-word` is the floor under that: if there is no dictionary
+   * for the language, the word still breaks rather than being cut off, which
+   * is uglier and still better than losing the end of it.
+   */
+  .masthead__sub {
+    white-space: normal;
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+}
+
 /* -------------------------------------------------------------- buttons --- */
 .btn {
   display: inline-flex;
@@ -881,6 +946,91 @@ a.btn { text-decoration: none; }
 .dockpick__item[data-empty='true'] .dockpick__name,
 .dockpick__item[data-empty='true'] .dockpick__count { color: var(--text-tertiary); }
 
+/*
+ * The balloon over the landsdel icon.
+ *
+ * Glass, like everything else that floats over the map, and the thick pane
+ * rather than the control one: it is a sentence, and text has to clear 4.5:1
+ * against whatever street happens to be behind it where an icon only has to
+ * clear 3.
+ *
+ * It sits in the same relative box as the menu, so it is anchored to the
+ * segment rather than to the bar and stays over the icon when the dock grows a
+ * search field underneath it. It cannot be open at the same time as the menu --
+ * script hides it the moment the picker is touched -- so the two never stack.
+ */
+.dockhint {
+  position: absolute;
+  z-index: var(--z-toast);
+  inset-block-end: calc(100% + var(--space-2));
+  /* Centred on the segment, and free to be wider than it: the segment is one
+     icon and this is a sentence. */
+  inset-inline: 50% auto;
+  translate: -50% 0;
+  inline-size: max-content;
+  /* Never wider than the viewport it floats over, with the dock's own margins
+     left clear on both sides. */
+  max-inline-size: min(17rem, calc(100vw - var(--space-8)));
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--text-primary);
+  background: var(--glass-panel-bg);
+  border: var(--border-hairline) solid var(--glass-border);
+  border-radius: var(--radius-md);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
+  text-align: center;
+  pointer-events: none;
+  /* Arrives and leaves on the same curve. The rise is small on purpose: this
+     is a label appearing, not a card being dealt. */
+  opacity: 1;
+  transition: opacity var(--duration-slow) var(--ease-out),
+              translate var(--duration-slow) var(--ease-out);
+}
+/* An author `display` beats the browser's `[hidden]`, as the dock's segments
+   and the intro both found out. */
+.dockhint[hidden] { display: none; }
+
+/* `translate` does the centring, so the RTL mirror has to be undone: the
+   logical inset already flips, and flipping the translate too would carry the
+   balloon a full width off the icon. */
+[dir='rtl'] .dockhint { translate: 50% 0; }
+
+/* The state it is put into for one frame before it is shown, and returned to
+   when its four seconds are up. The RTL rule is more specific, so it wins
+   without needing a :not() to fence the other one off. */
+.dockhint[data-away='true'] { opacity: 0; translate: -50% var(--space-2); }
+[dir='rtl'] .dockhint[data-away='true'] { translate: 50% var(--space-2); }
+
+/* The pointer, centred under the balloon and therefore on the icon. */
+.dockhint::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 50%;
+  margin-inline-start: calc(var(--space-2) * -1);
+  margin-block-start: calc(var(--border-hairline) * -1);
+  border: var(--space-2) solid transparent;
+  border-block-start-color: var(--glass-panel-bg);
+  /* The tail is a triangle of the pane's colour, not of the pane itself: a
+     backdrop-filter cannot be given a triangular shape, so it borrows the tint
+     and lets the blur stop at the balloon's edge. */
+  filter: drop-shadow(0 1px 0 var(--glass-border));
+}
+
+/*
+ * Somebody who has asked for less movement gets the balloon without the rise:
+ * it still appears and still leaves, because the words are the point, but it
+ * does not travel to do it.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dockhint { transition: opacity var(--duration-fast) var(--ease-out); }
+  .dockhint[data-away='true'] { translate: -50% 0; }
+  [dir='rtl'] .dockhint[data-away='true'] { translate: 50% 0; }
+}
+
 /* ================================================================ dock === */
 /*
  * A pill over the map. Collapsed it is one round segment, or two once somebody
@@ -917,9 +1067,17 @@ a.btn { text-decoration: none; }
    * screen the bar would have grown straight back under the zoom buttons.
    */
   --dock-room: calc(100% - 2 * (var(--space-3) + var(--control-lg) + var(--space-2)));
-  /* Wider than the icons in it, so it reads as a bar over the map rather than
-     as a button that happens to be round -- but only just. */
-  inline-size: min(8rem, var(--dock-room));
+  /*
+   * Wide enough for whatever it is holding, and no wider.
+   *
+   * This was a flat 8rem, which fitted the two segments it had when it was
+   * written. A third arrived with the landsdel picker and the bookmark spilled
+   * out past the rounded pane -- the glass ended and the icon carried on,
+   * floating on the map on its own. `max-content` sizes to the row inside, so
+   * it is right for two segments and for three, and for the fourth nobody has
+   * added yet.
+   */
+  inline-size: min(max-content, var(--dock-room));
   max-inline-size: min(24rem, var(--dock-room));
   display: grid;
   gap: var(--space-2);
@@ -1706,8 +1864,9 @@ a.btn { text-decoration: none; }
   .rail__lead { padding-inline: var(--space-4); }
   .result { padding-inline: var(--space-4); }
   .results__group { padding-inline: var(--space-4); }
-  .masthead { padding-inline: var(--space-3); gap: var(--space-2); }
-  .masthead__sub { display: none; }
+  /* The masthead's own narrow-screen rules live with the masthead, further up.
+     The subtitle used to be hidden here outright, which is the opposite of
+     showing all of the text: it is sized down and kept instead. */
 }
 
 /* ========================================================================== *
