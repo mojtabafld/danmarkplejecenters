@@ -147,6 +147,16 @@ const REGION_MS = 900;
 const SAVED_MAX_ZOOM = 12;
 
 /**
+ * And how close the map gets when it is showing a part of the country to
+ * browse rather than a shortlist to read.
+ *
+ * Shared by the landsdel picker and by letting go of the saved filter, so the
+ * two arrive at the same view: releasing the filter with Sjælland still chosen
+ * leaves exactly the camera choosing Sjælland would have given.
+ */
+const BROWSE_MAX_ZOOM = 11;
+
+/**
  * Which box covers the parts of the country a set of saved places falls in.
  *
  * One part, and it is that part's extent. Several, and it is all of them
@@ -605,11 +615,36 @@ export class PlejecenterMap {
    *
    * Saved places in more than one part cover all of those parts, by union.
    * There is no sense in which two of three landsdele can be narrowed to one.
+   *
+   * `released` is where the camera goes when the filter comes off: the whole
+   * country normally, or the part of it still chosen in the picker. Passed in
+   * rather than worked out here, because what is on the map without this
+   * filter is a question about all the other filters, and those live in the
+   * store.
    */
-  setSavedFocus(on: boolean, saved: readonly Plejecenter[] = []): void {
+  setSavedFocus(
+    on: boolean,
+    saved: readonly Plejecenter[] = [],
+    released: Box = HOME_BOX,
+  ): void {
     this.run((m) => {
       this.stopPulse(m);
-      if (!on) return;
+
+      // Letting go puts the camera back where the filter found it: the whole
+      // country, or the part of it that is still chosen. Leaving it zoomed on
+      // the landsdel was the old behaviour and it stranded the reader -- every
+      // dot in Denmark was back on the map and they could see one corner of
+      // them, with nothing to say the map had widened underneath. The move out
+      // is the thing that says the filter is off.
+      if (!on) {
+        m.fitBounds(released, {
+          padding: 56,
+          maxZoom: BROWSE_MAX_ZOOM,
+          duration: REDUCED.matches ? 0 : HOME_MS,
+          essential: true,
+        });
+        return;
+      }
 
       // The camera moves first.
       //
@@ -638,7 +673,7 @@ export class PlejecenterMap {
       const begin = (): void => {
         // Not twice, and not at all if the filter was released while the
         // camera was still flying: the ripple would then run over a map
-        // showing all 148 again, which says the opposite of what it means.
+        // showing all of them again, which says the opposite of what it means.
         if (started || token !== this.pulseToken) return;
         started = true;
         this.clearWait(m);
@@ -846,7 +881,7 @@ export class PlejecenterMap {
     this.run((m) => {
       m.fitBounds(box, {
         padding: 56,
-        maxZoom: 11,
+        maxZoom: BROWSE_MAX_ZOOM,
         duration: opts.instant || REDUCED.matches ? 0 : REGION_MS,
         essential: true,
       });
