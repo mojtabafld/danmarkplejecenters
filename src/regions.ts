@@ -251,3 +251,49 @@ for (const p of PLEJECENTRE) {
  * if it does.
  */
 export const HOME_BOX: Box = boxOf(PLEJECENTRE) ?? DENMARK_BOX;
+
+/**
+ * The extent of each part of the country, as its plejecentre describe it.
+ *
+ * The geographic boxes above are corners of a landmass; these are where the
+ * places in that landmass actually are, which is tighter. Sjælland's reaches
+ * Bornholm, because Bornholm is in it and has plejecentre on it -- covering
+ * the part means covering all of the part, not the mainland half of it.
+ *
+ * The picker does not read this: choosing a part frames whatever is visible
+ * after the filter, so a part narrowed further by a kommune frames the
+ * kommune. This is for the other direction, where a handful of saved places
+ * has to be widened back out to the part it sits in.
+ *
+ * Falls back to the geographic box for a part the extract has nothing in.
+ */
+export const REGION_EXTENT: Record<Region, Box> = {
+  sjaelland: boxOf(PLEJECENTRE.filter((p) => regionOf(p) === 'sjaelland')) ?? REGION_BOX.sjaelland,
+  fyn: boxOf(PLEJECENTRE.filter((p) => regionOf(p) === 'fyn')) ?? REGION_BOX.fyn,
+  jylland: boxOf(PLEJECENTRE.filter((p) => regionOf(p) === 'jylland')) ?? REGION_BOX.jylland,
+};
+
+/**
+ * The smallest box holding all of them.
+ *
+ * Used where somebody's saved places fall in more than one part: covering the
+ * parts they are in means covering every one of those parts, not choosing
+ * between them.
+ */
+export function unionBox(boxes: readonly Box[]): Box | null {
+  if (boxes.length === 0) return null;
+  let west = Infinity;
+  let south = Infinity;
+  let east = -Infinity;
+  let north = -Infinity;
+  for (const [[w, s], [e, n]] of boxes) {
+    if (w < west) west = w;
+    if (s < south) south = s;
+    if (e > east) east = e;
+    if (n > north) north = n;
+  }
+  return [
+    [west, south],
+    [east, north],
+  ];
+}

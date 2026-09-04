@@ -6,7 +6,15 @@ import maplibregl, {
 } from 'maplibre-gl';
 
 import { ownershipGroup } from './format';
-import { HOME_BOX, boxOf, type Box } from './regions';
+import {
+  HOME_BOX,
+  REGION_EXTENT,
+  boxOf,
+  regionOf,
+  unionBox,
+  type Box,
+  type Region,
+} from './regions';
 import { token, type Theme } from './theme';
 import type { Plejecenter } from './types';
 
@@ -137,6 +145,34 @@ const REGION_MS = 900;
  * be a ripple against.
  */
 const SAVED_MAX_ZOOM = 12;
+
+/**
+ * Which box covers the parts of the country a set of saved places falls in.
+ *
+ * One part, and it is that part's extent. Several, and it is all of them
+ * together. Nothing saved, or nothing placeable, and it is the whole extract,
+ * which is where the map opens anyway.
+ *
+ * A place whose municipality the landsdel table does not recognise cannot be
+ * filed under a part, and rather than drop it out of the frame its own
+ * position joins the union: the reader saved it, so it is on screen.
+ */
+function savedFocusBox(saved: readonly Plejecenter[]): Box {
+  if (saved.length === 0) return HOME_BOX;
+
+  const parts = new Set<Region>();
+  const strays: Plejecenter[] = [];
+  for (const p of saved) {
+    const r = regionOf(p);
+    if (r) parts.add(r);
+    else strays.push(p);
+  }
+
+  const boxes = [...parts].map((r) => REGION_EXTENT[r]);
+  const strayBox = boxOf(strays);
+  if (strayBox) boxes.push(strayBox);
+  return unionBox(boxes) ?? HOME_BOX;
+}
 
 /**
  * Somebody who has asked for less motion gets the state without the show: the
@@ -556,19 +592,19 @@ export class PlejecenterMap {
    * forever is a map nobody can read a street name on.
    */
   /**
-   * Narrow the map to the saved places, then set them rippling.
+   * Narrow the map to the part of the country the saved places are in, then
+   * set them rippling.
    *
-   * `saved` is what is on screen once the filter is on, so the camera goes to
-   * those and nothing else. That used to be the whole country, which was right
-   * when the country was Greater Copenhagen and is not right now: somebody
-   * whose saved places are all on Sjælland was shown Jylland and the North Sea
-   * as well, with their handful of dots in one corner. Fitting the places
-   * themselves means a set that happens to sit in one landsdel is framed as
-   * that landsdel, without anything here having to know which one it is.
+   * The part, not the places. Somebody with three saved plejecentre in
+   * Copenhagen is shown Sjælland -- all of it, out to Bornholm -- rather than
+   * a tight box around three dots. Framing the dots was the first attempt and
+   * it answers a different question: it shows you what you saved, where this
+   * shows you where what you saved is. The second is what somebody planning a
+   * move is actually asking, and it leaves the rest of the landsdel on screen
+   * with its other plejecentre in it.
    *
-   * `maxZoom` is what stops one saved place becoming a street view. The reader
-   * asked to see what they had saved, and a single dot filling the screen shows
-   * them a roof rather than a place they could travel to.
+   * Saved places in more than one part cover all of those parts, by union.
+   * There is no sense in which two of three landsdele can be narrowed to one.
    */
   setSavedFocus(on: boolean, saved: readonly Plejecenter[] = []): void {
     this.run((m) => {
@@ -583,8 +619,7 @@ export class PlejecenterMap {
       // animation nobody watches, on a map that looks broken. Framing them
       // puts every saved place on screen before anything moves.
       const still = REDUCED.matches;
-      const box = boxOf(saved) ?? HOME_BOX;
-      m.fitBounds(box, {
+      m.fitBounds(savedFocusBox(saved), {
         padding: 56,
         maxZoom: SAVED_MAX_ZOOM,
         duration: still ? 0 : HOME_MS,
