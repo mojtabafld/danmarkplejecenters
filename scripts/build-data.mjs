@@ -276,6 +276,32 @@ function tidyAddress(street, houseNo, postcode) {
   return [st, no, pc ? pc[1] : (postcode ?? '').trim()];
 }
 
+/**
+ * Which municipality DAWA says an address is in.
+ *
+ * Used only where the register leaves the Kommune column empty, which the
+ * national extract does for a handful of rows. Those rows are real
+ * plejecentre with real addresses that geocode perfectly well; the only thing
+ * missing is the one field the landsdel is derived from, and the address
+ * register knows it. Four extra requests to keep four care homes on the map is
+ * a better trade than dropping them.
+ *
+ * The default representation is asked for here rather than `mini`, because
+ * `mini` is the flat one and does not carry the kommune. That is why this is
+ * a separate call for a few rows instead of a wider one for all nine hundred.
+ */
+async function municipalityOf(addressId) {
+  if (!addressId) return null;
+  try {
+    const res = await fetch(`${DAWA}/${encodeURIComponent(addressId)}`);
+    if (!res.ok) return null;
+    const a = await res.json();
+    return a?.kommune?.navn ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function geocode(rawStreet, rawHouseNo, rawPostcode) {
   const [street, houseNo, postcode] = tidyAddress(rawStreet, rawHouseNo, rawPostcode);
   const m = /^\s*(\d+)\s*([A-Za-zÆØÅæøå])?/.exec(houseNo ?? '');
@@ -441,6 +467,18 @@ await pool(selected, CONCURRENCY, async (r) => {
   let web = (r['Web'] ?? '').trim();
   if (web && !/^https?:\/\//i.test(web)) web = `https://${web}`;
 
+  // The register leaves this blank on a few rows; the address register knows
+  // the answer, so it is asked rather than the row being thrown away.
+  let kommune = canonical(kommuneName(r['Kommune']));
+  if (!kommune) kommune = canonical(kommuneName((await municipalityOf(hit.id)) ?? ''));
+  if (!regionOf(kommune)) {
+    // Every shipped row has to belong to one of the three parts, or it is
+    // visible under Danmark and missing from all of them -- present and
+    // unfindable, which is worse than absent.
+    failures.push(`${name} — no municipality (register blank, address register gave ${JSON.stringify(kommune)})`);
+    return;
+  }
+
   const streetFull = tidy(`${street} ${houseNo}`);
   let phone = cleanPhone(r['Phone']);
   if (!phone) {
@@ -454,7 +492,7 @@ await pool(selected, CONCURRENCY, async (r) => {
     street: streetFull,
     postcode,
     city: hit.postnrnavn,
-    municipality: canonical(kommuneName(r['Kommune'])),
+    municipality: kommune,
     phone,
     email: cleanEmail(r['Email']),
     web: web || null,

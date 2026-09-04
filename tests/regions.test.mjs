@@ -95,7 +95,9 @@ check(
   'every municipality in it resolves to a part of the country',
   unplaceable.length === 0,
   unplaceable.length
-    ? `not in the table in src/regions.ts: ${unplaceable.join(', ')}\n` +
+    // Quoted, because the name that broke this was the empty string and an
+    // unquoted list of it printed as nothing at all.
+    ? `not in the table in src/regions.ts: ${unplaceable.map((m) => JSON.stringify(m)).join(', ')}\n` +
       '         Add each to SJAELLAND, FYN or JYLLAND there.'
     : '',
 );
