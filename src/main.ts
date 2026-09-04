@@ -96,7 +96,6 @@ const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
 const regionEl = $('#dockpick');
 const regionButton = $<HTMLButtonElement>('#dockRegion');
 const regionMenu = $('#regionMenu');
-const regionHint = $('#regionHint');
 const dockSplit = $('#dockSplit');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
@@ -312,8 +311,8 @@ function paintRegionSegment(): void {
 }
 
 function setRegionMenuOpen(open: boolean): void {
-  // Whoever opens the menu has found the control the balloon was pointing at.
-  if (open) hideRegionHint();
+  // Whoever opens the menu has found the control the motion was pointing at.
+  if (open) stopRegionAttention();
   regionMenu.hidden = !open;
   regionButton.setAttribute('aria-expanded', String(open));
   if (open) {
@@ -346,56 +345,54 @@ function chooseRegion(r: Region | null): void {
   flyToRegion(r);
 }
 
-/* ------------------------------------------------------------ the balloon */
+/* ---------------------------------------------------------- the attention */
 
 /**
- * A one-off note over the landsdel icon, because an icon cannot say what it
- * filters by.
+ * A short piece of motion on the landsdel icon, once, shortly after the map
+ * settles.
  *
- * Four seconds, which is about twice as long as the sentence takes to read --
- * long enough to be caught out of the corner of an eye, short enough that it is
- * gone before it is in the way. It cannot be interacted with (`pointer-events:
- * none`) so it never intercepts a press meant for the icon underneath it, and
- * it leaves early the moment anybody touches the picker, because at that point
- * they have found the thing it was pointing at.
+ * It replaces a balloon that said the same thing in a sentence. The balloon
+ * worked, but it covered the map at exactly the moment somebody is first
+ * reading it, and a paragraph is a heavy way to point at a button. Motion at
+ * the control itself puts the eye where the control is and costs nothing on
+ * screen.
+ *
+ * Three things keep it from being an irritation rather than a hint:
+ *
+ *   it stops.        Three pulses and it is over. Motion that never ends stops
+ *                    being a signal and becomes a fault the reader cannot fix.
+ *   it yields.       The moment anybody opens the picker it is cancelled --
+ *                    they have found the thing it was pointing at.
+ *   it stays put.    A ring drawn by a pseudo-element and a transform on the
+ *                    glyph; nothing in the layout moves, so the dock does not
+ *                    shift under a thumb already on its way to the button.
+ *
+ * Whoever asked for less movement gets none of it. The control still carries
+ * its name in the tooltip and its accessible name, which is what the hint was
+ * ultimately for.
  */
-const HINT_AFTER = 900;
-const HINT_LIFE = 4000;
-const HINT_FADE = 400;
+const ATTENTION_AFTER = 1200;
+/** Three runs of the keyframes below, plus a little slack. */
+const ATTENTION_LIFE = 3 * 1600 + 200;
 
-let regionHintTimers: number[] = [];
+let attentionTimers: number[] = [];
 
-function clearHintTimers(): void {
-  for (const t of regionHintTimers) window.clearTimeout(t);
-  regionHintTimers = [];
+function stopRegionAttention(): void {
+  for (const t of attentionTimers) window.clearTimeout(t);
+  attentionTimers = [];
+  delete regionButton.dataset.attention;
 }
 
-function hideRegionHint(): void {
-  clearHintTimers();
-  if (regionHint.hidden) return;
-  regionHint.dataset.away = 'true';
-  // Kept in the tree for the length of the fade, then taken out of it: an
-  // element at opacity 0 is still read aloud and still focusable.
-  regionHintTimers.push(window.setTimeout(() => { regionHint.hidden = true; }, HINT_FADE));
-}
-
-function showRegionHint(): void {
-  // Never over the open menu, and never on a screen where the dock itself has
-  // gone away behind a detail card.
+function startRegionAttention(): void {
+  // Not over an open menu, not on a dock that has stepped aside for a card,
+  // and not for somebody who has asked the system for less movement.
   if (!regionMenu.hidden || regionEl.dataset.away === 'true') return;
-  regionHint.hidden = false;
-  regionHint.dataset.away = 'true';
-  // One frame at the away state so the transition has somewhere to come from;
-  // setting both in the same frame is a change the browser never animates.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => { regionHint.dataset.away = 'false'; });
-  });
-  regionHintTimers.push(window.setTimeout(hideRegionHint, HINT_LIFE));
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  regionButton.dataset.attention = 'true';
+  attentionTimers.push(window.setTimeout(stopRegionAttention, ATTENTION_LIFE));
 }
 
-// After the map has had a moment to draw itself. Arriving at the same instant
-// as the map would put it on top of a page still assembling.
-regionHintTimers.push(window.setTimeout(showRegionHint, HINT_AFTER));
+attentionTimers.push(window.setTimeout(startRegionAttention, ATTENTION_AFTER));
 
 regionButton.addEventListener('click', () => setRegionMenuOpen(regionMenu.hidden));
 
@@ -1324,7 +1321,7 @@ function setRailOffscreen(off: boolean): void {
   regionEl.dataset.away = String(off);
   if (off) {
     setRegionMenuOpen(false);
-    hideRegionHint();
+    stopRegionAttention();
   }
   paintDockLift();
 }

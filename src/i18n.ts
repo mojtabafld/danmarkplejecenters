@@ -99,7 +99,6 @@ const DA = {
   'region.menu': 'Vælg landsdel',
   'region.all': 'Danmark',
   'region.empty': 'Ingen i denne udgave af data',
-  'region.hint': 'Vælg Sjælland, Fyn eller Jylland for at se én landsdel ad gangen.',
 
   'map.label': 'Kort over plejecentre i hele Danmark',
   'map.zoomIn': 'Zoom ind på kortet',
@@ -311,7 +310,6 @@ const EN: Record<Key, Entry> = {
   'region.menu': 'Choose a part of the country',
   'region.all': 'Denmark',
   'region.empty': 'None in this edition of the data',
-  'region.hint': 'Choose Sjælland, Fyn or Jylland to see one part of the country at a time.',
 
   'map.label': 'Map of care homes across Denmark',
   'map.zoomIn': 'Zoom in',
@@ -521,7 +519,6 @@ const FA: Record<Key, Entry> = {
   'region.menu': 'بخشی از دانمارک را انتخاب کنید',
   'region.all': 'دانمارک',
   'region.empty': 'در این نسخه از داده‌ها موردی نیست',
-  'region.hint': 'برای دیدن یک بخش از دانمارک، Sjælland، Fyn یا Jylland را انتخاب کنید.',
 
   'map.label': 'نقشهٔ مراکز مراقبت در سراسر دانمارک',
   'map.zoomIn': 'بزرگ‌نمایی نقشه',
