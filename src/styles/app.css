@@ -1498,6 +1498,24 @@ a.btn { text-decoration: none; }
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-snug);
   overflow-wrap: anywhere;
+  /* Danish names are compounds, and a browser carrying a Danish hyphenation
+     dictionary can break one at a syllable instead of wherever the column
+     edge falls. Kept as a progressive improvement, not as the fix: measured
+     here, hyphens:none gives identical line counts on every long name, so
+     this Chromium is not acting on it. The size step below is what actually
+     does the work, and overflow-wrap stays as the last resort for a single
+     word still wider than the column. */
+  hyphens: auto;
+}
+
+/* Long names step down rather than wrapping to four lines and pushing the
+   address, the mark and the job link off a phone screen. Set from the name's
+   length in detail.ts, where it can be counted; see titleStep there for why
+   the steps are 24 and 40. */
+.panel__title[data-len='l'] { font-size: var(--text-lg); }
+.panel__title[data-len='m'] {
+  font-size: var(--text-md);
+  letter-spacing: normal;
 }
 
 .panel__close {

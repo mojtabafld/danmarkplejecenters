@@ -25,6 +25,44 @@ const DISMISS_FRACTION = 0.28;
 const DISMISS_VELOCITY = 0.5;
 
 /** The card that opens when a dot or a list row is chosen. */
+/**
+ * How big the name at the top of the panel is allowed to be.
+ *
+ * Plejecentre are not named to fit a heading. Half of them are around twenty
+ * characters -- "Plejecenter Sølund" -- but the tail is long and
+ * administrative: "Den selvejende institution Plejehjemmet OK-Fonden
+ * Hornbaekhave" is 61, and the longest in the register is 66. At the full 22px
+ * those wrap to five and six lines and push the address, the mark and the job
+ * link down the panel, so it opens on a name and little else.
+ *
+ * Two things make a name long, and they need separate answers. The whole
+ * string being long is the obvious one. The other is one enormous compound --
+ * "Håndværkerforeningens" is a single 21-character word, in a name of only 31
+ * -- and that is the worse case: a word wider than the column cannot wrap, so
+ * it is broken mid-syllable wherever the edge falls. Stepping on total length
+ * alone leaves exactly those names broken, which is why the longest word is
+ * measured too.
+ *
+ * Three steps rather than a continuous scale, because a heading that is a
+ * slightly different size on every place reads as an accident, where three
+ * sizes read as a decision. The thresholds are where the shipped names sit:
+ * three quarters are 24 or shorter and keep the full size, and the word
+ * thresholds of 16 and 20 sit at the 95th and 99.5th percentile of the longest
+ * word, so they catch the compounds and nothing else.
+ *
+ * Measured in characters, which is a good enough proxy here -- these are all
+ * Latin-script Danish names in one font, so the widest and narrowest twenty
+ * characters differ by far less than one step of the scale.
+ */
+function titleStep(name: string): 'x' | 'l' | 'm' {
+  // Split on the places a line can already break, so a hyphenated pair counts
+  // as its two halves rather than as one unbreakable run.
+  const longest = Math.max(...name.split(/[\s/-]+/).map((w) => w.length));
+  if (name.length > 40 || longest >= 20) return 'm';
+  if (name.length > 24 || longest >= 16) return 'l';
+  return 'x';
+}
+
 export class DetailPanel {
   private lastFocus: HTMLElement | null = null;
   /** Set while the card is animating out, so a second hide() does not stack. */
@@ -350,7 +388,9 @@ export class DetailPanel {
     const eyebrow = head.querySelector('.panel__eyebrow')!;
     eyebrow.setAttribute('data-own', group);
     eyebrow.textContent = this.i18n.t(`ownership.${group}` as TranslationKey);
-    head.querySelector('.panel__title')!.textContent = p.name;
+    const title = head.querySelector<HTMLElement>('.panel__title')!;
+    title.textContent = p.name;
+    title.dataset.len = titleStep(p.name);
     head
       .querySelector('.panel__close')!
       .setAttribute('aria-label', this.i18n.t('panel.close', { name: p.name }));
