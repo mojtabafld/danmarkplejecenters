@@ -213,7 +213,7 @@
                 <span class="dock__icon" id="dockSearchIcon"></span>
               </button>
 
-              <span class="dock__split" aria-hidden="true"></span>
+              <span class="dock__split" id="dockSplit" aria-hidden="true"></span>
 
               <!--
                 Which part of the country. In the dock rather than floating
@@ -237,9 +237,18 @@
                   <span class="dock__icon" id="dockRegionIcon"></span>
                 </button>
                 <div class="dockpick__menu" id="regionMenu" hidden></div>
-              </div>
 
-              <span class="dock__split" id="dockSplit" aria-hidden="true" hidden></span>
+                <!--
+                  A one-off balloon over the map icon, saying what the icon
+                  cannot: that the country can be cut to Sjælland, Fyn or
+                  Jylland. It shows itself once the map has settled and leaves
+                  after four seconds, and it is `role="status"` rather than an
+                  alert -- it is worth hearing, not worth interrupting for.
+                -->
+                <div class="dockhint" id="regionHint" role="status" hidden>
+                  <span data-i18n="region.hint"></span>
+                </div>
+              </div>
 
               <button type="button" class="dock__seg" id="dockSaved" aria-pressed="false" hidden>
                 <span class="dock__icon" id="dockSavedIcon"></span>
