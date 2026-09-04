@@ -98,9 +98,6 @@ const DA = {
   'region.label': 'Landsdel',
   'region.menu': 'Vælg landsdel',
   'region.all': 'Danmark',
-  'region.sjaelland': 'Sjælland',
-  'region.fyn': 'Fyn',
-  'region.jylland': 'Jylland',
   'region.empty': 'Ingen i denne udgave af data',
 
   'map.label': 'Kort over plejecentre i hovedstadsområdet',
@@ -312,9 +309,6 @@ const EN: Record<Key, Entry> = {
   'region.label': 'Part of the country',
   'region.menu': 'Choose a part of the country',
   'region.all': 'Denmark',
-  'region.sjaelland': 'Zealand',
-  'region.fyn': 'Funen',
-  'region.jylland': 'Jutland',
   'region.empty': 'None in this edition of the data',
 
   'map.label': 'Map of care homes across Greater Copenhagen',
@@ -524,9 +518,6 @@ const FA: Record<Key, Entry> = {
   'region.label': 'بخش کشور',
   'region.menu': 'بخشی از دانمارک را انتخاب کنید',
   'region.all': 'دانمارک',
-  'region.sjaelland': 'شلاند',
-  'region.fyn': 'فون',
-  'region.jylland': 'یوتلند',
   'region.empty': 'در این نسخه از داده‌ها موردی نیست',
 
   'map.label': 'نقشهٔ مراکز مراقبت در منطقهٔ کپنهاگ',

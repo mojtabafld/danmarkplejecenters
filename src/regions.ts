@@ -19,7 +19,7 @@
  * Three islands need saying out loud, because each is in a bucket its
  * coordinates alone would not predict:
  *
- *   Bornholm   is 150km east of Sjælland in the Baltic, and belongs to Region
+ *   Bornholms  is 150km east of Sjælland in the Baltic, and belongs to Region
  *              Hovedstaden. It counts as Sjælland here.
  *   Samsø      sits in the Kattegat between the two, and belongs to Region
  *              Midtjylland. It counts as Jylland.
@@ -49,11 +49,11 @@ export const REGIONS: readonly Region[] = ['sjaelland', 'fyn', 'jylland'] as con
  */
 const SJAELLAND = [
   // Region Hovedstaden, which includes Bornholm.
-  'Albertslund', 'Allerød', 'Ballerup', 'Bornholm', 'Brøndby', 'Dragør',
+  'Albertslund', 'Allerød', 'Ballerup', 'Bornholms', 'Brøndby', 'Dragør',
   'Egedal', 'Fredensborg', 'Frederiksberg', 'Frederikssund', 'Furesø',
   'Gentofte', 'Gladsaxe', 'Glostrup', 'Gribskov', 'Halsnæs', 'Helsingør',
   'Herlev', 'Hillerød', 'Hvidovre', 'Høje-Taastrup', 'Hørsholm', 'Ishøj',
-  'København', 'Lyngby-Taarbæk', 'Rudersdal', 'Rødovre', 'Tårnby', 'Vallensbæk',
+  'Københavns', 'Lyngby-Taarbæk', 'Rudersdal', 'Rødovre', 'Tårnby', 'Vallensbæk',
   // Region Sjælland, which includes Lolland, Falster and Møn.
   'Faxe', 'Greve', 'Guldborgsund', 'Holbæk', 'Kalundborg', 'Køge', 'Lejre',
   'Lolland', 'Næstved', 'Odsherred', 'Ringsted', 'Roskilde', 'Slagelse',
@@ -85,7 +85,12 @@ const JYLLAND = [
  * Three differences show up between sources, and all three are spelling rather
  * than meaning:
  *
- *   " Kommune"  the register appends it on some rows and not others.
+ *   " Kommune"  the register appends it on some rows and not others -- and for
+ *                Bornholm the word is "Regionskommune", because Bornholm is not
+ *                a municipality inside a region, it is both at once. That one
+ *                name is why this is a pattern rather than a string: stripping
+ *                " Kommune" leaves "Bornholms Regionskommune" untouched, which
+ *                is exactly the row the national extract stopped on.
  *   å versus aa  both spellings are in use for the same place, officially --
  *                Aarhus and Århus, Tårnby and Taarnby, Faaborg and Fåborg.
  *                Folding å to aa makes the pair one key.
@@ -96,7 +101,7 @@ const JYLLAND = [
  */
 function fold(name: string): string {
   return name
-    .replace(/\s+Kommune\s*$/i, '')
+    .replace(/\s+(?:Regions)?kommune\s*$/i, '')
     .trim()
     .toLowerCase()
     .replace(/å/g, 'aa')

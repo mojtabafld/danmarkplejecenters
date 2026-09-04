@@ -1,0 +1,152 @@
+# Rebuild the plejecentre extract from the national register.
+#
+# This exists because the two sources are government hosts that a development
+# machine cannot always reach -- a corporate or sandboxed network will refuse
+# admin.plejehjemsoversigten.dk and api.dataforsyningen.dk outright. A GitHub
+# runner has ordinary internet access, so the refresh can happen here and
+# arrive as a commit rather than as an instruction to go and run something.
+#
+# It never writes to main. The regenerated file lands on this branch and a
+# person opens and reviews the pull request, because this is the one file in
+# the repository that decides what 148 -- or 950 -- addresses on a public map
+# actually say.
+name: Refresh plejecentre data
+
+on:
+  # By hand only. It ran on push while this workflow was being bootstrapped --
+  # a dispatch needs the workflow to exist somewhere first -- but a refresh is
+  # not something a commit should decide, and while the register's certificate
+  # is expired every automatic run would fail on it anyway.
+  workflow_dispatch:
+    inputs:
+      allow_expired_cert:
+        description: >-
+          Only if the register is serving an expired certificate AND you have
+          checked the host is the real one. Leave off unless the run below has
+          already failed for that reason.
+        type: boolean
+        default: false
+
+permissions:
+  # To commit the regenerated extract back to this branch. Nothing else.
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    # The register is one download; DAWA is a few thousand small requests at
+    # six in flight. Twenty minutes is generous for that and short enough that
+    # a hung run does not sit there all day.
+    timeout-minutes: 20
+
+    steps:
+      # The header promises this never writes to main. This is that promise
+      # enforced rather than described: dispatched from main there is no branch
+      # to put the result on, and pushing the data straight to production is
+      # precisely what must not happen by accident.
+      - name: Refuse to run on main
+        if: github.ref_name == github.event.repository.default_branch
+        run: |
+          echo "::error::Run this from a branch, not ${{ github.ref_name }}."
+          echo "The regenerated extract is reviewed in a pull request, never pushed to the default branch."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - run: npm ci
+
+      - name: Rebuild from Plejehjemsoversigten and DAWA
+        id: build
+        run: |
+          set +e
+          if [ "${{ inputs.allow_expired_cert }}" = "true" ]; then
+            echo "::warning::Certificate verification is being skipped for the register download."
+            npm run build:data -- --allow-expired-cert
+          else
+            npm run build:data
+          fi
+          code=$?
+          set -e
+          # Only two codes mean the file was written, and everything else is a
+          # failure that must stop the run.
+          #
+          #   0  written, every row placed.
+          #   3  written, and some rows could not be geocoded. Normal for a
+          #      national extract: the register's address columns are free text
+          #      and a handful are unusable -- an empty street, two streets in
+          #      one field, a postcode column holding a town name. Those rows
+          #      are named in the log above and are simply absent from the map,
+          #      which is honest; throwing away the other nine hundred over
+          #      them would not be.
+          #
+          # 1 is deliberately NOT on that list. It is what Node exits with when
+          # it throws, and treating it as a partial success is exactly how a
+          # crash -- an ECONNREFUSED from an optional website, before a single
+          # row was geocoded -- was once reported here as a green run with no
+          # data in it.
+          if [ "$code" -eq 3 ]; then
+            echo "::warning::Some rows could not be geocoded and are not on the map. See the list above."
+          elif [ "$code" -ne 0 ]; then
+            echo "::error::The data build failed with exit code $code. Nothing was committed."
+            exit "$code"
+          fi
+
+      # When the download is refused for a bad certificate, the next question
+      # is always "bad how?" -- a lapsed renewal on the real government host is
+      # a different thing from a certificate for somebody else's domain, and
+      # only one of them is a risk worth weighing. Printing the chain turns
+      # that into something a person can decide with rather than guess at.
+      - name: Describe the certificate that was refused
+        if: failure() && steps.build.conclusion == 'failure'
+        run: |
+          echo "Certificate presented by admin.plejehjemsoversigten.dk:"
+          echo | openssl s_client -connect admin.plejehjemsoversigten.dk:443 \
+                   -servername admin.plejehjemsoversigten.dk 2>/dev/null \
+            | openssl x509 -noout -subject -issuer -dates -ext subjectAltName \
+            || echo "  could not read the certificate"
+          echo
+          echo "Today: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      # The whole point of the run. A build that geocodes 950 rows and changes
+      # nothing means the extract is already current, which is worth saying
+      # rather than leaving as an empty commit.
+      - name: What changed
+        id: diff
+        run: |
+          if git diff --quiet -- src/data/plejecentre.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "The extract is unchanged. Nothing to commit."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- src/data/plejecentre.ts
+          fi
+
+      # The same checks CI runs, before the data is committed rather than
+      # after: the landsdel test is exactly the one that catches a new
+      # municipality name the region table has never seen.
+      - name: Typecheck, build and test against the new data
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          npm run build
+          npm test
+
+      - name: Commit the new extract
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/plejecentre.ts
+          git commit \
+            -m "Refresh the plejecentre extract from the national register" \
+            -m "Regenerated by .github/workflows/refresh-data.yml, which runs the same \
+          npm run build:data a person would run locally -- on a runner, because the \
+          register and the address register are not reachable from every network." \
+            -m "Every row is geocoded against Danmarks Adresseregister and checked against \
+          the landsdel table before being written; the run fails rather than writing a \
+          file it cannot place."
+          git push origin HEAD:${{ github.ref_name }}

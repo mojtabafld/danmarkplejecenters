@@ -213,6 +213,32 @@
                 <span class="dock__icon" id="dockSearchIcon"></span>
               </button>
 
+              <span class="dock__split" aria-hidden="true"></span>
+
+              <!--
+                Which part of the country. In the dock rather than floating
+                over the map, next to the bookmark, because all three things
+                you can do to what the map is showing now live in one pill:
+                search it, narrow it to a landsdel, cut it to what you saved.
+
+                Icon only. The three names are places, so they are set in
+                Danish in every language and never translated -- the same rule
+                the plejecenter names and the kommune names already follow.
+              -->
+              <div class="dockpick" id="dockpick">
+                <button
+                  type="button"
+                  class="dock__seg"
+                  id="dockRegion"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  aria-controls="regionMenu"
+                >
+                  <span class="dock__icon" id="dockRegionIcon"></span>
+                </button>
+                <div class="dockpick__menu" id="regionMenu" hidden></div>
+              </div>
+
               <span class="dock__split" id="dockSplit" aria-hidden="true" hidden></span>
 
               <button type="button" class="dock__seg" id="dockSaved" aria-pressed="false" hidden>
@@ -250,38 +276,6 @@
                 <select class="select" id="dockMunicipality"></select>
               </label>
             </div>
-          </div>
-
-          <!--
-            Which part of the country, above the search and saved pill.
-
-            It sits over the map rather than in the header because it is a
-            statement about what the map is showing, and because on a phone the
-            header is three controls wide already. Directly above the dock, so
-            the three things you can do to the view -- narrow it to a part,
-            search inside it, and cut it to what you saved -- are one stack in
-            one place instead of three controls in three corners.
-
-            Denmark is the resting state and is not a filter: it is every
-            plejecentre in the extract, which is what the map opens on.
-          -->
-          <div class="regionpick" id="regionpick" data-away="false">
-            <button
-              type="button"
-              class="regionpick__button"
-              id="regionButton"
-              aria-expanded="false"
-              aria-controls="regionMenu"
-            >
-              <span class="regionpick__icon" id="regionIcon" aria-hidden="true"></span>
-              <!-- The visible text is a place name; the label in front of it is
-                   what turns "Danmark" into "part of the country: Danmark" for
-                   anyone listening rather than looking. -->
-              <span class="sr-only" data-i18n="region.label"></span>
-              <span class="regionpick__name" id="regionName"></span>
-              <span class="regionpick__caret" id="regionCaret" aria-hidden="true"></span>
-            </button>
-            <div class="regionpick__menu" id="regionMenu" hidden></div>
           </div>
 
           <div class="map__tools">

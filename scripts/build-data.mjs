@@ -24,7 +24,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import { regionLookup } from './landsdele.mjs';
+import { canonicalNames, regionLookup } from './landsdele.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(HERE, '../src/data/plejecentre.ts');
@@ -41,6 +41,16 @@ const DAWA = 'https://api.dataforsyningen.dk/adgangsadresser';
  * the data.
  */
 const regionOf = regionLookup();
+
+/**
+ * The spelling to write down, for a municipality the register spells its way.
+ *
+ * The first national build reported 99 municipalities in a country that has
+ * 98: the register uses more than one spelling for the same place, and two
+ * spellings are two entries in the kommune list. The landsdel table's spelling
+ * is the one that gets stored.
+ */
+const canonical = canonicalNames();
 
 /**
  * How many geocoding requests are in flight at once.
@@ -67,6 +77,17 @@ const ADDRESS_FIXES = {
 };
 
 /* ------------------------------------------------------- field validation */
+
+/**
+ * The municipality name as this project stores it: without the trailing word.
+ *
+ * "Regions" is in the pattern because of exactly one row. Bornholm is a
+ * regionskommune -- a municipality and a region at once -- so the register
+ * writes "Bornholms Regionskommune", and a plain " Kommune" trim leaves it
+ * whole. That is the row the first national build stopped on.
+ */
+const kommuneName = (raw) => (raw ?? '').replace(/\s+(?:Regions)?kommune\s*$/i, '').trim();
+
 
 /**
  * The register's Phone and Email columns are free text, and ~58 rows nationally
@@ -97,6 +118,20 @@ function cleanEmail(raw) {
  * gap the primary register leaves empty, never to overwrite it.
  */
 async function copenhagenPhones() {
+  try {
+    return await copenhagenPhonesInner();
+  } catch (err) {
+    // This is a nice-to-have and nothing else: it fills in phone numbers the
+    // register leaves blank for Copenhagen's municipal homes. A national build
+    // of 929 rows must not die because one optional municipal website is
+    // having a bad afternoon -- which is exactly what happened, with an
+    // ECONNREFUSED that threw away a complete extract.
+    console.warn(`  kk.dk unavailable (${err?.cause?.code ?? err.message}); continuing without backfill.`);
+    return new Map();
+  }
+}
+
+async function copenhagenPhonesInner() {
   const base = 'https://boligertilaeldre.kk.dk/plejehjem/find-plejehjem';
   const slugs = new Set();
   for (let page = 0; page < 8; page++) {
@@ -110,7 +145,12 @@ async function copenhagenPhones() {
 
   const byAddress = new Map();
   for (const slug of slugs) {
-    const res = await fetch(`${base}/${slug}/kontakt`);
+    let res;
+    try {
+      res = await fetch(`${base}/${slug}/kontakt`);
+    } catch {
+      continue; // One unreachable page costs one phone number, not the build.
+    }
     if (!res.ok) continue;
     const text = (await res.text()).replace(/<[^>]+>/g, '\n');
     const lines = text
@@ -167,14 +207,103 @@ function parseCsv(text, delimiter = ';') {
 
 /* ------------------------------------------------------------- geocoding */
 
+/**
+ * One address lookup, and the retry that makes nine hundred of them survivable.
+ *
+ * A national build asks DAWA a few thousand times. At that volume a dropped
+ * connection is not a possibility, it is a scheduled event, and an unhandled
+ * one throws away every row geocoded before it. So a network failure is
+ * retried once after a moment, and a second failure gives up on that lookup
+ * alone: the row is reported as unresolved and the build carries on, which is
+ * the same outcome as an address the register spelled wrong.
+ */
 async function dawa(params) {
   const url = `${DAWA}?${new URLSearchParams({ ...params, struktur: 'mini' })}`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  return res.json();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (err) {
+      if (attempt === 1) {
+        console.warn(`    lookup failed (${err?.cause?.code ?? err.message}); the row will be reported.`);
+        return [];
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  return [];
 }
 
-async function geocode(street, houseNo, postcode) {
+/**
+ * Undo the three ways the register mangles an address, before asking DAWA.
+ *
+ * These are not guesses about what an address might be; each is a shape the
+ * national extract actually produced, and each is reversible without inventing
+ * anything. The first national run lost 34 of 929 rows and half of them were
+ * these three:
+ *
+ *   "Erritsø Bygade A" + "85A"   the house letter is in the street as well as
+ *                                the number. Eight rows. Dropping the trailing
+ *                                letter is safe only when the number already
+ *                                ends in that same letter, which is the check.
+ *   "Skovvangsvej 99A" + "99A"   the whole house number, twice.
+ *   postcode "4250 Fuglebjerg"   the postal town in the postcode column. Six
+ *                                rows. Four digits is unambiguous.
+ *
+ * Anything that does not match a shape is passed through untouched, so a row
+ * this does not understand fails loudly as before rather than being bent into
+ * the wrong address.
+ */
+function tidyAddress(street, houseNo, postcode) {
+  let st = (street ?? '').replace(/\s+/g, ' ').trim();
+  const no = (houseNo ?? '').replace(/\s+/g, ' ').trim();
+
+  // The house number repeated at the end of the street name.
+  if (no && st.toUpperCase().endsWith(` ${no.toUpperCase()}`)) {
+    st = st.slice(0, -(no.length + 1)).trim();
+  }
+
+  // A lone capital at the end of the street that is the number's own letter.
+  const tail = /\s([A-ZÆØÅ])$/.exec(st);
+  if (tail && new RegExp(`^\\d+\\s*${tail[1]}$`, 'i').test(no)) {
+    st = st.slice(0, -2).trim();
+  }
+
+  // Four digits anywhere in the postcode column; the rest is the postal town.
+  const pc = /\b(\d{4})\b/.exec(String(postcode ?? ''));
+
+  return [st, no, pc ? pc[1] : (postcode ?? '').trim()];
+}
+
+/**
+ * Which municipality DAWA says an address is in.
+ *
+ * Used only where the register leaves the Kommune column empty, which the
+ * national extract does for a handful of rows. Those rows are real
+ * plejecentre with real addresses that geocode perfectly well; the only thing
+ * missing is the one field the landsdel is derived from, and the address
+ * register knows it. Four extra requests to keep four care homes on the map is
+ * a better trade than dropping them.
+ *
+ * The default representation is asked for here rather than `mini`, because
+ * `mini` is the flat one and does not carry the kommune. That is why this is
+ * a separate call for a few rows instead of a wider one for all nine hundred.
+ */
+async function municipalityOf(addressId) {
+  if (!addressId) return null;
+  try {
+    const res = await fetch(`${DAWA}/${encodeURIComponent(addressId)}`);
+    if (!res.ok) return null;
+    const a = await res.json();
+    return a?.kommune?.navn ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function geocode(rawStreet, rawHouseNo, rawPostcode) {
+  const [street, houseNo, postcode] = tidyAddress(rawStreet, rawHouseNo, rawPostcode);
   const m = /^\s*(\d+)\s*([A-Za-zÆØÅæøå])?/.exec(houseNo ?? '');
   const candidates = [
     (houseNo ?? '').replace(/\s+/g, ''),
@@ -280,7 +409,7 @@ console.log(`  ${selected.length} active rows across Denmark`);
 const unplaceable = [
   ...new Set(
     selected
-      .map((r) => (r['Kommune'] ?? '').replace(' Kommune', '').trim())
+      .map((r) => kommuneName(r['Kommune']))
       .filter((m) => m && !regionOf(m)),
   ),
 ];
@@ -338,6 +467,18 @@ await pool(selected, CONCURRENCY, async (r) => {
   let web = (r['Web'] ?? '').trim();
   if (web && !/^https?:\/\//i.test(web)) web = `https://${web}`;
 
+  // The register leaves this blank on a few rows; the address register knows
+  // the answer, so it is asked rather than the row being thrown away.
+  let kommune = canonical(kommuneName(r['Kommune']));
+  if (!kommune) kommune = canonical(kommuneName((await municipalityOf(hit.id)) ?? ''));
+  if (!regionOf(kommune)) {
+    // Every shipped row has to belong to one of the three parts, or it is
+    // visible under Danmark and missing from all of them -- present and
+    // unfindable, which is worse than absent.
+    failures.push(`${name} — no municipality (register blank, address register gave ${JSON.stringify(kommune)})`);
+    return;
+  }
+
   const streetFull = tidy(`${street} ${houseNo}`);
   let phone = cleanPhone(r['Phone']);
   if (!phone) {
@@ -351,7 +492,7 @@ await pool(selected, CONCURRENCY, async (r) => {
     street: streetFull,
     postcode,
     city: hit.postnrnavn,
-    municipality: r['Kommune'].replace(' Kommune', '').trim(),
+    municipality: kommune,
     phone,
     email: cleanEmail(r['Email']),
     web: web || null,
@@ -407,4 +548,13 @@ console.log(`  Sjælland ${byRegion.sjaelland}  ·  Fyn ${byRegion.fyn}  ·  Jyl
 console.log(`  phone: ${withPhone}/${records.length} (${backfilled} backfilled from kk.dk)`);
 console.log(`  email: ${withEmail}/${records.length}`);
 
-if (failures.length) process.exit(1);
+/*
+ * 3, not 1, and the difference matters to whatever is running this.
+ *
+ * 1 is what Node exits with when it throws, so a build that dies on its first
+ * request and a build that wrote 895 good rows and could not place 34 both
+ * looked identical -- and the workflow, told that 1 meant "partial success",
+ * reported a crash as a green run with no data in it. A code of its own says
+ * the one thing that cannot be inferred: the file was written.
+ */
+if (failures.length) process.exit(3);

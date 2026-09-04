@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import { readRegions, regionLookup, fold } from '../scripts/landsdele.mjs';
+import { canonicalNames, readRegions, regionLookup, fold } from '../scripts/landsdele.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA = resolve(HERE, '../src/data/plejecentre.ts');
@@ -57,12 +57,20 @@ check(
 );
 
 const regionOf = regionLookup();
+const canonical = canonicalNames();
 
 // The three spellings the source register is known to vary on. Each is a real
 // failure this lookup has to absorb, not a hypothetical.
 check('reads the genitive the register writes', regionOf('Københavns') === 'sjaelland');
 check('reads the plain form too', regionOf('København') === 'sjaelland');
 check('reads it with the word Kommune attached', regionOf('Odense Kommune') === 'fyn');
+// Bornholm is a regionskommune -- a municipality and a region at once -- so the
+// register writes a word that a plain " Kommune" trim does not touch. The first
+// national build stopped on exactly this row.
+check(
+  'reads Bornholm, which is a Regionskommune rather than a Kommune',
+  regionOf('Bornholms Regionskommune') === 'sjaelland',
+);
 check('treats aa and å as the same letter', regionOf('Århus') === regionOf('Aarhus'));
 check('and does not strip a final s that belongs to the name', regionOf('Assens') === 'fyn');
 check('answers null for a name that is not a municipality', regionOf('Atlantis') === null);
@@ -87,9 +95,26 @@ check(
   'every municipality in it resolves to a part of the country',
   unplaceable.length === 0,
   unplaceable.length
-    ? `not in the table in src/regions.ts: ${unplaceable.join(', ')}\n` +
+    // Quoted, because the name that broke this was the empty string and an
+    // unquoted list of it printed as nothing at all.
+    ? `not in the table in src/regions.ts: ${unplaceable.map((m) => JSON.stringify(m)).join(', ')}\n` +
       '         Add each to SJAELLAND, FYN or JYLLAND there.'
     : '',
+);
+
+// Denmark has 98 municipalities, so more than 98 distinct names in the data
+// means the register spelled one of them two ways and the kommune list would
+// offer the same place twice. The first national build produced exactly that:
+// 99 of 98.
+check(
+  'holds no more municipality names than Denmark has municipalities',
+  municipalities.length <= 98,
+  `${municipalities.length} distinct names`,
+);
+check(
+  'and each is spelled the way the landsdel table spells it',
+  municipalities.every((m) => canonical(m) === m),
+  municipalities.filter((m) => canonical(m) !== m).map((m) => `${m} -> ${canonical(m)}`).join(', '),
 );
 
 const counts = { sjaelland: 0, fyn: 0, jylland: 0 };
