@@ -11,7 +11,16 @@ import { icon, iconDataUri } from './icons';
 import { ResultList } from './list';
 import { PlejecenterMap } from './map';
 import { setCollatorLocale } from './format';
-import { MUNICIPALITIES, Store, resortForLocale } from './store';
+import { Store, resortForLocale } from './store';
+import {
+  DENMARK_BOX,
+  REGIONS,
+  REGION_BOX,
+  REGION_COUNT,
+  TOTAL_COUNT,
+  boxOf,
+  type Region,
+} from './regions';
 import { ThemeController, token } from './theme';
 import type { OwnershipGroup, Plejecenter } from './types';
 
@@ -85,6 +94,10 @@ const dockFields = $('#dockFields');
 const dockSearchInput = $<HTMLInputElement>('#dockSearch');
 const dockClear = $<HTMLButtonElement>('#dockClear');
 const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
+const regionEl = $('#regionpick');
+const regionButton = $<HTMLButtonElement>('#regionButton');
+const regionMenu = $('#regionMenu');
+const regionName = $('#regionName');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -106,6 +119,8 @@ accountButton.insertAdjacentHTML('afterbegin', icon('user'));
 $('#geoNoteClose').insertAdjacentHTML('beforeend', icon('x'));
 $('.panel__close').insertAdjacentHTML('beforeend', icon('x'));
 langButton.insertAdjacentHTML('afterbegin', icon('globe'));
+$('#regionIcon').innerHTML = icon('map');
+$('#regionCaret').innerHTML = icon('chevronDown');
 $('#dockFieldIcon').innerHTML = icon('search');
 dockClear.insertAdjacentHTML('beforeend', icon('x'));
 $('#dockSavedIcon').innerHTML = icon('bookmark');
@@ -136,7 +151,10 @@ function renderMunicipalityOptions(): void {
   all.value = '';
   all.textContent = t('filter.allMunicipalities');
   dockMuni.append(all);
-  for (const m of MUNICIPALITIES) {
+  // Only the kommuner in the part of the country that is showing. Offering the
+  // other eighty-odd would be offering eighty ways to empty the list, since the
+  // two filters are an AND.
+  for (const m of store.municipalitiesIn(store.filters.region)) {
     const opt = document.createElement('option');
     opt.value = m;
     opt.textContent = t('filter.municipalitySuffix', { name: m });
@@ -225,6 +243,124 @@ langMenu.addEventListener('keydown', (e) => {
 document.addEventListener('click', (e) => {
   if (langMenu.hidden) return;
   if (!e.composedPath().includes($('#langpick'))) setLangMenuOpen(false);
+});
+
+/* ---------------------------------------------------------------- region */
+
+/**
+ * Which part of the country the map is showing.
+ *
+ * The same disclosure pattern as the language menu, and for the same reason
+ * set out there: four mutually exclusive choices do not need `role="menu"` and
+ * the roving-tabindex contract that comes with it. A button with
+ * `aria-expanded` over a list of ordinary buttons is operable with no script
+ * at all, and the arrow keys below are a convenience rather than a promise.
+ *
+ * Denmark is null, not a fourth region. It is the absence of the filter, so
+ * the store cannot end up in a state where "all of it" is a thing that has to
+ * be kept in step with the three parts.
+ */
+const REGION_KEY = {
+  sjaelland: 'region.sjaelland',
+  fyn: 'region.fyn',
+  jylland: 'region.jylland',
+} as const;
+
+function regionLabel(r: Region | null): string {
+  return r ? t(REGION_KEY[r]) : t('region.all');
+}
+
+function renderRegionMenu(): void {
+  const current = store.filters.region;
+  regionName.textContent = regionLabel(current);
+  regionMenu.setAttribute('aria-label', t('region.menu'));
+
+  const row = (r: Region | null, n: number): string => {
+    const on = r === current;
+    const empty = n === 0;
+    return (
+      `<li><button type="button" class="regionpick__item"` +
+      ` aria-current="${on ? 'true' : 'false'}" data-empty="${empty}"` +
+      ` data-region="${r ?? ''}"` +
+      // A part with nothing in it says so in words as well as with a nought,
+      // because "0" beside a place name is easy to read as a loading state.
+      (empty ? ` title="${esc(t('region.empty'))}"` : '') +
+      `><span class="regionpick__tick">${icon('check')}</span>` +
+      `<span class="regionpick__label">${esc(regionLabel(r))}</span>` +
+      `<span class="regionpick__count">${esc(i18n.n(n))}</span>` +
+      `</button></li>`
+    );
+  };
+
+  regionMenu.innerHTML =
+    '<ul>' +
+    row(null, TOTAL_COUNT) +
+    REGIONS.map((r) => row(r, REGION_COUNT[r])).join('') +
+    '</ul>';
+}
+
+function setRegionMenuOpen(open: boolean): void {
+  regionMenu.hidden = !open;
+  regionButton.setAttribute('aria-expanded', String(open));
+  if (open) regionMenu.querySelector<HTMLElement>('[aria-current="true"]')?.focus();
+}
+
+/**
+ * Move the camera to the chosen part of the country.
+ *
+ * Fitted to the plejecentre that are actually in it, not to a box drawn round
+ * the landmass -- so the view is as tight as the data allows and stays right
+ * when the extract grows. The geographic box is the fallback for a part with
+ * nothing in it, which is the only case where there is nothing to frame; it is
+ * what makes choosing an empty Fyn land on Fyn rather than nowhere.
+ */
+function flyToRegion(r: Region | null): void {
+  const places = store.inRegion(r);
+  map.fitBox(boxOf(places) ?? (r ? REGION_BOX[r] : DENMARK_BOX));
+}
+
+function chooseRegion(r: Region | null): void {
+  store.setRegion(r);
+  // The kommune list is scoped to the part, so it is rebuilt with it -- and
+  // setRegion may have dropped a kommune that is not in the new part.
+  renderMunicipalityOptions();
+  renderRegionMenu();
+  flyToRegion(r);
+}
+
+regionButton.addEventListener('click', () => setRegionMenuOpen(regionMenu.hidden));
+
+regionMenu.addEventListener('click', (e) => {
+  const item = (e.target as HTMLElement).closest<HTMLElement>('[data-region]');
+  if (!item) return;
+  setRegionMenuOpen(false);
+  regionButton.focus();
+  chooseRegion((item.dataset.region || null) as Region | null);
+});
+
+regionMenu.addEventListener('keydown', (e) => {
+  const items = [...regionMenu.querySelectorAll<HTMLElement>('[data-region]')];
+  const at = items.indexOf(document.activeElement as HTMLElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const next = e.key === 'ArrowDown' ? at + 1 : at - 1;
+    items[(next + items.length) % items.length]?.focus();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    (e.key === 'Home' ? items[0] : items.at(-1))?.focus();
+  } else if (e.key === 'Escape') {
+    e.stopPropagation();
+    setRegionMenuOpen(false);
+    regionButton.focus();
+  }
+});
+
+// composedPath() rather than contains(), for the reason set out at the
+// language menu: the path is fixed when the event is dispatched, so it still
+// names the real ancestors after a handler has replaced the menu's contents.
+document.addEventListener('click', (e) => {
+  if (regionMenu.hidden) return;
+  if (!e.composedPath().includes(regionEl)) setRegionMenuOpen(false);
 });
 
 /* --------------------------------------------------------------- account */
@@ -779,9 +915,26 @@ function paintDockLift(): void {
   stageEl.style.setProperty('--dock-lift', `${lift}px`);
 }
 
+/**
+ * How tall the dock is, so the region pill can sit on top of it.
+ *
+ * Measured rather than assumed for the same reason as the lift above: the dock
+ * is one height closed and another with the search field and the kommune list
+ * open, and a constant would leave a gap under the pill every time somebody
+ * searched. Zero while it is hidden, so the pill drops to where the dock would
+ * have been rather than floating over an empty strip.
+ */
+function paintDockHeight(): void {
+  const h = dock.hidden ? 0 : dock.offsetHeight;
+  stageEl.style.setProperty('--dock-height', `${h}px`);
+}
+
 // The sheet changes height when the filters change the tally, when the
 // language changes the wrapping, and when the phone turns.
 new ResizeObserver(() => paintDockLift()).observe(railEl);
+// The dock changes height when the search opens and when the language changes
+// the wrapping inside it.
+new ResizeObserver(() => paintDockHeight()).observe(dock);
 window.addEventListener('resize', paintDockLift);
 
 dockSearchBtn.addEventListener('click', () => {
@@ -1089,6 +1242,8 @@ function setRailOffscreen(off: boolean): void {
   // with it; the search it holds is about the list, not about the one card
   // that is open.
   dock.dataset.away = String(off);
+  regionEl.dataset.away = String(off);
+  if (off) setRegionMenuOpen(false);
   paintDockLift();
 }
 
@@ -1222,7 +1377,10 @@ for (const chip of document.querySelectorAll<HTMLButtonElement>('.chip[data-grou
 }
 
 resetViewBtn.addEventListener('click', () => {
-  map.resetView();
+  // Back to the whole of whatever is selected, not always the whole country.
+  // With Jylland chosen, "show it all again" means all of Jylland: resetting to
+  // Denmark would undo a choice the reader did not ask to undo.
+  flyToRegion(store.filters.region);
   live.textContent = t('live.resetView');
 });
 
@@ -1358,6 +1516,7 @@ i18n.onChange((locale) => {
   applyStaticTranslations();
   renderMunicipalityOptions();
   renderLangMenu();
+  renderRegionMenu();
   paintThemeToggle();
   paintDock();
   renderGeo(geo.status);
@@ -1382,6 +1541,7 @@ i18n.onChange((locale) => {
 
 applyStaticTranslations();
 renderMunicipalityOptions();
+renderRegionMenu();
 renderLangMenu();
 paintThemeToggle();
 paintCaret();

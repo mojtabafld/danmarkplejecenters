@@ -95,10 +95,18 @@ const DA = {
   'empty.reset': 'Nulstil filtre',
 
 
+  'region.label': 'Landsdel',
+  'region.menu': 'Vælg landsdel',
+  'region.all': 'Danmark',
+  'region.sjaelland': 'Sjælland',
+  'region.fyn': 'Fyn',
+  'region.jylland': 'Jylland',
+  'region.empty': 'Ingen i denne udgave af data',
+
   'map.label': 'Kort over plejecentre i hovedstadsområdet',
   'map.zoomIn': 'Zoom ind på kortet',
   'map.zoomOut': 'Zoom ud på kortet',
-  'map.reset': 'Vis hele hovedstadsområdet igen',
+  'map.reset': 'Vis hele området igen',
   'map.legend': 'Signaturforklaring',
   'map.legendTitle': 'Driftsform',
   'map.legendSaved': 'Gemt af dig',
@@ -139,7 +147,7 @@ const DA = {
 
   'live.results': { one: '{n} plejecenter vist på kortet.', other: '{n} plejecentre vist på kortet.' },
   'live.noResults': 'Ingen plejecentre matcher. Justér søgning eller filtre.',
-  'live.resetView': 'Kortet viser hele hovedstadsområdet igen.',
+  'live.resetView': 'Kortet viser hele området igen.',
   'live.basemapDown': 'Baggrundskortet kunne ikke hentes. Listen virker stadig.',
   'live.language': 'Sproget er skiftet til dansk.',
   'account.open': 'Konto',
@@ -301,10 +309,18 @@ const EN: Record<Key, Entry> = {
   'empty.reset': 'Reset filters',
 
 
+  'region.label': 'Part of the country',
+  'region.menu': 'Choose a part of the country',
+  'region.all': 'Denmark',
+  'region.sjaelland': 'Zealand',
+  'region.fyn': 'Funen',
+  'region.jylland': 'Jutland',
+  'region.empty': 'None in this edition of the data',
+
   'map.label': 'Map of care homes across Greater Copenhagen',
   'map.zoomIn': 'Zoom in',
   'map.zoomOut': 'Zoom out',
-  'map.reset': 'Show the whole region again',
+  'map.reset': 'Show the whole area again',
   'map.legend': 'Legend',
   'map.legendTitle': 'Operator',
   'map.legendSaved': 'Saved by you',
@@ -345,7 +361,7 @@ const EN: Record<Key, Entry> = {
 
   'live.results': { one: '{n} care home shown on the map.', other: '{n} care homes shown on the map.' },
   'live.noResults': 'No care homes match. Adjust the search or the filters.',
-  'live.resetView': 'The map shows the whole region again.',
+  'live.resetView': 'The map shows the whole area again.',
   'live.basemapDown': 'The background map could not be loaded. The list still works.',
   'live.language': 'Language changed to English.',
   'account.open': 'Account',
@@ -504,6 +520,14 @@ const FA: Record<Key, Entry> = {
     'واژهٔ کوتاه‌تری بنویسید، شهرداری دیگری برگزینید، یا پالایه‌های نوع اداره را دوباره روشن کنید. جست‌وجو نام، خیابان، کد پستی و شهر را در بر می‌گیرد.',
   'empty.reset': 'بازنشانی پالایه‌ها',
 
+
+  'region.label': 'بخش کشور',
+  'region.menu': 'بخشی از دانمارک را انتخاب کنید',
+  'region.all': 'دانمارک',
+  'region.sjaelland': 'شلاند',
+  'region.fyn': 'فون',
+  'region.jylland': 'یوتلند',
+  'region.empty': 'در این نسخه از داده‌ها موردی نیست',
 
   'map.label': 'نقشهٔ مراکز مراقبت در منطقهٔ کپنهاگ',
   'map.zoomIn': 'بزرگ‌نمایی نقشه',

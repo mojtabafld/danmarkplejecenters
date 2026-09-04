@@ -5,7 +5,7 @@
   "description": "Interactive map of plejecentre (care homes) across Greater Copenhagen, on OpenStreetMap data.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
     "start": "node server.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/api.test.mjs",
+    "test": "node tests/regions.test.mjs && node tests/api.test.mjs",
     "serve:memdb": "node tests/serve-with-memdb.mjs",
     "build:data": "node scripts/build-data.mjs",
     "build:harness": "node verification/build-harness.mjs",
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "maplibre-gl": "^5.6.0",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^9.1.1",
     "pg": "^8.23.0"
   },
   "devDependencies": {

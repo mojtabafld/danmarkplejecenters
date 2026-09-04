@@ -43,6 +43,11 @@ const PATHS: Record<string, string> = {
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   minus: '<path d="M5 12h14"/>',
   chevronDown: '<path d="m6 9 6 6 6-6"/>',
+  // A folded paper map: the one glyph that says "part of the country" rather
+  // than "a point on it", which is what the pin already means here.
+  map:
+    '<path d="M14.1 5.55a2 2 0 0 0 1.79 0l3.66-1.83A1 1 0 0 1 21 4.62v12.76a1 1 0 0 1-.55.9l-4.56 2.27a2 2 0 0 1-1.78 0l-4.22-2.1a2 2 0 0 0-1.78 0l-3.66 1.83A1 1 0 0 1 3 19.38V6.62a1 1 0 0 1 .55-.9l4.56-2.27a2 2 0 0 1 1.78 0Z"/>' +
+    '<path d="M15 5.76v15"/><path d="M9 3.24v15"/>',
   external:
     '<path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
     '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/>',

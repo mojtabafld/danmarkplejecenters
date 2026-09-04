@@ -6,6 +6,7 @@ import maplibregl, {
 } from 'maplibre-gl';
 
 import { ownershipGroup } from './format';
+import { HOME_BOX, type Box } from './regions';
 import { token, type Theme } from './theme';
 import type { Plejecenter } from './types';
 
@@ -19,15 +20,43 @@ const STYLE: Record<Theme, string> = {
   dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
 };
 
-/** Greater Copenhagen, with a margin so the outer municipalities are not clipped. */
-export const HOME_BOUNDS: LngLatBoundsLike = [
-  [12.12, 55.52],
-  [12.73, 55.95],
-];
+/**
+ * The default view: whatever the shipped extract actually covers.
+ *
+ * It used to be a hard-coded box around Greater Copenhagen, which was correct
+ * for exactly one dataset. Deriving it means the map frames Copenhagen while
+ * the extract is Copenhagen and frames the country once the extract is the
+ * country, with nothing here to remember to change. See src/regions.ts.
+ */
+export const HOME_BOUNDS: LngLatBoundsLike = HOME_BOX;
 
-/** Opening camera, refined to HOME_BOUNDS as soon as the transform is sized. */
-const HOME_CENTER: [number, number] = [12.425, 55.735];
-const HOME_ZOOM = 9;
+/**
+ * Opening camera, refined to HOME_BOUNDS as soon as the transform is sized.
+ *
+ * Derived from the same box for the same reason, and deliberately a little
+ * wider than the fit that follows: opening too far in and zooming out reads as
+ * a mistake being corrected, while opening slightly out and settling in reads
+ * as the map arriving.
+ */
+const HOME_CENTER: [number, number] = [
+  (HOME_BOX[0][0] + HOME_BOX[1][0]) / 2,
+  (HOME_BOX[0][1] + HOME_BOX[1][1]) / 2,
+];
+/*
+ * Web Mercator at the equator fits 360 degrees of longitude across 512px at
+ * zoom 1, halving with each level; the cosine corrects for the meridians
+ * converging at Denmark's latitude. One level is subtracted so the opening
+ * frame is wider than the target rather than narrower.
+ */
+const HOME_ZOOM = Math.max(
+  3,
+  Math.min(
+    11,
+    Math.log2(
+      (360 * Math.cos((HOME_CENTER[1] * Math.PI) / 180)) / (HOME_BOX[1][0] - HOME_BOX[0][0]),
+    ) - 1,
+  ),
+);
 
 const SRC = 'plejecentre';
 const USER_SRC = 'user-location';
@@ -98,6 +127,8 @@ const PULSE_TOTAL = RIPPLE_OFFSET + RIPPLE_STAGGER * RIPPLE_STAGGER_CAP + RIPPLE
 
 /** How long the camera takes to pull back to the whole region. */
 const HOME_MS = 620;
+/** Longer than a card focus: this crosses the country, and should be read as travel. */
+const REGION_MS = 900;
 
 /**
  * Somebody who has asked for less motion gets the state without the show: the
@@ -739,6 +770,24 @@ export class PlejecenterMap {
 
   resetView(): void {
     this.run((m) => m.fitBounds(HOME_BOUNDS, { padding: 48, duration: HOME_MS }));
+  }
+
+  /**
+   * Move to a named box -- the whole country, or one part of it.
+   *
+   * `maxZoom` is what stops a part holding a single plejecentre from becoming
+   * a street view: the reader asked to see a region, and a region that fills
+   * the screen at building scale is not one.
+   */
+  fitBox(box: Box, opts: { instant?: boolean } = {}): void {
+    this.run((m) => {
+      m.fitBounds(box, {
+        padding: 56,
+        maxZoom: 11,
+        duration: opts.instant || REDUCED.matches ? 0 : REGION_MS,
+        essential: true,
+      });
+    });
   }
 
   /* ------------------------------------------------------- user location -- */

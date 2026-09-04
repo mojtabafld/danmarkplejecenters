@@ -1,0 +1,52 @@
+# Build it and test it on every push and every pull request.
+#
+# What this catches: a commit that does not compile, a build that fails, and
+# any of the 99 API checks going red. Until this existed those only ran when
+# somebody remembered to run them, which meant a broken test could reach
+# production and be discovered by a visitor.
+#
+# What it does NOT catch, and is worth knowing: nothing here drives a browser.
+# The map, the bottom sheet, the ratings form and the admin panel are verified
+# by hand against a real Chromium, not here. This is the floor, not the ceiling.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only. This workflow builds and tests; it has no business writing to the
+# repository, and saying so means a compromised action cannot either.
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same major the app declares in `engines` and the same one App
+      # Platform will run, so a pass here is evidence about production rather
+      # than about whatever the runner happened to have.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      # `npm ci` rather than `npm install`: it installs exactly what the
+      # lockfile says and fails if the lockfile and package.json disagree,
+      # which is the difference between testing your dependencies and testing
+      # some dependencies.
+      - run: npm ci
+
+      # Typecheck plus both Vite builds -- the map's bundle and the admin
+      # panel's. The build is where a missing import or a broken type shows up.
+      - run: npm run build
+
+      # 99 checks against an in-memory Postgres and a capturing mail
+      # transport: accounts, the confirmation link, sessions, notes, ratings
+      # and moderation, who may reach the admin API, and the counting beacon.
+      - run: npm test
