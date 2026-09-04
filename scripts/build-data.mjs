@@ -5,10 +5,18 @@
  *   1. Download the monthly CSV extract from Plejehjemsoversigten — the
  *      statutory national register of Danish plejehjem, plejecentre and
  *      friplejeboliger, maintained by Sundhedsdatastyrelsen.
- *   2. Keep the Greater Copenhagen municipalities.
- *   3. Resolve every row against Danmarks Adresseregister (DAWA) to get an
+ *   2. Keep every active row, in all 98 municipalities.
+ *   3. Check each row's municipality against the landsdel table, so nothing is
+ *      written that the interface could not file under Sjælland, Fyn or Jylland.
+ *   4. Resolve every row against Danmarks Adresseregister (DAWA) to get an
  *      official address and WGS84 coordinates. Nothing is placed on the map on
  *      a guessed coordinate: a row that will not resolve is reported, not shipped.
+ *
+ * This used to keep only the 23 Greater Copenhagen municipalities. The whole
+ * country is roughly 950 rows rather than 148, which is why the geocoding below
+ * runs a few requests at a time instead of one after another: serially it is
+ * about ten minutes of waiting on a public API, and DAWA is a free government
+ * service that should be asked politely rather than as fast as possible.
  *
  * Usage: npm run build:data
  */
@@ -16,19 +24,32 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
+import { regionLookup } from './landsdele.mjs';
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(HERE, '../src/data/plejecentre.ts');
 
 const CSV_URL = 'https://admin.plejehjemsoversigten.dk/handlers/downloadcsvfilehandler.ashx';
 const DAWA = 'https://api.dataforsyningen.dk/adgangsadresser';
 
-/** Greater Copenhagen: the capital plus the surrounding commuter municipalities. */
-const MUNICIPALITIES = new Set([
-  'Københavns', 'Frederiksberg', 'Gentofte', 'Gladsaxe', 'Herlev', 'Rødovre',
-  'Hvidovre', 'Brøndby', 'Glostrup', 'Albertslund', 'Ballerup', 'Tårnby',
-  'Dragør', 'Lyngby-Taarbæk', 'Rudersdal', 'Furesø', 'Vallensbæk', 'Ishøj',
-  'Høje-Taastrup', 'Hørsholm', 'Egedal', 'Allerød', 'Greve',
-]);
+/**
+ * Which part of the country each municipality is in, read from src/regions.ts.
+ *
+ * Used here only to check that every row can be placed. The answer is not
+ * written into the data file: the application derives it from the municipality
+ * the row already carries, so correcting the table never means regenerating
+ * the data.
+ */
+const regionOf = regionLookup();
+
+/**
+ * How many geocoding requests are in flight at once.
+ *
+ * DAWA is free, public and run by a government agency, and this is a build
+ * step that runs once a month. Six is enough to turn ten minutes into two and
+ * modest enough that nobody has to think about it.
+ */
+const CONCURRENCY = 6;
 
 /**
  * A handful of register rows carry a malformed street field (a repeated name, a
@@ -245,10 +266,33 @@ const text = new TextDecoder('windows-1252').decode(await res.arrayBuffer());
 const all = parseCsv(text);
 console.log(`  ${all.length} rows, extract dated ${extractDate}`);
 
-const selected = all.filter(
-  (r) => r.Inactive !== 'True' && MUNICIPALITIES.has((r['Kommune'] ?? '').replace(' Kommune', '').trim()),
-);
-console.log(`  ${selected.length} rows in Greater Copenhagen — geocoding…`);
+const selected = all.filter((r) => r.Inactive !== 'True');
+console.log(`  ${selected.length} active rows across Denmark`);
+
+/*
+ * Every row has to be placeable before any of them is written.
+ *
+ * A municipality this build does not recognise is not a row to drop quietly:
+ * it is either a spelling the landsdel table has not seen or a change to the
+ * map of Denmark, and both want a person to look. Checked up front, so the
+ * answer arrives before ten minutes of geocoding rather than after it.
+ */
+const unplaceable = [
+  ...new Set(
+    selected
+      .map((r) => (r['Kommune'] ?? '').replace(' Kommune', '').trim())
+      .filter((m) => m && !regionOf(m)),
+  ),
+];
+if (unplaceable.length) {
+  console.error(
+    `\n${unplaceable.length} municipality name(s) are not in the landsdel table ` +
+      'in src/regions.ts:\n' +
+      unplaceable.map((m) => `  ${m}`).join('\n') +
+      '\n\nAdd each to SJAELLAND, FYN or JYLLAND there, then re-run. Nothing was written.\n',
+  );
+  process.exit(2);
+}
 
 console.log('  fetching Copenhagen contact pages for the numbers the register omits…');
 const kkPhones = await copenhagenPhones();
@@ -261,12 +305,35 @@ let backfilled = 0;
 /** The register contains doubled spaces and stray padding in some names. */
 const tidy = (s) => (s ?? '').replace(/\s+/g, ' ').trim();
 
-for (const r of selected) {
+/**
+ * Run `worker` over `items`, `limit` at a time.
+ *
+ * A pool rather than Promise.all over the lot: nine hundred simultaneous
+ * requests is not concurrency, it is a denial of service against a service
+ * that is doing us a favour. Each worker takes the next index until there are
+ * none left, so a slow row delays only itself.
+ */
+async function pool(items, limit, worker) {
+  let next = 0;
+  let done = 0;
+  const runner = async () => {
+    while (next < items.length) {
+      const i = next++;
+      await worker(items[i], i);
+      done++;
+      if (done % 50 === 0) console.log(`    ${done}/${items.length} geocoded`);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, runner));
+}
+
+console.log(`  geocoding ${selected.length} rows, ${CONCURRENCY} at a time…`);
+await pool(selected, CONCURRENCY, async (r) => {
   const name = tidy(r['Plejehjemsnavn']);
   const [street, houseNo, postcode] = ADDRESS_FIXES[name] ?? [r['Vejnavn'], r['Vejnummer'], r['Postalcode']];
 
   const hit = await geocode(street, houseNo, postcode);
-  if (!hit) { failures.push(`${name} — ${street} ${houseNo}, ${postcode}`); continue; }
+  if (!hit) { failures.push(`${name} — ${street} ${houseNo}, ${postcode}`); return; }
 
   let web = (r['Web'] ?? '').trim();
   if (web && !/^https?:\/\//i.test(web)) web = `https://${web}`;
@@ -293,8 +360,11 @@ for (const r of selected) {
     lat: Number(hit.y.toFixed(6)),
     lon: Number(hit.x.toFixed(6)),
   });
-}
+});
 
+// The pool finishes rows out of order, so the sort is what makes the generated
+// file stable: the same extract must produce the same bytes, or every rebuild
+// is a diff nobody can read.
 records.sort((a, b) =>
   a.municipality.localeCompare(b.municipality, 'da-DK') || a.name.localeCompare(b.name, 'da-DK'),
 );
@@ -305,6 +375,12 @@ if (failures.length) {
   console.error('Add a corrected address to ADDRESS_FIXES in this script, then re-run.\n');
 }
 
+const withPhone = records.filter((r) => r.phone).length;
+const withEmail = records.filter((r) => r.email).length;
+const byRegion = { sjaelland: 0, fyn: 0, jylland: 0 };
+for (const r of records) byRegion[regionOf(r.municipality)] += 1;
+const kommuner = new Set(records.map((r) => r.municipality)).size;
+
 const banner = `// GENERATED FILE — do not edit by hand.
 // Regenerate with:  npm run build:data
 //
@@ -313,6 +389,9 @@ const banner = `// GENERATED FILE — do not edit by hand.
 //         Monthly CSV extract dated ${extractDate}.
 // Geocode Danmarks Adresseregister (DAWA, api.dataforsyningen.dk) — every row
 //         resolved to an official access address; coordinates are WGS84.
+// Covers  All of Denmark: ${records.length} plejecentre in ${kommuner} of the 98
+//         municipalities. The landsdel each belongs to is not stored here; it
+//         is derived from the municipality in src/regions.ts.
 
 import type { Plejecenter } from '../types';
 
@@ -322,9 +401,9 @@ export const PLEJECENTRE: Plejecenter[] = ${JSON.stringify(records, null, 1)};
 `;
 
 writeFileSync(OUT, banner, 'utf8');
-const withPhone = records.filter((r) => r.phone).length;
-const withEmail = records.filter((r) => r.email).length;
 console.log(`\nWrote ${records.length} plejecentre to ${OUT}`);
+console.log(`  kommuner: ${kommuner}/98`);
+console.log(`  Sjælland ${byRegion.sjaelland}  ·  Fyn ${byRegion.fyn}  ·  Jylland ${byRegion.jylland}`);
 console.log(`  phone: ${withPhone}/${records.length} (${backfilled} backfilled from kk.dk)`);
 console.log(`  email: ${withEmail}/${records.length}`);
 

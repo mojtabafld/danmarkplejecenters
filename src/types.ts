@@ -1,3 +1,5 @@
+import type { Region } from './regions';
+
 export type Ownership = 'Kommunal' | 'Selvejende' | 'Privat' | 'Friplejebolig' | 'Ukendt';
 
 export interface Plejecenter {
@@ -30,4 +32,11 @@ export interface Filters {
   ownership: Set<OwnershipGroup>;
   /** Show only what the signed-in reader has marked visited. */
   visitedOnly: boolean;
+  /**
+   * Which part of the country, or null for all of it.
+   *
+   * Not stored on the place: it is derived from the municipality, which every
+   * row already carries. See src/regions.ts.
+   */
+  region: Region | null;
 }

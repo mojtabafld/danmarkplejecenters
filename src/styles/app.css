@@ -722,7 +722,8 @@ a.btn { text-decoration: none; }
  */
 .dock,
 .map__tool,
-.map__toolgroup {
+.map__toolgroup,
+.regionpick__button {
   background: var(--glass-bg);
   border: var(--border-hairline) solid var(--glass-border);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -782,6 +783,167 @@ a.btn { text-decoration: none; }
    the one opaque thing on a translucent control. */
 .map__tool:hover { background: var(--glass-hover); color: var(--text-primary); }
 .map__tool:active { background: var(--glass-active); }
+
+/* ========================================================== regionpick === */
+/*
+ * Which part of the country, as a pill directly above the dock.
+ *
+ * Positioned rather than stacked. The obvious thing would have been to wrap
+ * this and the dock in one column and let flexbox space them, and that would
+ * have meant moving the dock's own positioning -- the `--dock-room` reservation
+ * that keeps it clear of the zoom buttons, the measured `--dock-lift`, the
+ * `data-away` slide -- onto a new parent, all of it tuned and none of it
+ * related to this. Anchoring to the same corner and clearing the dock's
+ * measured height costs one custom property and leaves that alone.
+ *
+ * `--dock-height` is written by script from the dock's real box, because the
+ * dock is not one height: it grows when the search opens, and a constant would
+ * put a gap under this pill every time somebody searched.
+ */
+.regionpick {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  inset-block-end: calc(
+    var(--dock-lift, 0px) + var(--space-3) + var(--dock-height, 3.25rem) + var(--space-2)
+  );
+  /* Centred over the map exactly as the dock is, and for the same reason: the
+     width changes with the name in it, so a 50% offset could not centre it. */
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: max-content;
+  max-inline-size: calc(100% - 2 * var(--space-3));
+  transition: translate var(--duration-base) var(--ease-out);
+}
+/* Away with the dock and the sheet, while a detail card owns the bottom of the
+   map. Matches `.dock[data-away]`, including hiding it from the tab order. */
+.regionpick[data-away='true'] {
+  translate: 0 calc(300% + var(--space-3));
+  visibility: hidden;
+}
+.regionpick[hidden] { display: none; }
+
+/*
+ * The pane, the hairline and the blur come from the shared glass rule above.
+ * A pill, because it is one control and it sits above another pill.
+ */
+.regionpick__button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-lg);
+  padding-inline: var(--space-3) var(--space-2);
+  max-inline-size: 100%;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  /* Primary, not secondary: see the note by --glass-bg. A mid-grey on a pane
+     you can read a street through is the thing that disappears. */
+  color: var(--text-primary);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.regionpick__button:hover { background: var(--glass-bg-strong); }
+.regionpick__button:active { background: var(--glass-active); }
+.regionpick__button[aria-expanded='true'] { background: var(--glass-bg-strong); }
+
+.regionpick__icon,
+.regionpick__caret { display: flex; flex: none; }
+.regionpick__icon svg {
+  display: block;
+  inline-size: var(--icon-md);
+  block-size: var(--icon-md);
+  stroke-width: 1.6;
+}
+/* Smaller than the leading glyph and one step quieter: it is punctuation on
+   the control, not a second thing to look at. */
+.regionpick__caret svg {
+  display: block;
+  inline-size: var(--icon-sm);
+  block-size: var(--icon-sm);
+  color: var(--text-secondary);
+  transition: rotate var(--duration-fast) var(--ease-out);
+}
+.regionpick__button[aria-expanded='true'] .regionpick__caret svg { rotate: 180deg; }
+
+.regionpick__name { overflow: hidden; text-overflow: ellipsis; }
+
+/*
+ * The menu opens upward, because the control is at the bottom of the map.
+ *
+ * Thick glass, not the control tint: these rows are words and a count, and
+ * text has to clear 4.5:1 against whatever street is behind it where an icon
+ * only has to clear 3. Same blur and sheen as the dock, so it still reads as
+ * the same material.
+ */
+.regionpick__menu {
+  position: absolute;
+  z-index: var(--z-toast);
+  inset-block-end: calc(100% + var(--space-2));
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  max-inline-size: 15rem;
+  padding: var(--space-1);
+  background: var(--glass-panel-bg);
+  border: var(--border-hairline) solid var(--glass-border);
+  border-radius: var(--menu-radius);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
+}
+/* An author `display` beats the browser's `[hidden]`. The dock's segments and
+   the intro both learned this the hard way; this is here so this one does not. */
+.regionpick__menu[hidden] { display: none; }
+
+.regionpick__menu ul { list-style: none; margin: 0; padding: 0; }
+
+.regionpick__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: var(--control-md);
+  padding-inline: var(--space-2);
+  text-align: start;
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.regionpick__item:hover { background: var(--menu-item-hover-bg); }
+
+/* The tick keeps its column whether or not it is showing, so the names line up
+   rather than shifting one glyph left when the selection moves. */
+.regionpick__tick { display: flex; flex: none; visibility: hidden; }
+.regionpick__tick svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); }
+.regionpick__item[aria-current='true'] .regionpick__tick { visibility: visible; }
+.regionpick__item[aria-current='true'] { font-weight: var(--weight-medium); }
+
+.regionpick__label { flex: 1 1 auto; }
+
+/*
+ * The count, and the one place this interface admits what it does not have.
+ *
+ * A part of the country with nothing in it is worth saying before it is
+ * chosen, not after: the shipped extract covers Greater Copenhagen, so two of
+ * the three parts are genuinely empty, and a reader who picks Fyn deserves to
+ * have known that rather than to find an empty map and wonder what they broke.
+ */
+.regionpick__count {
+  flex: none;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+.regionpick__item[data-empty='true'] .regionpick__label,
+.regionpick__item[data-empty='true'] .regionpick__count { color: var(--text-tertiary); }
 
 /* ================================================================ dock === */
 /*

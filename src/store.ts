@@ -1,6 +1,8 @@
 import { PLEJECENTRE } from './data/plejecentre';
 import { compare, fold, ownershipGroup } from './format';
+import { regionOf, regionOfMunicipality } from './regions';
 import type { Filters, OwnershipGroup, Plejecenter } from './types';
+import type { Region } from './regions';
 
 const ALL_OWNERSHIP: OwnershipGroup[] = ['Kommunal', 'Selvejende', 'Privat'];
 
@@ -11,6 +13,17 @@ const INDEX = new Map<string, string>(
     fold([p.name, p.street, p.postcode, p.city, p.municipality].join(' ')),
   ]),
 );
+
+/**
+ * The landsdel of every place, resolved once at load.
+ *
+ * A map rather than a field on the record, because the record is generated
+ * from the register and the answer is not in the register -- it is derived
+ * from the municipality, and deriving it 148 times per keystroke inside the
+ * filter would be the one avoidable cost in a function that runs on every
+ * character typed.
+ */
+const REGION = new Map(PLEJECENTRE.map((p) => [p.id, regionOf(p)]));
 
 const MUNICIPALITY_NAMES = [...new Set(PLEJECENTRE.map((p) => p.municipality))];
 
@@ -38,6 +51,7 @@ export class Store {
     municipality: null,
     ownership: new Set(ALL_OWNERSHIP),
     visitedOnly: false,
+    region: null,
   };
 
   /**
@@ -88,10 +102,11 @@ export class Store {
   }
 
   private compute(): Plejecenter[] {
-    const { query, municipality, ownership, visitedOnly } = this.filters;
+    const { query, municipality, ownership, visitedOnly, region } = this.filters;
     const terms = fold(query).split(/\s+/).filter(Boolean);
     return ALL.filter((p) => {
       if (visitedOnly && !this.isVisited(p.id)) return false;
+      if (region && REGION.get(p.id) !== region) return false;
       if (municipality && p.municipality !== municipality) return false;
       if (!ownership.has(ownershipGroup(p))) return false;
       if (terms.length === 0) return true;
@@ -135,6 +150,38 @@ export class Store {
     this.emit();
   }
 
+  /**
+   * Narrow to one part of the country, or to all of it with null.
+   *
+   * A kommune already chosen is dropped when it is not in the new part,
+   * because the two filters are an AND and the pair "Fyn, and Gentofte" can
+   * only ever mean an empty list. Dropping it is the reading that keeps
+   * something on screen; the alternative is an empty map that blames the
+   * reader for a combination the interface offered them.
+   */
+  setRegion(r: Region | null): void {
+    this.filters.region = r;
+    const m = this.filters.municipality;
+    if (r && m && regionOfMunicipality(m) !== r) this.filters.municipality = null;
+    this.emit();
+  }
+
+  /** The places in one part of the country, ignoring every other filter. */
+  inRegion(r: Region | null): Plejecenter[] {
+    return r ? ALL.filter((p) => REGION.get(p.id) === r) : ALL;
+  }
+
+  /**
+   * The kommune list for one part of the country.
+   *
+   * Offering all 98 while Fyn is selected would be offering 88 ways to empty
+   * the list.
+   */
+  municipalitiesIn(r: Region | null): string[] {
+    if (!r) return MUNICIPALITIES;
+    return MUNICIPALITIES.filter((m) => regionOfMunicipality(m) === r);
+  }
+
   toggleOwnership(o: OwnershipGroup): void {
     const set = this.filters.ownership;
     if (set.has(o)) set.delete(o);
@@ -155,6 +202,7 @@ export class Store {
       municipality: null,
       ownership: new Set(ALL_OWNERSHIP),
       visitedOnly: false,
+      region: null,
     };
     this.selectedId = null;
     this.emit();
@@ -165,6 +213,7 @@ export class Store {
     return (
       f.query !== '' ||
       f.municipality !== null ||
+      f.region !== null ||
       f.visitedOnly ||
       f.ownership.size !== ALL_OWNERSHIP.length
     );
