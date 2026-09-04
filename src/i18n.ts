@@ -452,7 +452,7 @@ const EN: Record<Key, Entry> = {
 
 const FA: Record<Key, Entry> = {
   'app.title': 'مراکز مراقبت سالمندان',
-  'app.subtitle': 'منطقه کلان شهری کپنهاگ',
+  'app.subtitle': 'در سراسر دانمارک',
   'intro.label': 'راهنمای کوتاه',
   'intro.progress': 'گام {n} از {total}',
   'intro.next': 'بعدی',
