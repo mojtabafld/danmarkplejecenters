@@ -218,8 +218,8 @@ export function boxOf(items: readonly Plejecenter[]): Box | null {
  *
  * The picker shows these beside the names. A part with nothing in it is worth
  * saying out loud rather than leaving to be discovered by selecting it and
- * finding an empty map -- especially while the shipped extract covers only
- * Greater Copenhagen, where two of the three are genuinely empty.
+ * finding an empty map -- which was the state while the shipped extract
+ * covered only Greater Copenhagen and two of the three were genuinely empty.
  */
 export const REGION_COUNT: Record<Region, number> = { sjaelland: 0, fyn: 0, jylland: 0 };
 
@@ -245,9 +245,9 @@ for (const p of PLEJECENTRE) {
  * The default view: everything we actually have.
  *
  * Derived from the data rather than fixed to the country, so it is right for
- * whatever extract is shipped -- Greater Copenhagen today, the whole of Denmark
- * once the national extract is built. The country box is the fallback for an
- * empty dataset, which should never happen but must not open the map on the
- * Atlantic if it does.
+ * whatever extract is shipped -- the whole of Denmark now, a corner of it if
+ * one were ever built that way. The country box is the fallback for an empty
+ * dataset, which should never happen but must not open the map on the Atlantic
+ * if it does.
  */
 export const HOME_BOX: Box = boxOf(PLEJECENTRE) ?? DENMARK_BOX;

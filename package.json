@@ -2,7 +2,7 @@
   "name": "plejecenter-kort",
   "version": "1.0.0",
   "private": true,
-  "description": "Interactive map of plejecentre (care homes) across Greater Copenhagen, on OpenStreetMap data.",
+  "description": "Interactive map of plejecentre (care homes) across Denmark, on OpenStreetMap data.",
   "type": "module",
   "engines": {
     "node": "22.x"

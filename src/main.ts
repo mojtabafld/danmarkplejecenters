@@ -14,6 +14,7 @@ import { setCollatorLocale } from './format';
 import { Store, resortForLocale } from './store';
 import {
   DENMARK_BOX,
+  HOME_BOX,
   REGIONS,
   REGION_BOX,
   REGION_COUNT,
@@ -1366,7 +1367,9 @@ function render(): void {
   // is on must not set the whole map off again.
   if (store.filters.visitedOnly !== lastVisitedOnly) {
     lastVisitedOnly = store.filters.visitedOnly;
-    map.setSavedFocus(lastVisitedOnly);
+    // What is on screen with the filter on: the saved places, already narrowed
+    // by any landsdel or kommune also chosen. The camera frames exactly that.
+    map.setSavedFocus(lastVisitedOnly, store.visible);
   }
 
   if (store.selectedId !== lastSelected) {
@@ -1520,10 +1523,17 @@ function renderGeo(status: GeoStatus): void {
         geoFramed = true;
         map.focusUser(status.lat, status.lon, panelInset());
         live.textContent = t('locate.found');
-        const [[w, s], [e, n]] = [
-          [12.12, 55.52],
-          [12.73, 55.95],
-        ];
+        /*
+         * Outside the area the map actually covers -- measured from the
+         * extract, not written down here.
+         *
+         * These four numbers used to be a copy of the old Greater Copenhagen
+         * bounds, typed inline. They stayed put when the extract went
+         * national, so anybody standing in Aarhus or Aalborg was told they
+         * were outside the area while looking at a map with their own city on
+         * it. HOME_BOX is the extent of the data, so this cannot drift again.
+         */
+        const [[w, s], [e, n]] = HOME_BOX;
         if (status.lon < w || status.lon > e || status.lat < s || status.lat > n) {
           showGeoNote(t('locate.far'));
         }
