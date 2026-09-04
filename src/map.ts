@@ -6,7 +6,7 @@ import maplibregl, {
 } from 'maplibre-gl';
 
 import { ownershipGroup } from './format';
-import { HOME_BOX, type Box } from './regions';
+import { HOME_BOX, boxOf, type Box } from './regions';
 import { token, type Theme } from './theme';
 import type { Plejecenter } from './types';
 
@@ -129,6 +129,14 @@ const PULSE_TOTAL = RIPPLE_OFFSET + RIPPLE_STAGGER * RIPPLE_STAGGER_CAP + RIPPLE
 const HOME_MS = 620;
 /** Longer than a card focus: this crosses the country, and should be read as travel. */
 const REGION_MS = 900;
+/**
+ * How far in the saved-places view is allowed to go.
+ *
+ * Tighter than a single card's 14.5, because this frames a set rather than
+ * picking one out of it: at street level the ripple has nothing around it to
+ * be a ripple against.
+ */
+const SAVED_MAX_ZOOM = 12;
 
 /**
  * Somebody who has asked for less motion gets the state without the show: the
@@ -547,20 +555,40 @@ export class PlejecenterMap {
    * they are here on purpose. It runs once and stops -- a map that pulses
    * forever is a map nobody can read a street name on.
    */
-  setSavedFocus(on: boolean): void {
+  /**
+   * Narrow the map to the saved places, then set them rippling.
+   *
+   * `saved` is what is on screen once the filter is on, so the camera goes to
+   * those and nothing else. That used to be the whole country, which was right
+   * when the country was Greater Copenhagen and is not right now: somebody
+   * whose saved places are all on Sjælland was shown Jylland and the North Sea
+   * as well, with their handful of dots in one corner. Fitting the places
+   * themselves means a set that happens to sit in one landsdel is framed as
+   * that landsdel, without anything here having to know which one it is.
+   *
+   * `maxZoom` is what stops one saved place becoming a street view. The reader
+   * asked to see what they had saved, and a single dot filling the screen shows
+   * them a roof rather than a place they could travel to.
+   */
+  setSavedFocus(on: boolean, saved: readonly Plejecenter[] = []): void {
     this.run((m) => {
       this.stopPulse(m);
       if (!on) return;
 
-      // The camera comes home first.
+      // The camera moves first.
       //
       // Somebody zoomed into one street who asks for their saved places is
       // asking to see them, and most of them are somewhere else. Without this
       // the filter emptied the visible map and the ripple ran off-screen: an
-      // animation nobody watches, on a map that looks broken. Pulling back to
-      // the region puts every saved place in frame before anything moves.
+      // animation nobody watches, on a map that looks broken. Framing them
+      // puts every saved place on screen before anything moves.
       const still = REDUCED.matches;
-      m.fitBounds(HOME_BOUNDS, { padding: 48, duration: still ? 0 : HOME_MS });
+      const box = boxOf(saved) ?? HOME_BOX;
+      m.fitBounds(box, {
+        padding: 56,
+        maxZoom: SAVED_MAX_ZOOM,
+        duration: still ? 0 : HOME_MS,
+      });
       if (still) return;
 
       // And the ripple waits for it. Rings expanding while the camera is still

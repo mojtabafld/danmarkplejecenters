@@ -101,7 +101,7 @@ const DA = {
   'region.empty': 'Ingen i denne udgave af data',
   'region.hint': 'Vælg Sjælland, Fyn eller Jylland for at se én landsdel ad gangen.',
 
-  'map.label': 'Kort over plejecentre i hovedstadsområdet',
+  'map.label': 'Kort over plejecentre i hele Danmark',
   'map.zoomIn': 'Zoom ind på kortet',
   'map.zoomOut': 'Zoom ud på kortet',
   'map.reset': 'Vis hele området igen',
@@ -126,7 +126,7 @@ const DA = {
   'locate.insecure':
     'Placering kræver en sikker forbindelse (https). Åbn siden over https, og prøv igen.',
   'locate.unsupported': 'Din browser understøtter ikke placering.',
-  'locate.far': 'Du er uden for hovedstadsområdet. Kortet viser stadig din placering.',
+  'locate.far': 'Du er uden for kortets område. Kortet viser stadig din placering.',
   'locate.dismiss': 'Luk beskeden',
 
   'panel.close': 'Luk detaljer om {name}',
@@ -313,7 +313,7 @@ const EN: Record<Key, Entry> = {
   'region.empty': 'None in this edition of the data',
   'region.hint': 'Choose Sjælland, Fyn or Jylland to see one part of the country at a time.',
 
-  'map.label': 'Map of care homes across Greater Copenhagen',
+  'map.label': 'Map of care homes across Denmark',
   'map.zoomIn': 'Zoom in',
   'map.zoomOut': 'Zoom out',
   'map.reset': 'Show the whole area again',
@@ -338,7 +338,7 @@ const EN: Record<Key, Entry> = {
   'locate.insecure':
     'Location needs a secure connection (https). Open the page over https, then try again.',
   'locate.unsupported': 'Your browser does not support location.',
-  'locate.far': 'You are outside Greater Copenhagen. The map still shows where you are.',
+  'locate.far': 'You are outside the area this map covers. The map still shows where you are.',
   'locate.dismiss': 'Dismiss this message',
 
   'panel.close': 'Close details for {name}',
@@ -523,7 +523,7 @@ const FA: Record<Key, Entry> = {
   'region.empty': 'در این نسخه از داده‌ها موردی نیست',
   'region.hint': 'برای دیدن یک بخش از دانمارک، Sjælland، Fyn یا Jylland را انتخاب کنید.',
 
-  'map.label': 'نقشهٔ مراکز مراقبت در منطقهٔ کپنهاگ',
+  'map.label': 'نقشهٔ مراکز مراقبت در سراسر دانمارک',
   'map.zoomIn': 'بزرگ‌نمایی نقشه',
   'map.zoomOut': 'کوچک‌نمایی نقشه',
   'map.reset': 'نمایش دوبارهٔ کل منطقه',
@@ -548,7 +548,7 @@ const FA: Record<Key, Entry> = {
   'locate.insecure':
     'موقعیت‌یابی به پیوند امن (https) نیاز دارد. صفحه را با https باز کنید و دوباره تلاش کنید.',
   'locate.unsupported': 'مرورگر شما از موقعیت‌یابی پشتیبانی نمی‌کند.',
-  'locate.far': 'شما بیرون از منطقهٔ کپنهاگ هستید. نقشه همچنان موقعیت شما را نشان می‌دهد.',
+  'locate.far': 'شما بیرون از محدودهٔ این نقشه هستید. نقشه همچنان موقعیت شما را نشان می‌دهد.',
   'locate.dismiss': 'بستن این پیام',
 
   'panel.close': 'بستن جزئیات {name}',
