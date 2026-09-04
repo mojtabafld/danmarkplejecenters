@@ -1071,13 +1071,20 @@ a.btn { text-decoration: none; }
    * Wide enough for whatever it is holding, and no wider.
    *
    * This was a flat 8rem, which fitted the two segments it had when it was
-   * written. A third arrived with the landsdel picker and the bookmark spilled
-   * out past the rounded pane -- the glass ended and the icon carried on,
-   * floating on the map on its own. `max-content` sizes to the row inside, so
-   * it is right for two segments and for three, and for the fourth nobody has
-   * added yet.
+   * written; a third arrived with the landsdel picker and the bookmark spilled
+   * out past the rounded pane. The fix for that was `min(max-content, ...)`,
+   * which is not valid CSS -- `min()` takes lengths and percentages, not
+   * intrinsic keywords, so the whole declaration was dropped and the dock fell
+   * back to filling the room it is allowed. That was 262px against 176px of
+   * icons, and it only looked fixed because a pane too wide still contains its
+   * contents.
+   *
+   * `max-content` on its own is valid and is what was meant: the pane is the
+   * width of the row inside it. `max-inline-size` still caps it, and the two
+   * together shrink-to-fit while `inset-inline: 0` and the auto margins keep
+   * it centred.
    */
-  inline-size: min(max-content, var(--dock-room));
+  inline-size: max-content;
   max-inline-size: min(24rem, var(--dock-room));
   display: grid;
   gap: var(--space-2);
@@ -1130,7 +1137,13 @@ a.btn { text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  /*
+   * Tighter than the 8px it was. Each segment already carries about 11px of
+   * air between its edge and its glyph, so 8px on top of that read as a gap
+   * between separate buttons rather than as one control with parts. At 4px the
+   * dividers do the separating, which is what they are for.
+   */
+  gap: var(--space-1);
   min-block-size: var(--control-lg);
 }
 
