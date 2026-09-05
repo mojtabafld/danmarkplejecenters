@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <!-- Tints the browser's own chrome: Safari's address bar, Android's status
-         bar. ThemeController keeps it in step with the theme; the value here is
-         only what shows for the first frame. -->
+         bar. ThemeController keeps it in step with the theme once it loads; the
+         script below corrects it before the first paint, which for at least one
+         browser is the only moment that counts. See there. -->
     <meta name="theme-color" content="#FFFFFF" />
     <script>
       /*
@@ -37,6 +38,26 @@
         document
           .querySelector('meta[name="color-scheme"]')
           .setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');
+        /*
+         * And the chrome above the page, here rather than in the module.
+         *
+         * This is the one place colours are written outside the token layer,
+         * and it is not a shortcut. Browsers do not agree on when they read
+         * theme-color. Safari reads it late enough to see the module's value,
+         * which is why its address bar was right after a reload and wrong
+         * before one. Chrome appears to commit to what it has at first paint --
+         * and what it had was the static #FFFFFF in the markup above, so
+         * somebody on a dark theme got a white bar on every visit, reload
+         * included, no matter what the module set afterwards.
+         *
+         * The module still owns every later change; this is only the value the
+         * first paint gets. The two literals must equal --header-bg in each
+         * theme, which is asserted against the resolved tokens in
+         * verification, because a colour written twice is a colour that drifts.
+         */
+        document
+          .querySelector('meta[name="theme-color"]')
+          .setAttribute('content', t === 'dark' ? '#1E2121' : '#FFFFFF');
       })();
     </script>
     <title>Plejecentre</title>
