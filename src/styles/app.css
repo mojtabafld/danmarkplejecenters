@@ -980,13 +980,28 @@ a.btn { text-decoration: none; }
   border-radius: var(--radius-pill);
   /* Never in the way of the press it is inviting. */
   pointer-events: none;
-  animation: dock-attention-ring 1600ms var(--ease-out) 3;
+  /*
+   * Invisible unless the keyframes are showing it, twice over: the base style
+   * here, and `both` so the animation holds its first frame before it starts
+   * and its last after it ends.
+   *
+   * Without either, the ring had a fourth flash nobody asked for. The three
+   * runs finish at 4800ms and the script clears the attribute at 5000ms, and
+   * in between fill-mode: none handed the ring back to its own style -- a
+   * solid ring at full strength, brighter than the 0.55 the real pulses peak
+   * at, appearing for 165ms and then vanishing without a fade. Measured at
+   * opacity 1 where the three before it measured 0.55.
+   */
+  opacity: 0;
+  animation: dock-attention-ring 1600ms var(--ease-out) 3 both;
 }
 
 /* The glyph breathes with it, a little behind, so the two read as one gesture
    rather than a ring that happens to be over an icon. */
 .dock__seg[data-attention='true'] .dock__icon {
-  animation: dock-attention-glyph 1600ms var(--ease-out) 3;
+  /* `both` for the same reason, though the glyph's first and last keyframes
+     are both scale 1, so here it is consistency rather than a fix. */
+  animation: dock-attention-glyph 1600ms var(--ease-out) 3 both;
 }
 
 @keyframes dock-attention-ring {
