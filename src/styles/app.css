@@ -147,17 +147,32 @@ a { color: var(--text-link); }
  * and the header are all painted the same colour in both themes.
  */
 .masthead {
-  padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
-  padding-inline-start: calc(var(--space-4) + env(safe-area-inset-left, 0px));
-  padding-inline-end: calc(var(--space-4) + env(safe-area-inset-right, 0px));
   z-index: var(--z-header);
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-block-size: var(--header-height);
   min-inline-size: 0;
+  /*
+   * The shorthands first, the safe-area longhands after them.
+   *
+   * Order is the whole point here. These three used to sit at the top of the
+   * rule, above `padding-inline` and `padding-block`, and a shorthand
+   * overrides a longhand declared before it -- so all three were silently
+   * discarded and the header stopped at the top of the viewport instead of
+   * filling the strip behind the notch. Measured by substituting a real inset
+   * for env(): padding-top computed to 8px where it should have been 55px.
+   *
+   * The comment above this rule said the header paints the notch. It did not,
+   * and that is why the strip up there did not follow the theme: it was being
+   * painted by the browser from theme-color, which iOS Safari reads at load,
+   * rather than by an element whose background is a token.
+   */
   padding-inline: var(--space-4);
   padding-block: var(--space-2);
+  padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  padding-inline-start: calc(var(--space-4) + env(safe-area-inset-left, 0px));
+  padding-inline-end: calc(var(--space-4) + env(safe-area-inset-right, 0px));
   /*
    * Glass, like the dock and the panels -- but painted by a pseudo-element
    * rather than by the header itself, and that is not a stylistic choice.
