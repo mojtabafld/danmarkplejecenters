@@ -211,15 +211,14 @@ const DA = {
   'rating.comments': 'Kommentarer',
   'rating.noComments': 'Ingen kommentarer endnu.',
   /*
-   * The row label, and the link on it.
+   * The whole of the vacancies row: a link under the website, with a search
+   * icon and no label of its own.
    *
-   * They were one string when this was a link under the name with nothing
-   * else around it. As a row in the facts it has a label like every other row,
-   * and repeating "ledige stillinger" in both halves of the row would be the
-   * label read twice.
+   * No label, because unlike the rows above it the text is a sentence rather
+   * than a value -- "Adresse: Ryesgade 20A" reads, "Ledige stillinger: Søg job
+   * på dette center" reads the same thing twice.
    */
-  'jobs.label': 'Ledige stillinger',
-  'jobs.search': 'Søg på dette center',
+  'jobs.search': 'Søg job på dette center',
   'account.passwordHint': 'Mindst {n} tegn.',
   'account.close': 'Luk kontopanelet',
   'account.adminPanel': 'Administration',
@@ -435,8 +434,7 @@ const EN: Record<Key, Entry> = {
   'rating.unverified': 'Confirm your e-mail address before rating.',
   'rating.comments': 'Comments',
   'rating.noComments': 'No comments yet.',
-  'jobs.label': 'Vacancies',
-  'jobs.search': 'Search at this centre',
+  'jobs.search': 'Search jobs at this centre',
   'account.passwordHint': 'At least {n} characters.',
   'account.close': 'Close the account panel',
   'account.adminPanel': 'Administration',
@@ -651,8 +649,7 @@ const FA: Record<Key, Entry> = {
   'rating.unverified': 'پیش از امتیاز دادن نشانی ایمیل خود را تأیید کنید.',
   'rating.comments': 'نظرها',
   'rating.noComments': 'هنوز نظری ثبت نشده است.',
-  'jobs.label': 'آگهی‌های استخدام',
-  'jobs.search': 'جست‌وجو در این مرکز',
+  'jobs.search': 'جستجوی مشاغل برای این مرکز',
   'account.passwordHint': 'دست‌کم {n} نویسه.',
   'account.close': 'بستن پنل حساب',
   'account.adminPanel': 'مدیریت',

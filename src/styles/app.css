@@ -1545,51 +1545,6 @@ a.btn { text-decoration: none; }
  */
 .panel__eyebrow--muni:empty { display: none; }
 
-/*
- * The vacancies chip: the same pill as the two beside it, and a link.
- *
- * It was a row in the facts, under the website. As a chip it sits with the
- * operator and the kommune, which is where somebody scanning a card for
- * whether to apply is already looking -- and it is the only one of the three
- * that goes anywhere, which the colour and the icon both say.
- */
-/*
- * Doubled deliberately. The ownership rule further down sets colour and
- * background on .panel__eyebrow at the same specificity as this, and it comes
- * later in the file, so a single class here lost to it and the chip rendered
- * in the neutral grey the other two fall back to. Two classes outrank it
- * wherever either rule ends up sitting.
- */
-.panel__eyebrow.panel__eyebrow--jobs {
-  color: var(--jobs-fg);
-  background: var(--jobs-bg);
-  text-decoration: none;
-  /*
-   * Exactly the pill the other two are: same padding, same height, same type.
-   * It carried a taller box and wider padding to reach 24px for WCAG 2.5.8,
-   * which made it visibly the odd one in a row of three.
-   *
-   * The hit area is bigger than the pill instead. A pseudo-element spilling
-   * 3px above and below is part of the link's own target and changes no
-   * layout, so a thumb gets 27px while the eye gets 21. Nothing else in this
-   * row is interactive and the nearest control is the close button well above,
-   * so the spacing exception in 2.5.8 covers the pill on its own either way.
-   */
-  position: relative;
-}
-.panel__eyebrow.panel__eyebrow--jobs::after {
-  content: '';
-  position: absolute;
-  inset-block: -3px;
-  inset-inline: 0;
-}
-.panel__eyebrow.panel__eyebrow--jobs:hover { filter: brightness(0.95); }
-.panel__eyebrow--jobs svg {
-  inline-size: var(--icon-sm);
-  block-size: var(--icon-sm);
-  flex: none;
-}
-
 /* ====================================================== address balloon === */
 /*
  * The address, and the two applications it can be handed to.
