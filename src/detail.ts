@@ -90,6 +90,13 @@ export class DetailPanel {
         this.setMapMenu(this.root.querySelector<HTMLElement>('#addrMenu')?.hidden ?? false);
         return;
       }
+      // The route tile is a shortcut to the address's own balloon, so it opens
+      // that one where it already lives rather than growing a second copy.
+      if (el.closest('[data-act="route"]')) {
+        this.setMapMenu(true);
+        this.root.querySelector<HTMLElement>('#addrButton')?.scrollIntoView({ block: 'nearest' });
+        return;
+      }
       const copyBtn = el.closest<HTMLElement>('[data-copy]');
       if (copyBtn) {
         void this.copyAddress(copyBtn);
@@ -187,22 +194,59 @@ export class DetailPanel {
   }
 
   /*
-   * One row of the register's own data.
+   * One row of the register's own data: a tile, a label, a value.
    *
-   * The label is spoken, not drawn. "ADRESSE" over a street name, "TELEFON"
-   * over eight digits and "OFFICIEL HJEMMESIDE" over a hostname each say a
-   * second time what the icon beside them and the value under them already
-   * say, and six of them stacked up turned the card into a column of small
-   * grey capitals with the actual content indented beneath it. The value's own
-   * shape identifies it; the label stays in the accessibility tree, where it
-   * is the only place the naming still does any work.
+   * The chevron is drawn only where the row leads somewhere, and it is drawn
+   * INSIDE the row's own link or button rather than beside it -- a mark at the
+   * far edge that is not part of the target it points at is an invitation to
+   * press nothing. The rows that only state a fact, like the operator, get no
+   * chevron and no wider hit area, because they do not act.
    */
-  private fact(iconName: IconName, labelKey: TranslationKey, value: string): string {
+  private fact(
+    iconName: IconName,
+    labelKey: TranslationKey,
+    value: string,
+    opts: { leads?: boolean } = {},
+  ): string {
     return (
-      `<div class="fact"><span class="fact__icon">${icon(iconName)}</span>` +
-      `<span class="fact__body"><span class="sr-only">${esc(this.i18n.t(labelKey))}</span>` +
-      `<span class="fact__value">${value}</span></span></div>`
+      `<div class="fact"${opts.leads ? ' data-leads="true"' : ''}>` +
+      `<span class="fact__icon">${icon(iconName)}</span>` +
+      `<span class="fact__body"><span class="fact__label">${esc(this.i18n.t(labelKey))}</span>` +
+      `<span class="fact__value">${value}</span></span>` +
+      `</div>`
     );
+  }
+
+  /** The mark on a row that leads somewhere, drawn inside the thing it marks. */
+  private static chev(): string {
+    return `<span class="fact__chev" aria-hidden="true">${icon('chevronRight')}</span>`;
+  }
+
+  /*
+   * The four things somebody does with a plejecentre, above the list that
+   * spells them out.
+   *
+   * Each is a shortcut to a row below rather than a fifth thing: route opens
+   * the same balloon the address does, and the rest are the same links. A
+   * shortcut to something that is not there is worse than one fewer shortcut,
+   * so a centre with no phone gets three tiles.
+   */
+  private quickActions(p: Plejecenter): string {
+    const t = this.i18n.t.bind(this.i18n);
+    const tile = (attrs: string, iconName: IconName, label: string) =>
+      `<a class="qa__tile" ${attrs}>${icon(iconName)}<span>${esc(label)}</span></a>`;
+    const out = [
+      // A button, not a link: it opens the balloon on the address below rather
+      // than going anywhere itself.
+      `<button type="button" class="qa__tile" data-act="route">` +
+        `${icon('navigation')}<span>${esc(t('act.route'))}</span></button>`,
+    ];
+    if (p.phone) out.push(tile(`href="${esc(telHref(p.phone))}"`, 'phone', t('act.call')));
+    if (p.email) out.push(tile(`href="mailto:${esc(p.email)}"`, 'mail', t('act.mail')));
+    out.push(
+      tile(`href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer"`, 'search', t('act.jobs')),
+    );
+    return `<div class="qa">${out.join('')}</div>`;
   }
 
   show(
@@ -294,6 +338,7 @@ export class DetailPanel {
     const group = ownershipGroup(p);
     const parts: string[] = [];
 
+    parts.push(this.quickActions(p));
     parts.push('<div class="facts">');
 
     // The address itself stays in Danish: it is a postal address, and a
@@ -351,9 +396,9 @@ export class DetailPanel {
        * carry dir="ltr" for the same reason; this line had been getting away
        * without it.
        */
-      ` dir="ltr" lang="da"` +
       ` aria-expanded="false" aria-haspopup="dialog"` +
-      ` aria-label="${esc(t('panel.chooseMap'))}">${address}</button>` +
+      ` aria-label="${esc(t('panel.chooseMap'))}">` +
+      `<span dir="ltr" lang="da">${address}</span>${DetailPanel.chev()}</button>` +
       `<span class="mapmenu" id="addrMenu" hidden role="dialog"` +
       ` aria-label="${esc(t('panel.chooseMap'))}">${apps}${copy}</span>` +
       `</span>`;
@@ -364,7 +409,7 @@ export class DetailPanel {
       address += `<span class="fact__value fact__distance">${esc(t('panel.distance', { n: shown }))}</span>`;
     }
 
-    parts.push(this.fact('pin', 'panel.address', address));
+    parts.push(this.fact('pin', 'panel.address', address, { leads: true }));
     parts.push(this.fact('building', 'panel.ownership', esc(t(ownershipDetailKey(p)))));
 
     if (p.phone) {
@@ -373,14 +418,23 @@ export class DetailPanel {
           'phone',
           'panel.phone',
           // The number is dialled, so it is never localised into Persian digits.
-          `<a href="${esc(telHref(p.phone))}" dir="ltr">${esc(formatPhone(p.phone))}</a>`,
+          `<a href="${esc(telHref(p.phone))}">` +
+            `<span dir="ltr" class="fact__atom">${esc(formatPhone(p.phone))}</span>` +
+            `${DetailPanel.chev()}</a>`,
+          { leads: true },
         ),
       );
     }
 
     if (p.email) {
       parts.push(
-        this.fact('mail', 'panel.email', `<a href="mailto:${esc(p.email)}" dir="ltr">${esc(p.email)}</a>`),
+        this.fact(
+          'mail',
+          'panel.email',
+          `<a href="mailto:${esc(p.email)}">` +
+            `<span dir="ltr">${esc(p.email)}</span>${DetailPanel.chev()}</a>`,
+          { leads: true },
+        ),
       );
     }
 
@@ -389,30 +443,24 @@ export class DetailPanel {
         this.fact(
           'globe',
           'panel.website',
-          `<a href="${esc(p.web)}" target="_blank" rel="noopener noreferrer" dir="ltr">` +
-            `${esc(prettyHost(p.web))}</a>`,
+          `<a href="${esc(p.web)}" target="_blank" rel="noopener noreferrer">` +
+            `<span dir="ltr">${esc(prettyHost(p.web))}</span>${DetailPanel.chev()}</a>`,
+          { leads: true },
         ),
       );
     }
 
-    /*
-     * The vacancies, under the centre's own website.
-     *
-     * A row like the ones above it and styled like their links, but with no
-     * label: the rows above pair a label with a value, and this one is a
-     * sentence. "Ledige stillinger: Søg job på dette center" says the same
-     * thing twice. The search icon fills the column the globe and the envelope
-     * use, so the row lines up with them without a word of its own.
-     *
-     * And no "for <name>" hidden on the end either: the link sits inside a card
-     * whose heading is that name, so a screen reader has already said it.
-     */
+    // The vacancies, under the centre's own website, and a row like the rest:
+    // every other row names its field above its value, and the one that did
+    // not was the one that looked like a stray line.
     parts.push(
-      `<div class="fact"><span class="fact__icon">${icon('search')}</span>` +
-        `<span class="fact__body"><span class="fact__value">` +
+      this.fact(
+        'search',
+        'jobs.label',
         `<a href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
-        `${esc(t('jobs.search'))}` +
-        `</a></span></span></div>`,
+          `${esc(t('jobs.search'))}${DetailPanel.chev()}</a>`,
+        { leads: true },
+      ),
     );
 
     parts.push('</div>');

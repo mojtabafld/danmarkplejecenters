@@ -138,11 +138,21 @@ const mapApp = (id, name) =>
   `<a class="mapmenu__app" data-app="${id}" href="https://example.invalid/">` +
   `<span class="mapmenu__mark"></span><span class="mapmenu__name">${name}</span></a>`;
 
-// The label is spoken only; see the comment on `fact()` in src/detail.ts.
-const fact = (ic, label, value) =>
-  `<div class="fact"><span class="fact__icon">${ic}</span>` +
-  `<span class="fact__body"><span class="sr-only">${label}</span>` +
+// The chevron is decorative and lives inside the row's own target; see the
+// comment on `fact()` in src/detail.ts.
+const CHEV = icon('<path d="m9 18 6-6-6-6"/>');
+const chev = `<span class="fact__chev" aria-hidden="true">${CHEV}</span>`;
+const fact = (ic, label, value, leads = false) =>
+  `<div class="fact"${leads ? ' data-leads="true"' : ''}><span class="fact__icon">${ic}</span>` +
+  `<span class="fact__body"><span class="fact__label">${label}</span>` +
   `<span class="fact__value">${value}</span></span></div>`;
+
+// The four shortcuts above the list. Route is a button: it opens the address's
+// own balloon rather than going anywhere itself.
+const qa = (ic, label, tag = 'a') =>
+  tag === 'a'
+    ? `<a class="qa__tile" href="https://example.invalid/">${ic}<span>${label}</span></a>`
+    : `<button type="button" class="qa__tile" data-act="route">${ic}<span>${label}</span></button>`;
 
 const detail = pick('Plejecenter Sølund');
 
@@ -349,13 +359,19 @@ const panel = `<!doctype html>
             <p class="note__label">Din note</p>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
+          <div class="qa">
+            ${qa(I.navigation, 'Rute', 'button')}
+            ${qa(I.phone, 'Ring')}
+            ${qa(I.mail, 'E-mail')}
+            ${qa(I.search, 'Job')}
+          </div>
           <div class="facts">
-            ${fact(I.pin, 'Adresse', `<span class="addr"><button type="button" class="addr__button" dir="ltr" lang="da" aria-expanded="false" aria-haspopup="dialog" aria-label="Åbn adressen i et kort">${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}</button><span class="mapmenu" hidden role="dialog" aria-label="Åbn adressen i et kort">${mapApp('apple', 'Apple Maps')}${mapApp('google', 'Google Maps')}<button type="button" class="mapmenu__app" data-copy="x"><span class="mapmenu__mark mapmenu__mark--action">${I.copy}</span><span class="mapmenu__name">Kopiér</span></button></span></span>`)}
+            ${fact(I.pin, 'Adresse', `<span class="addr"><button type="button" class="addr__button" aria-expanded="false" aria-haspopup="dialog" aria-label="Åbn adressen i et kort"><span dir="ltr" lang="da">${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}</span>${chev}</button><span class="mapmenu" hidden role="dialog" aria-label="Åbn adressen i et kort">${mapApp('apple', 'Apple Maps')}${mapApp('google', 'Google Maps')}<button type="button" class="mapmenu__app" data-copy="x"><span class="mapmenu__mark mapmenu__mark--action">${I.copy}</span><span class="mapmenu__name">Kopiér</span></button></span></span>`, true)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}
-            ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}">82 32 50 50</a>`)}
-            ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}">${esc(detail.email ?? 'kontakt@kk.dk')}</a>`)}
-            ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}">boligertilaeldre.kk.dk<span class="sr-only"> (åbner i ny fane)</span></a>`)}
-            <div class="fact"><span class="fact__icon">${I.search}</span><span class="fact__body"><span class="fact__value"><a href="https://www.google.com/search?q=x">Søg job på dette center<span class="sr-only"> (åbner i ny fane)</span></a></span></span></div>
+            ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}"><span dir="ltr" class="fact__atom">82 32 50 50</span>${chev}</a>`, true)}
+            ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}"><span dir="ltr">${esc(detail.email ?? 'kontakt@kk.dk')}</span>${chev}</a>`, true)}
+            ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}"><span dir="ltr">boligertilaeldre.kk.dk</span><span class="sr-only"> (åbner i ny fane)</span>${chev}</a>`, true)}
+            ${fact(I.search, 'Ledige stillinger', `<a href="https://www.google.com/search?q=x">Søg job på dette center<span class="sr-only"> (åbner i ny fane)</span>${chev}</a>`, true)}
           </div>
         </div>
         <div class="panel__foot">
