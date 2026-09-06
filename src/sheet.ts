@@ -115,7 +115,16 @@ export class Sheet {
       return;
     }
     root.dataset.detent = detent;
+    /*
+     * Now, and again once the movement has run.
+     *
+     * A sheet being settled has usually just been told where to go, not
+     * arrived: a card is still parked below the screen at the moment its
+     * entrance is released. Anything positioned against it that measured only
+     * now would measure the old place and never hear about the new one.
+     */
     this.o.onMove?.();
+    window.setTimeout(() => this.o.onMove?.(), 460);
   }
 
   /** Move to a resting place without a finger being involved. */

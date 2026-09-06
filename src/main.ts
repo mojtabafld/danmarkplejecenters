@@ -22,7 +22,6 @@ import {
   type Box,
   type Region,
 } from './regions';
-import { Sheet } from './sheet';
 import { ThemeController, token } from './theme';
 import type { OwnershipGroup, Plejecenter } from './types';
 
@@ -992,12 +991,49 @@ function syncDock(): void {
  * the map and there is nothing to clear, so the dock sits on the gutter.
  */
 function paintDockLift(): void {
-  // How much of the sheet is actually on screen, not how tall it is. Collapsing
-  // it is a translate, which leaves offsetHeight alone -- measuring that left
-  // the dock floating where a full-height sheet used to be, over nothing.
-  const seen = Math.max(0, window.innerHeight - railEl.getBoundingClientRect().top);
-  const lift = NARROW.matches && !railEl.dataset.offscreen ? Math.round(seen) : 0;
-  stageEl.style.setProperty('--dock-lift', `${lift}px`);
+  const cardOpen = !panelEl.hidden;
+
+  /*
+   * Whether the dock has anywhere to be.
+   *
+   * It used to leave the moment a card opened, which was right when a card
+   * filled the screen. It is not any more: pulled down to peek, a card leaves
+   * the top half of the map on show, and the search, the landsdel picker and
+   * the bookmark went with it for no reason -- the map was there and the three
+   * controls for working with it were not. It leaves only when the card is
+   * expanded, where there is genuinely nothing between the card and the header,
+   * and comes back the moment the card is pulled back down.
+   */
+  const away = NARROW.matches && cardOpen && panelEl.dataset.detent === 'full';
+  if (dock.dataset.away !== String(away)) {
+    dock.dataset.away = String(away);
+    regionEl.dataset.away = String(away);
+    if (away) {
+      setRegionMenuOpen(false);
+      stopRegionAttention();
+    }
+  }
+
+  /*
+   * And how high it floats: above whichever sheet is at the bottom of the map.
+   *
+   * With a card open that is the card -- the rail has slid away underneath it,
+   * and floating the dock at the rail's height would put it behind the card.
+   * Measured from where the sheet actually is rather than from how tall it is,
+   * because both move by translate: that leaves offsetHeight alone and fires no
+   * ResizeObserver, which is why the sheets report their own movement.
+   *
+   * A dock that is away gets no lift, and the two are decided together here so
+   * they cannot disagree. `data-away` slides it down by its own height plus the
+   * gutter, which only clears the screen from a resting place at the bottom --
+   * lifted, it slid down from wherever it had been lifted to and sat there,
+   * invisible but occupying the top of the map.
+   */
+  const front = cardOpen ? panelEl : railEl;
+  const grounded =
+    away || !NARROW.matches || (front === railEl && railEl.dataset.offscreen === 'true');
+  const seen = grounded ? 0 : Math.max(0, window.innerHeight - front.getBoundingClientRect().top);
+  stageEl.style.setProperty('--dock-lift', `${Math.round(seen)}px`);
 }
 
 /**
@@ -1018,10 +1054,7 @@ function paintDockHeight(): void {
 // language changes the wrapping, and when the phone turns. Its collapsed
 // offset is a share of that height, so it is worked out again with it --
 // keeping whichever resting place the reader chose.
-new ResizeObserver(() => {
-  railSheet.settle(false);
-  paintDockLift();
-}).observe(railEl);
+new ResizeObserver(() => paintDockLift()).observe(railEl);
 // The dock changes height when the search opens and when the language changes
 // the wrapping inside it.
 new ResizeObserver(() => paintDockHeight()).observe(dock);
@@ -1261,7 +1294,11 @@ const map = new PlejecenterMap($('#map'), theme.current, {
 
 /* ----------------------------------------------------------------- panel */
 
-const detail = new DetailPanel(panelEl, panelBody, panelFoot, i18n, () => store.select(null));
+const detail = new DetailPanel(panelEl, panelBody, panelFoot, i18n, () => store.select(null), () => {
+  // The card is the frontmost sheet while it is open, so the dock's height
+  // above the map and its right to be there both follow it.
+  paintDockLift();
+});
 
 /**
  * The counting beacon.
@@ -1323,27 +1360,6 @@ const list = new ResultList(resultsEl, store, i18n, (p) => {
 
 const NARROW = window.matchMedia('(max-width: 60rem)');
 
-/**
- * The rail's own pull-down, the same gesture the detail card has.
- *
- * No onDismiss: the rail collapses to a strip carrying the bar and the count
- * and stops there. A list that can be pulled away with no way back would be
- * worse than one in the way, and the count is the one thing on it that answers
- * a question about the map rather than about the list.
- *
- * Not while the detail card has slid it off screen -- there is nothing to grab
- * then, and a drag would fight the card for the same corner of the screen.
- */
-const railSheet = new Sheet({
-  root: railEl,
-  grip: $('#railGrip'),
-  probe: $('#railPeek'),
-  opensAt: 'full',
-  active: () => railEl.dataset.offscreen !== 'true',
-  onMove: () => paintDockLift(),
-});
-railSheet.settle(true);
-
 /** Slide the filter sheet fully away, so nothing frames the detail card. */
 function setRailOffscreen(off: boolean): void {
   if (off) railEl.dataset.offscreen = 'true';
@@ -1352,8 +1368,7 @@ function setRailOffscreen(off: boolean): void {
   // dock was floating exactly there. It goes with the sheet and comes back
   // with it; the search it holds is about the list, not about the one card
   // that is open.
-  dock.dataset.away = String(off);
-  regionEl.dataset.away = String(off);
+  paintDockLift();
   if (off) {
     setRegionMenuOpen(false);
     stopRegionAttention();
