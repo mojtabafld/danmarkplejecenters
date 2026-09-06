@@ -389,6 +389,17 @@
    */
   --brand-ramp: linear-gradient(180deg, var(--p-brand-500), var(--p-brand-700));
   --brand-ramp-cta: linear-gradient(180deg, var(--p-brand-700), var(--p-brand-900));
+  /*
+   * The grouped list's glyph tiles: flat, tinted, and one accent.
+   *
+   * Not a hue per row, tempting as that is. Three of this palette's ramps are
+   * load-bearing -- brand is Kommunal, ochre is Selvejende, plum is Privat,
+   * and the deep blue is a place you saved -- and they say so on the map dots
+   * and the chips a few pixels above these rows. A row of icons in those same
+   * colours would be claiming a meaning it does not have.
+   */
+  --tile-bg: var(--p-brand-200);
+  --tile-fg: var(--p-brand-700);
   --brand-ramp-glow: 0 6px 16px -8px rgb(0 109 99 / 0.7);
 
   --shadow-xs: 0 1px 2px rgb(18 22 22 / 0.06);
@@ -594,6 +605,10 @@
      case and the ramps stay well above it. */
   --brand-ramp: linear-gradient(180deg, var(--p-brand-300), var(--p-brand-500));
   --brand-ramp-cta: linear-gradient(180deg, var(--p-brand-200), var(--p-brand-400));
+  /* The tint is the accent held back rather than a lighter grey, so the tile
+     still reads as coloured against a near-black row. */
+  --tile-bg: rgb(39 162 149 / 0.18);
+  --tile-fg: var(--p-brand-300);
   --brand-ramp-glow: 0 6px 16px -8px rgb(0 0 0 / 0.6);
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.5);

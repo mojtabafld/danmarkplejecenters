@@ -2025,9 +2025,14 @@ a.btn { text-decoration: none; }
   inline-size: 1.875rem;
   block-size: 1.875rem;
   border-radius: 0.5625rem;
-  background: var(--brand-ramp);
-  color: var(--text-on-brand);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28);
+  /*
+   * Flat: a tint and a glyph, with no gradient, no specular line and no
+   * shadow. The pane around it is the thing carrying depth in this card, and a
+   * lit chip inside a lit sheet is one lighting model too many -- five of them
+   * down a column read as five buttons rather than as the marks on a list.
+   */
+  background: var(--tile-bg);
+  color: var(--tile-fg);
   flex: none;
 }
 .fact__icon svg {
