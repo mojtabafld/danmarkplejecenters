@@ -1,10 +1,9 @@
 import { distanceKm } from './geolocate';
 import type { I18n, TranslationKey } from './i18n';
 import { icon, type IconName } from './icons';
+import { MAP_APPS } from './mapapps';
 import {
-  appleMapsHref,
   formatPhone,
-  googleMapsHref,
   jobsHref,
   ownershipDetailKey,
   ownershipGroup,
@@ -80,15 +79,62 @@ export class DetailPanel {
     private onMove: () => void = () => {},
   ) {
     this.root.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('.panel__close')) this.onClose();
+      const el = e.target as HTMLElement;
+      if (el.closest('.panel__close')) {
+        this.onClose();
+        return;
+      }
+      if (el.closest('.addr__button')) {
+        this.setMapMenu(this.root.querySelector<HTMLElement>('#addrMenu')?.hidden ?? false);
+        return;
+      }
+      // Any other press inside the card closes the balloon, including one on a
+      // link inside it -- that link is on its way to another application and
+      // the card should not be holding an open menu when it comes back.
+      this.setMapMenu(false);
+    });
+
+    /*
+     * And a press anywhere else on the page. On `pointerdown` rather than
+     * `click`, so the balloon is gone by the time a drag of the map begins
+     * rather than after it -- the same reason the dock's menus use it.
+     */
+    document.addEventListener('pointerdown', (e) => {
+      if (!e.composedPath().includes(this.root)) this.setMapMenu(false);
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !this.root.hidden) {
-        e.stopPropagation();
-        this.onClose();
+      if (e.key !== 'Escape' || this.root.hidden) return;
+      e.stopPropagation();
+      // The balloon first. Escape closes the innermost thing that is open, so
+      // a reader who opened the map menu by mistake does not lose the card too.
+      const menu = this.root.querySelector<HTMLElement>('#addrMenu');
+      if (menu && !menu.hidden) {
+        this.setMapMenu(false);
+        this.root.querySelector<HTMLElement>('.addr__button')?.focus();
+        return;
       }
+      this.onClose();
     });
+  }
+
+  /**
+   * Open or close the balloon at the address.
+   *
+   * Looked up each time rather than held, because the card's body is rebuilt
+   * from markup on every open and any reference kept here would be to an
+   * element that is no longer in the document.
+   */
+  private setMapMenu(open: boolean): void {
+    const menu = this.root.querySelector<HTMLElement>('#addrMenu');
+    const button = this.root.querySelector<HTMLElement>('.addr__button');
+    if (!menu || !button) return;
+    if (menu.hidden === !open) return;
+    menu.hidden = !open;
+    button.setAttribute('aria-expanded', String(open));
+    // Into the balloon, so a keyboard lands on the first application rather
+    // than tabbing through the rest of the card to reach it.
+    if (open) menu.querySelector<HTMLElement>('.mapmenu__app')?.focus();
   }
 
   private fact(iconName: IconName, labelKey: TranslationKey, value: string): string {
@@ -192,9 +238,50 @@ export class DetailPanel {
 
     // The address itself stays in Danish: it is a postal address, and a
     // translated one cannot be posted to or read out to a driver.
-    let address =
-      `${esc(p.street)}<br>${esc(p.postcode)} ${esc(p.city)}<br>` +
-      `<span class="fact__value">${esc(t('panel.municipalityLine', { name: p.municipality }))}</span>`;
+    // The kommune is not repeated here: it is a chip at the top of the card
+    // now, beside the operator.
+    let address = `${esc(p.street)}<br>${esc(p.postcode)} ${esc(p.city)}`;
+    /*
+     * The address is the control that hands itself to a map application.
+     *
+     * A button rather than a link, because pressing it does not go anywhere --
+     * it asks which of two places to go. The two real links are inside the
+     * balloon, and each carries the address it opens, so a long press or a
+     * middle click on either behaves the way a link should.
+     *
+     * This replaces two buttons pinned to the bottom of the card. They were
+     * the last row of a footer that also holds the website and the note, and
+     * they said "Google Maps" and "Apple Maps" without saying what for; the
+     * address saying it about itself is shorter and points at the thing it
+     * acts on.
+     */
+    const apps = MAP_APPS.map(
+      (app) =>
+        `<a class="mapmenu__app" data-app="${app.id}" href="${esc(app.href(p))}"` +
+        ` target="_blank" rel="noopener noreferrer">` +
+        `<span class="mapmenu__mark">${app.mark}</span>` +
+        `<span class="mapmenu__name">${esc(t(app.label))}</span>` +
+        `<span class="sr-only"> ${esc(t('panel.routeTo', { name: p.name }))}</span></a>`,
+    ).join('');
+    address =
+      `<span class="addr">` +
+      `<button type="button" class="addr__button" id="addrButton"` +
+      /*
+       * Danish, and laid out left to right, said explicitly.
+       *
+       * A Danish postal address in a Persian paragraph is a run of Latin text
+       * and digits inside right-to-left, and the bidi algorithm reorders it:
+       * "2200 København N" rendered as "København N 2200", which is not an
+       * address anybody can use. The phone, the e-mail and the website already
+       * carry dir="ltr" for the same reason; this line had been getting away
+       * without it.
+       */
+      ` dir="ltr" lang="da"` +
+      ` aria-expanded="false" aria-haspopup="dialog"` +
+      ` aria-label="${esc(t('panel.chooseMap'))}">${address}</button>` +
+      `<span class="mapmenu" id="addrMenu" hidden role="dialog"` +
+      ` aria-label="${esc(t('panel.chooseMap'))}">${apps}</span>` +
+      `</span>`;
 
     if (userAt) {
       const km = distanceKm(userAt, p);
@@ -259,15 +346,9 @@ export class DetailPanel {
   private actions(p: Plejecenter, canVisit: boolean, note: string): string {
     const t = this.i18n.t.bind(this.i18n);
 
-    const link = (href: string, iconName: 'external' | 'navigation', label: string, extra: string): string =>
-      `<a class="btn btn--secondary" href="${esc(href)}" target="_blank" rel="noopener noreferrer">` +
-      `${icon(iconName)}${esc(label)}<span class="sr-only">${extra}</span></a>`;
-
-    // Two tiers. The top row is what you do with this plejecenter -- write
-    // something about it, or read what it says about itself -- and both
-    // buttons look the same because neither outranks the other. The row below
-    // is handing the address to a map application, which is a different kind
-    // of act and reads as one.
+    // One row: what you do with this plejecenter -- write something about it,
+    // or read what it says about itself. Both buttons look the same because
+    // neither outranks the other.
     const top: string[] = [];
     if (canVisit) {
       top.push(
@@ -283,14 +364,12 @@ export class DetailPanel {
       );
     }
 
-    const routes =
-      link(googleMapsHref(p), 'navigation', t('panel.google'), esc(t('panel.routeTo', { name: p.name }))) +
-      link(appleMapsHref(p), 'navigation', t('panel.apple'), esc(t('panel.routeTo', { name: p.name })));
-
+    // No route buttons down here any more. Handing the address to a map
+    // application is something you do TO the address, so it is offered at the
+    // address -- see the balloon in markup() above.
     return (
       '<div class="panel__actions">' +
       (top.length ? `<div class="nav-links">${top.join('')}</div>` : '') +
-      `<div class="nav-links">${routes}</div>` +
       '</div>'
     );
   }
@@ -330,6 +409,16 @@ export class DetailPanel {
     const eyebrow = head.querySelector('.panel__eyebrow')!;
     eyebrow.setAttribute('data-own', group);
     eyebrow.textContent = this.i18n.t(`ownership.${group}` as TranslationKey);
+
+    // The kommune, up here with the operator rather than as the last line of
+    // the address. It is what a reader is choosing between when they are
+    // choosing where to work, so it belongs where they read the name.
+    const muni = head.querySelector<HTMLElement>('.panel__eyebrow--muni');
+    if (muni) {
+      muni.textContent = p.municipality
+        ? this.i18n.t('panel.municipalityLine', { name: p.municipality })
+        : '';
+    }
     const title = head.querySelector<HTMLElement>('.panel__title')!;
     title.textContent = p.name;
     title.dataset.len = titleStep(p.name);

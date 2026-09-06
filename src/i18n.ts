@@ -142,6 +142,7 @@ const DA = {
    * municipality and the wrong one for an address in Denmark.
    */
   'panel.municipalityLine': '{name} Kommune',
+  'panel.chooseMap': 'Åbn adressen i et kort',
   'panel.ownership': 'Driftsform',
   'panel.phone': 'Telefon',
   'panel.email': 'E-mail',
@@ -354,6 +355,7 @@ const EN: Record<Key, Entry> = {
   'panel.close': 'Close details for {name}',
   'panel.address': 'Address',
   'panel.municipalityLine': '{name} Kommune',
+  'panel.chooseMap': 'Open the address in a map',
   'panel.ownership': 'Operator',
   'panel.phone': 'Phone',
   'panel.email': 'Email',
@@ -565,6 +567,7 @@ const FA: Record<Key, Entry> = {
   'panel.address': 'نشانی',
   /* Danish, deliberately. See the note on this key in the Danish table. */
   'panel.municipalityLine': '{name} Kommune',
+  'panel.chooseMap': 'باز کردن نشانی در نقشه',
   'panel.ownership': 'نوع اداره',
   'panel.phone': 'تلفن',
   'panel.email': 'ایمیل',
