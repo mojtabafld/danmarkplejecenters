@@ -122,6 +122,18 @@ const result = ({ p, group, current }) =>
   (p.homes ? `<span>${p.homes} boliger</span>` : '') +
   `</span></button></li>`;
 
+/*
+ * A tile in the address balloon, mirroring src/mapapps.ts.
+ *
+ * The marks there are drawings, not the applications' own icons, and this is a
+ * placeholder square rather than a copy of either: the gates measure contrast,
+ * target size and overflow, and for those what matters is that a 40px rounded
+ * tile with a name under it is in the DOM where the app puts one.
+ */
+const mapApp = (id, name) =>
+  `<a class="mapmenu__app" data-app="${id}" href="https://example.invalid/">` +
+  `<span class="mapmenu__mark"></span><span class="mapmenu__name">${name}</span></a>`;
+
 const fact = (ic, label, value) =>
   `<div class="fact"><span class="fact__icon">${ic}</span>` +
   `<span><span class="fact__label">${label}</span><span class="fact__value">${value}</span></span></div>`;
@@ -320,15 +332,17 @@ const panel = `<!doctype html>
 <main class="stage">
       <aside class="panel" role="region" aria-labelledby="panelTitle" tabindex="-1">
         <div class="panel__head">
-          <div>
-            <span class="panel__eyebrow" data-own="Kommunal">Kommunal</span>
+          <div class="panel__headmain">
             <div class="panel__titlerow">
               <button type="button" class="panel__visit" aria-pressed="true" aria-label="Fjern fra besøgte">${I.bookmarkCheck}</button>
               <h2 class="panel__title" id="panelTitle">${esc(detail.name)}</h2>
             </div>
-            <a class="joblink" href="https://www.google.com/search?q=x">${I.search}<span>Søg ledige stillinger på dette center</span></a>
           </div>
           <button type="button" class="panel__close" aria-label="Luk detaljer om ${esc(detail.name)}">${I.x}</button>
+          <p class="panel__tags">
+            <span class="panel__eyebrow" data-own="Kommunal">Kommunal</span>
+            <span class="panel__eyebrow panel__eyebrow--muni" lang="da">${esc(detail.municipality)} Kommune</span>
+          </p>
         </div>
         <div class="panel__body">
           <div class="note">
@@ -336,11 +350,12 @@ const panel = `<!doctype html>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
           <div class="facts">
-            ${fact(I.pin, 'Adresse', `${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}<br>${esc(detail.municipality)} Kommune`)}
+            ${fact(I.pin, 'Adresse', `<span class="addr"><button type="button" class="addr__button" dir="ltr" lang="da" aria-expanded="false" aria-haspopup="dialog" aria-label="Åbn adressen i et kort">${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}</button><span class="mapmenu" hidden role="dialog" aria-label="Åbn adressen i et kort">${mapApp('apple', 'Apple Maps')}${mapApp('google', 'Google Maps')}</span></span>`)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}
             ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}">82 32 50 50</a>`)}
             ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}">${esc(detail.email ?? 'kontakt@kk.dk')}</a>`)}
             ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}">boligertilaeldre.kk.dk<span class="sr-only"> (åbner i ny fane)</span></a>`)}
+            ${fact(I.search, 'Ledige stillinger', '<a href="https://www.google.com/search?q=x">Søg på dette center<span class="sr-only"> (åbner i ny fane)</span></a>')}
           </div>
         </div>
         <div class="panel__foot">

@@ -1431,11 +1431,11 @@ a.btn { text-decoration: none; }
 
 .panel__head {
   display: grid;
-  /* The chip row across the top, then the name and the buttons beside it. */
+  /* The name with the buttons beside it, then the chips across under them. */
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    'tags tags'
-    'name acts';
+    'name acts'
+    'tags tags';
   align-items: start;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-4) var(--space-3);
@@ -1523,11 +1523,13 @@ a.btn { text-decoration: none; }
  */
 .panel__tags {
   grid-area: tags;
+  margin-block-start: var(--space-2);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin: 0;
+  margin-block-end: 0;
+  margin-inline: 0;
   min-inline-size: 0;
 }
 
@@ -1559,24 +1561,39 @@ a.btn { text-decoration: none; }
 }
 
 .addr__button {
-  /* A button that reads as the text it is. The underline is what says it can
-     be pressed; a border would make an address look like a form field. */
+  /*
+   * Reads as the contact links under it -- the phone, the e-mail, the website.
+   *
+   * It is a button rather than a link, because pressing it asks where to go
+   * rather than going there, but that is a distinction about what happens
+   * next, not about what it is: it is the address, and it is live. Styling it
+   * as its own kind of thing made the one live line in the card that did not
+   * look like the others.
+   *
+   * Bolder than they are, deliberately. It is the first row of the card and
+   * the thing most of the others are about, and it is a button whose label is
+   * a whole address rather than a single value.
+   *
+   * `text-decoration: none` with the underline on hover and focus, exactly as
+   * .fact__value a does, and for the reason recorded there: six underlined
+   * rows stacked up read as ruled-through rather than as links.
+   */
   display: inline;
   padding: 0;
   margin: 0;
   font: inherit;
-  color: inherit;
+  font-weight: var(--weight-semibold);
+  color: var(--text-link);
   text-align: start;
   background: none;
   border: 0;
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: var(--border-strong);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-decoration: none;
+  text-underline-offset: 0.15em;
 }
-.addr__button:hover { text-decoration-color: var(--action-primary); }
-.addr__button[aria-expanded='true'] { text-decoration-color: var(--action-primary); }
+.addr__button:hover,
+.addr__button:focus-visible,
+.addr__button[aria-expanded='true'] { text-decoration: underline; }
 
 .mapmenu {
   position: absolute;
@@ -1813,25 +1830,6 @@ a.btn { text-decoration: none; }
  * a card or a button would have claimed more of the eye than a search deserves
  * sitting above the address it belongs to.
  */
-.joblink {
-  display: inline-flex;
-  margin-block-start: var(--space-1);
-  align-items: center;
-  gap: var(--space-1);
-  /* Small type, but the row keeps a 24px box: WCAG 2.5.8 is about the hit
-     area, not the letters, and this is a link people tap with a thumb. */
-  min-block-size: var(--control-sm);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--text-link);
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-.joblink svg { inline-size: var(--icon-sm); block-size: var(--icon-sm); flex: none; }
-/* No underline on hover: the row reads as a line of the card, not as body
-   copy with a link in it. The colour lifts instead. */
-.joblink:hover { color: var(--text-link-hover); }
-
 /* A note the reader wrote, above the register's own fields. */
 .note {
   padding: var(--space-3);
