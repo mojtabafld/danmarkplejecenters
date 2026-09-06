@@ -175,17 +175,6 @@
       <div class="workspace">
         <!-- ---------------------------------------------------------- rail -->
         <aside class="rail" id="rail" data-i18n-aria="results.label">
-          <!-- The same bar as the detail sheet's, doing the same thing: on a
-               phone this rail is a sheet over the map, and this is how it gets
-               out of the way. Shown only below the breakpoint, where the rail
-               is a sheet; on a desktop it is a column and there is nothing to
-               pull. aria-hidden because collapsing takes nothing away that a
-               keyboard or a screen reader could reach: the list inside is
-               clipped to a pixel until focus enters it either way, and the
-               chips it hides are duplicated nowhere -- they come straight back
-               on a pull up, and the close button of this sheet is the sheet. -->
-          <div class="rail__grip" id="railGrip" aria-hidden="true"></div>
-          <div class="rail__peek" id="railPeek" aria-hidden="true"></div>
           <div class="rail__lead">
             <p class="tally">
               <span class="tally__count" id="tallyCount"></span>

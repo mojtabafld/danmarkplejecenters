@@ -70,6 +70,15 @@ export class DetailPanel {
     private foot: HTMLElement,
     private i18n: I18n,
     private onClose: () => void,
+    /**
+     * Called whenever the card settles or is being dragged.
+     *
+     * The dock floats above whatever sheet is at the bottom of the map, and
+     * this card is that sheet whenever it is open. A translate fires no
+     * ResizeObserver, so without this the dock has no way to know the card
+     * moved under it.
+     */
+    private onMove: () => void = () => {},
   ) {
     this.root.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('.panel__close')) this.onClose();
@@ -123,6 +132,7 @@ export class DetailPanel {
       probe: this.root.querySelector<HTMLElement>('.panel__peek'),
       onDismiss: () => this.onClose(),
       active: () => !this.root.hidden && this.leaving === null,
+      onMove: () => this.onMove(),
     });
   }
 
@@ -159,7 +169,6 @@ export class DetailPanel {
     // A fresh card starts from the bottom detent; whatever the last one was
     // left in is not this one's business.
     delete this.root.dataset.detent;
-    this.root.style.removeProperty('--sheet-offset');
     this.root.hidden = false;
 
     // Entrance: set the "before" state, then release it on the next frame so
@@ -219,10 +228,12 @@ export class DetailPanel {
     delete this.root.dataset.leave;
     this.root.style.translate = '';
     delete this.root.dataset.detent;
-    this.root.style.removeProperty('--sheet-offset');
     this.root.hidden = true;
     this.body.innerHTML = '';
     this.foot.innerHTML = '';
+    // The card is gone; whatever was floating above it belongs to the sheet
+    // underneath again.
+    this.onMove();
   }
 
   private markup(p: Plejecenter, userAt: { lat: number; lon: number } | null, note: string): string {
