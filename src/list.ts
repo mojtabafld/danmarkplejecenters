@@ -8,10 +8,39 @@ const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /**
+ * How many rows go in on the first pass.
+ *
+ * The whole extract is 907 plejecentre in 98 municipality groups: 7647 DOM
+ * nodes and 315KB of markup, which on a four-times-throttled CPU costs 523ms
+ * to insert and lay out. All of it went in at startup, in one innerHTML, while
+ * the map was trying to come up -- and nobody has scrolled to row 200 in the
+ * first second of a visit.
+ *
+ * Enough to fill the tallest phone twice over, so the first scroll never
+ * reaches the end of what has been rendered.
+ */
+const FIRST_ROWS = 60;
+
+/** requestIdleCallback where it exists, a timer where it does not (Safari). */
+const soon: (fn: () => void) => number =
+  'requestIdleCallback' in window
+    ? (fn) => (window as unknown as {
+        requestIdleCallback: (f: () => void, o?: { timeout: number }) => number;
+      }).requestIdleCallback(fn, { timeout: 1200 })
+    : (fn) => window.setTimeout(fn, 200);
+
+const cancelSoon: (id: number) => void =
+  'cancelIdleCallback' in window
+    ? (id) => (window as unknown as { cancelIdleCallback: (i: number) => void }).cancelIdleCallback(id)
+    : (id) => window.clearTimeout(id);
+
+/**
  * The result list is also the keyboard path to every marker: a map canvas
  * cannot be tabbed through, so each plejecenter gets a real <button> here.
  */
 export class ResultList {
+  /** The scheduled tail of a long list, so a new render can cancel it. */
+  private tail: number | null = null;
   constructor(
     private root: HTMLElement,
     private store: Store,
@@ -28,6 +57,13 @@ export class ResultList {
 
   render(): void {
     const items = this.store.visible;
+
+    // A render already in flight is answering a question nobody is asking any
+    // more. Cancel it before anything else, or its rows land in the new list.
+    if (this.tail !== null) {
+      cancelSoon(this.tail);
+      this.tail = null;
+    }
 
     if (items.length === 0) {
       this.root.innerHTML = this.emptyState();
@@ -46,17 +82,41 @@ export class ResultList {
       groups.set(p.municipality, g);
     }
 
-    const html: string[] = [];
+    /*
+     * Built whole, inserted in two pieces: enough to fill the screen now, the
+     * rest once the main thread has nothing better to do.
+     *
+     * Split on a group boundary rather than mid-municipality, so what is on
+     * screen is always a run of complete groups -- a heading with three of its
+     * eleven rows under it and the other eight arriving a moment later is worse
+     * than waiting.
+     */
+    const first: string[] = [];
+    const rest: string[] = [];
+    let placed = 0;
     for (const [muni, rows] of [...groups].sort((a, b) => compare(a[0], b[0]))) {
-      html.push(
+      const into = placed < FIRST_ROWS ? first : rest;
+      into.push(
         `<li><h3 class="results__group">${esc(muni)} ` +
           `<span class="sr-only">${esc(this.i18n.t('results.municipality'))}</span>` +
           ` ${esc(this.i18n.n(rows.length))}</h3><ul>`,
       );
-      for (const p of rows) html.push(`<li>${this.row(p)}</li>`);
-      html.push('</ul></li>');
+      for (const p of rows) into.push(`<li>${this.row(p)}</li>`);
+      into.push('</ul></li>');
+      placed += rows.length;
     }
-    this.root.innerHTML = `<ul>${html.join('')}</ul>`;
+
+    this.root.innerHTML = `<ul>${first.join('')}</ul>`;
+    if (rest.length > 0) {
+      const list = this.root.querySelector('ul');
+      this.tail = soon(() => {
+        this.tail = null;
+        list?.insertAdjacentHTML('beforeend', rest.join(''));
+        // The selected row may be one of the ones that just arrived, and the
+        // first sync could not have found it.
+        this.syncSelection();
+      });
+    }
     this.syncSelection();
   }
 

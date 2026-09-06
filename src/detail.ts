@@ -21,8 +21,18 @@ const STILL = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 /** How far down, as a share of the card's height, counts as "put it away". */
 const DISMISS_FRACTION = 0.28;
-/** Or a flick: px per millisecond, downward, regardless of how far it got. */
+/** Or a flick: px per millisecond, regardless of how far it got. */
 const DISMISS_VELOCITY = 0.5;
+/**
+ * Below this much hidden content there is no expanded state worth having.
+ *
+ * A record with a phone number and nothing else is shorter than the peek
+ * height, and a sheet that can be pulled up by nine pixels is a sheet that
+ * feels broken rather than one that feels short. Those simply open at their
+ * own height and only drag downwards, which is what they did before detents
+ * existed.
+ */
+const DETENT_MIN_TRAVEL = 48;
 
 /** The card that opens when a dot or a list row is chosen. */
 /**
@@ -65,6 +75,8 @@ function titleStep(name: string): 'x' | 'l' | 'm' {
 
 export class DetailPanel {
   private lastFocus: HTMLElement | null = null;
+  /** The zero-width box whose height is the peek detent. See settleDetent. */
+  private peek: HTMLElement | null = null;
   /** Set while the card is animating out, so a second hide() does not stack. */
   private leaving: number | null = null;
 
@@ -86,18 +98,94 @@ export class DetailPanel {
       }
     });
 
+    this.peek = this.root.querySelector<HTMLElement>('.panel__peek');
     this.armDrag();
   }
 
   /*
-   * Pull the sheet down to put it away.
+   * Pull the sheet up to see more of it, down to see less, further down to put
+   * it away.
+   *
+   * Two resting places. `peek` shows the head and the first of the facts with
+   * the map still visible under it; `full` is the whole card. The sheet is laid
+   * out at its full height either way and the peek state is that same box
+   * translated down, so a drag moves one composited layer rather than relaying
+   * out the card on every frame.
    *
    * The gesture is an enhancement and never the only way out: the close button
-   * is right there, Escape works, and the grip itself is aria-hidden precisely
-   * so it does not present itself as a second control doing the same job.
+   * is right there, Escape works, and the grip is aria-hidden precisely so it
+   * does not present itself as a second control doing the same job. A record
+   * too short to have anything hidden gets no detents at all -- see
+   * DETENT_MIN_TRAVEL.
    *
    * Only below the breakpoint. Above it the card is a column anchored to the
-   * inline start, and dragging that downwards means nothing.
+   * inline start, and dragging that up or down means nothing.
+   */
+
+  /**
+   * How far down the sheet sits at `peek`, in px.
+   *
+   * Read back off the browser rather than computed here: the stylesheet owns
+   * the offset, and asking for the resolved `translate` is asking the same
+   * question the renderer just answered. `--sheet-peek` itself cannot be read
+   * this way -- a custom property computes to its token stream, so it comes
+   * back as the literal text "min(22rem, 50svh)" and parses to nothing.
+   */
+  private peekShift = 0;
+
+  /**
+   * Put the sheet at a resting place and note how far down `peek` is.
+   *
+   * `initial` is a fresh card, which always starts at peek. A card already open
+   * keeps whatever the reader put it in -- re-rendering after a note is saved
+   * or a rating cast should not shove the sheet down under their thumb.
+   */
+  private settleDetent(initial: boolean): void {
+    if (!SHEET.matches) {
+      delete this.root.dataset.detent;
+      this.peekShift = 0;
+      return;
+    }
+
+    const detent = initial ? 'peek' : this.root.dataset.detent === 'full' ? 'full' : 'peek';
+    // The peek height in px, off the probe. Neither of the two obvious routes
+    // works: a custom property computes to its own token stream, so
+    // --sheet-peek reads back as the literal "min(22rem, 50svh)", and a
+    // translate keeps its percentage unresolved, so the rule reads back as
+    // "calc(0px + (0 * max(0px, 100% - 352px)))". The probe is a real box with
+    // a real used height, and it carries no transition, so it can be read at
+    // any moment.
+    const peek = this.peek?.offsetHeight ?? 0;
+    this.peekShift = Math.max(0, this.root.getBoundingClientRect().height - peek);
+
+    if (this.peekShift < DETENT_MIN_TRAVEL) {
+      // Nothing worth expanding to: the card is barely taller than the peek.
+      // No detent attribute at all, so it keeps the plain drag-to-dismiss it
+      // had before detents existed.
+      delete this.root.dataset.detent;
+      this.peekShift = 0;
+      return;
+    }
+    this.root.dataset.detent = detent;
+  }
+
+  /*
+   * Pull the sheet up to see more of it, down to see less, further down to put
+   * it away.
+   *
+   * Two resting places. `peek` leaves the name, the job link and the first
+   * facts on screen with the map still visible above them; `full` is the whole
+   * card. The sheet is laid out at its full height either way and peek is that
+   * same box translated down, so a drag moves one composited layer rather than
+   * relaying out the card on every frame.
+   *
+   * The gesture is an enhancement and never the only way out: the close button
+   * is right there, Escape works, and the grip is aria-hidden precisely so it
+   * does not present itself as a second control doing the same job. A record
+   * too short to hide anything gets no detents -- see DETENT_MIN_TRAVEL.
+   *
+   * Only below the breakpoint. Above it the card is a column anchored to the
+   * inline start, and dragging that up or down means nothing.
    */
   private armDrag(): void {
     const grip = this.root.querySelector<HTMLElement>('.panel__grip');
@@ -106,7 +194,8 @@ export class DetailPanel {
     let startY = 0;
     let lastY = 0;
     let lastT = 0;
-    let travelled = 0;
+    let base = 0;
+    let offset = 0;
     let dragging = false;
 
     grip.addEventListener('pointerdown', (e) => {
@@ -114,45 +203,63 @@ export class DetailPanel {
       dragging = true;
       startY = lastY = e.clientY;
       lastT = e.timeStamp;
-      travelled = 0;
+      base = offset = this.root.dataset.detent === 'full' ? 0 : this.peekShift;
       this.root.dataset.dragging = 'true';
       grip.setPointerCapture(e.pointerId);
     });
 
     grip.addEventListener('pointermove', (e) => {
       if (!dragging) return;
-      // Downwards only. Dragging a bottom sheet upwards past its place is a
-      // rubber band on iOS and an empty gap here, so it simply does not move.
-      travelled = Math.max(0, e.clientY - startY);
+      // Upwards stops at the full height. Past that a bottom sheet is a rubber
+      // band on iOS and an empty gap here, so it simply does not go.
+      offset = Math.max(0, base + (e.clientY - startY));
       lastY = e.clientY;
       lastT = e.timeStamp;
-      this.root.style.translate = `0 ${travelled}px`;
+      // Inline, so it beats the stylesheet's resting rule for as long as the
+      // finger is down.
+      this.root.style.translate = `0 ${offset}px`;
     });
 
     const release = (e: PointerEvent): void => {
       if (!dragging) return;
       dragging = false;
       if (grip.hasPointerCapture(e.pointerId)) grip.releasePointerCapture(e.pointerId);
+      delete this.root.dataset.dragging;
 
       const height = this.root.getBoundingClientRect().height || 1;
       const elapsed = Math.max(1, e.timeStamp - lastT);
       const velocity = (e.clientY - lastY) / elapsed;
-      const gone = travelled > height * DISMISS_FRACTION || velocity > DISMISS_VELOCITY;
+      const flickedDown = velocity > DISMISS_VELOCITY;
+      const flickedUp = velocity < -DISMISS_VELOCITY;
+      const atFull = this.root.dataset.detent === 'full';
 
-      delete this.root.dataset.dragging;
-      if (gone) {
-        // Leave the inline offset in place for one frame so the exit carries on
-        // from where the finger let go rather than snapping back first.
+      // Dismissal is measured from the lowest resting place, so a pull down
+      // from `full` lands on `peek` rather than closing the card outright.
+      if (offset - this.peekShift > height * DISMISS_FRACTION || (flickedDown && !atFull)) {
+        // The inline translate stays where the finger left it, so the exit
+        // carries on from there rather than snapping back first.
         this.onClose();
         return;
       }
-      // Not far enough: the transition comes back with the attribute, and
-      // clearing the offset springs it home.
+
+      // Handing the offset back to the stylesheet is what makes the snap
+      // animate: the inline value goes, the detent rule applies, and the
+      // transition runs between them.
       this.root.style.translate = '';
+      if (this.peekShift === 0) return;
+      if (flickedUp) return void (this.root.dataset.detent = 'full');
+      if (flickedDown) return void (this.root.dataset.detent = 'peek');
+      this.root.dataset.detent = offset < this.peekShift / 2 ? 'full' : 'peek';
     };
 
     grip.addEventListener('pointerup', release);
     grip.addEventListener('pointercancel', release);
+
+    // Turning the phone changes the height the peek offset is a share of, and
+    // crossing the breakpoint takes the detents away entirely.
+    window.addEventListener('resize', () => {
+      if (!this.root.hidden && !dragging) this.settleDetent(false);
+    });
   }
 
   private fact(iconName: IconName, labelKey: TranslationKey, value: string): string {
@@ -185,6 +292,10 @@ export class DetailPanel {
     }
     delete this.root.dataset.leave;
     this.root.style.translate = '';
+    // A fresh card starts from the bottom detent; whatever the last one was
+    // left in is not this one's business.
+    delete this.root.dataset.detent;
+    this.root.style.removeProperty('--sheet-offset');
     this.root.hidden = false;
 
     // Entrance: set the "before" state, then release it on the next frame so
@@ -193,7 +304,14 @@ export class DetailPanel {
     this.root.dataset.enter = 'pending';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        // Both in the same frame, and in this order. The detent rules carry
+        // :not([data-enter]), so the offset cannot be read -- or applied --
+        // while the entrance state is still set. Doing both here means one
+        // style change and one transition: the sheet rises from below the
+        // screen straight to peek, rather than arriving fully open and then
+        // dropping to peek in a second movement.
         delete this.root.dataset.enter;
+        this.settleDetent(true);
       });
     });
 
@@ -236,6 +354,8 @@ export class DetailPanel {
     }
     delete this.root.dataset.leave;
     this.root.style.translate = '';
+    delete this.root.dataset.detent;
+    this.root.style.removeProperty('--sheet-offset');
     this.root.hidden = true;
     this.body.innerHTML = '';
     this.foot.innerHTML = '';
