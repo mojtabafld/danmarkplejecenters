@@ -22,6 +22,7 @@ import {
   type Box,
   type Region,
 } from './regions';
+import { Sheet } from './sheet';
 import { ThemeController, token } from './theme';
 import type { OwnershipGroup, Plejecenter } from './types';
 
@@ -991,7 +992,11 @@ function syncDock(): void {
  * the map and there is nothing to clear, so the dock sits on the gutter.
  */
 function paintDockLift(): void {
-  const lift = NARROW.matches && !railEl.dataset.offscreen ? railEl.offsetHeight : 0;
+  // How much of the sheet is actually on screen, not how tall it is. Collapsing
+  // it is a translate, which leaves offsetHeight alone -- measuring that left
+  // the dock floating where a full-height sheet used to be, over nothing.
+  const seen = Math.max(0, window.innerHeight - railEl.getBoundingClientRect().top);
+  const lift = NARROW.matches && !railEl.dataset.offscreen ? Math.round(seen) : 0;
   stageEl.style.setProperty('--dock-lift', `${lift}px`);
 }
 
@@ -1010,8 +1015,13 @@ function paintDockHeight(): void {
 }
 
 // The sheet changes height when the filters change the tally, when the
-// language changes the wrapping, and when the phone turns.
-new ResizeObserver(() => paintDockLift()).observe(railEl);
+// language changes the wrapping, and when the phone turns. Its collapsed
+// offset is a share of that height, so it is worked out again with it --
+// keeping whichever resting place the reader chose.
+new ResizeObserver(() => {
+  railSheet.settle(false);
+  paintDockLift();
+}).observe(railEl);
 // The dock changes height when the search opens and when the language changes
 // the wrapping inside it.
 new ResizeObserver(() => paintDockHeight()).observe(dock);
@@ -1312,6 +1322,27 @@ const list = new ResultList(resultsEl, store, i18n, (p) => {
 /* ------------------------------------------------- mobile rail (sheet) --- */
 
 const NARROW = window.matchMedia('(max-width: 60rem)');
+
+/**
+ * The rail's own pull-down, the same gesture the detail card has.
+ *
+ * No onDismiss: the rail collapses to a strip carrying the bar and the count
+ * and stops there. A list that can be pulled away with no way back would be
+ * worse than one in the way, and the count is the one thing on it that answers
+ * a question about the map rather than about the list.
+ *
+ * Not while the detail card has slid it off screen -- there is nothing to grab
+ * then, and a drag would fight the card for the same corner of the screen.
+ */
+const railSheet = new Sheet({
+  root: railEl,
+  grip: $('#railGrip'),
+  probe: $('#railPeek'),
+  opensAt: 'full',
+  active: () => railEl.dataset.offscreen !== 'true',
+  onMove: () => paintDockLift(),
+});
+railSheet.settle(true);
 
 /** Slide the filter sheet fully away, so nothing frames the detail card. */
 function setRailOffscreen(off: boolean): void {
