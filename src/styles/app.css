@@ -1545,6 +1545,37 @@ a.btn { text-decoration: none; }
  */
 .panel__eyebrow--muni:empty { display: none; }
 
+/*
+ * The vacancies chip: the same pill as the two beside it, and a link.
+ *
+ * It was a row in the facts, under the website. As a chip it sits with the
+ * operator and the kommune, which is where somebody scanning a card for
+ * whether to apply is already looking -- and it is the only one of the three
+ * that goes anywhere, which the colour and the icon both say.
+ */
+/*
+ * Doubled deliberately. The ownership rule further down sets colour and
+ * background on .panel__eyebrow at the same specificity as this, and it comes
+ * later in the file, so a single class here lost to it and the chip rendered
+ * in the neutral grey the other two fall back to. Two classes outrank it
+ * wherever either rule ends up sitting.
+ */
+.panel__eyebrow.panel__eyebrow--jobs {
+  color: var(--jobs-fg);
+  background: var(--jobs-bg);
+  text-decoration: none;
+  /* WCAG 2.5.8 is about the hit area, not the letters: this is a link people
+     tap with a thumb, so the pill keeps a 24px box however small the type. */
+  min-block-size: var(--control-sm);
+  padding-inline: var(--space-3);
+}
+.panel__eyebrow.panel__eyebrow--jobs:hover { filter: brightness(0.95); }
+.panel__eyebrow--jobs svg {
+  inline-size: var(--icon-sm);
+  block-size: var(--icon-sm);
+  flex: none;
+}
+
 /* ====================================================== address balloon === */
 /*
  * The address, and the two applications it can be handed to.
