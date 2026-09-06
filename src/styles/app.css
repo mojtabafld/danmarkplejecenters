@@ -1350,10 +1350,10 @@ a.btn { text-decoration: none; }
   max-block-size: calc(100% - var(--space-6));
   inline-size: min(23rem, calc(100% - var(--space-6)));
   display: grid;
-  /* grip, head, scrolling body, pinned foot. Four children, four rows: leave
-     one out and the body lands in an `auto` track and collapses, which is
-     exactly how the rail's list once ended up 1px tall. */
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  /* head, scrolling body, pinned foot. Three children, three rows: leave one
+     out and the body lands in an `auto` track and collapses, which is exactly
+     how the rail's list once ended up 1px tall. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
   /*
    * The card floats over the map on every screen, so this is the one of the
    * three where the blur has a city behind it to work on.
@@ -1412,7 +1412,6 @@ a.btn { text-decoration: none; }
 
 /* While a finger has hold of it, the card follows the finger exactly: a
    transition here would make it lag behind the drag. */
-.panel[data-dragging='true'] { transition: none; }
 
 /*
  * The grip: an iOS-style bar you can pull down to put the card away.
@@ -1423,42 +1422,6 @@ a.btn { text-decoration: none; }
  * browser claims the vertical gesture for scrolling before a pointermove ever
  * arrives.
  */
-.panel__grip {
-  display: none;
-  padding-block: var(--space-3) var(--space-1);
-  /* The browser must not claim the vertical gesture for a scroll: this is the
-     one element on the sheet whose whole job is to receive it. */
-  touch-action: none;
-  cursor: grab;
-}
-.panel__grip:active { cursor: grabbing; }
-
-/* The measuring stick for the peek detent. Absolutely positioned so it is not
-   a grid item, zero-width and hidden so it draws nothing, and with no
-   transition so it can be read at any moment -- including mid-animation, which
-   is exactly when the offset has to be worked out. */
-.panel__peek {
-  position: absolute;
-  inset-block-start: 0;
-  inline-size: 0;
-  block-size: var(--sheet-peek, 0px);
-  visibility: hidden;
-  pointer-events: none;
-}
-.panel__grip::before {
-  content: '';
-  display: block;
-  inline-size: 2.25rem;
-  block-size: 0.3125rem;
-  margin-inline: auto;
-  border-radius: var(--radius-pill);
-  background: var(--border-default);
-  /* Darkens under the finger, so the bar reads as the thing being held rather
-     than as a line drawn on the sheet. */
-  transition: background var(--duration-fast) var(--ease-out);
-}
-.panel[data-dragging='true'] .panel__grip::before,
-.panel__grip:active::before { background: var(--border-strong); }
 
 /* Anchored on the right in Persian, so it arrives from the right. */
 :root[dir='rtl'] .panel {
@@ -1851,9 +1814,25 @@ a.btn { text-decoration: none; }
   .tally__count { font-size: var(--text-2xl); }
 
   .panel {
-    inset-block: auto var(--space-3);
+    /*
+     * Pinned top and bottom, by the same gutter.
+     *
+     * On a phone the card is what the reader asked for -- they tapped a
+     * plejecenter, not the map behind it -- so it takes the screen, with the
+     * same 12px of map showing above it as below. Pinning both edges rather
+     * than setting a height is what makes those two gaps equal by
+     * construction: they are the same token, and neither can drift when the
+     * header or the safe area changes.
+     *
+     * The desktop card above still sizes to its content and is anchored only
+     * at the top, for the reason recorded there -- a taller screen should make
+     * a column show more, not make a card taller. That reasoning is about a
+     * card beside a map. This one IS the screen.
+     */
+    inset-block: var(--space-3);
     inset-inline: var(--space-3);
     inline-size: auto;
+    max-block-size: none;
     /*
      * A sheet, not a card that lifts. It starts entirely below the screen and
      * slides up to its place, which is what "expand from the bottom" means and
@@ -1865,77 +1844,7 @@ a.btn { text-decoration: none; }
     --enter-scale: 1;
     --enter-opacity: 1;
     --panel-origin: bottom;
-
-    /*
-     * Two heights, and the sheet is always laid out at the taller one.
-     *
-     * --sheet-full is what it can grow to; the peek state is that same box
-     * translated down so only the top of it is on screen. Doing it that way
-     * rather than by swapping the height means the drag moves a composited
-     * layer instead of relaying out the card on every frame, and the finger
-     * gets to push a sheet rather than watch one resize.
-     *
-     * The card still sizes to its content: a sparse record is a short card
-     * with nothing to expand to, and the script leaves it alone.
-     *
-     * This used to sit inside the `:root[dir='rtl'] .panel` block below, so
-     * only Persian ever got it. Danish and English fell back to the desktop
-     * card's `calc(100% - var(--space-6))` and opened a sheet 764px tall over
-     * a 788px stage -- the whole map covered, and nothing to pull down to.
-     */
-    /*
-     * All the way to the top of the stage. It used to stop at min(88%, 44rem),
-     * which on a 788px stage left the card 139px short of the top -- a gap of
-     * map that the reader could not use and could not close, on a card they had
-     * deliberately pulled all the way up. The stage already excludes the
-     * header, so this reaches exactly as far as the app has to give.
-     *
-     * Less the bottom gutter, not a flat 100%: the card is inset from the
-     * bottom by that much, so a full 100% would put a tall record's top edge
-     * the same distance ABOVE the stage and tuck it under the header.
-     *
-     * And one pixel less again, so the card stops just under the header
-     * rather than against it. Flush, the card's own top edge and the header's
-     * hairline bottom border met and read as one thick line with no seam --
-     * a hairline of map between them is what says these are two surfaces.
-     */
-    --sheet-full: calc(100% - var(--space-3) - 1px);
-    /*
-     * How much of the sheet the peek state leaves on screen. A length rather
-     * than a share of anything, because it is answering "enough for the name,
-     * the job link and the first facts", which is a number of lines and not a
-     * fraction of a phone. The svh cap keeps it from being most of the screen
-     * on a short one.
-     */
-    --sheet-peek: min(22rem, 50svh);
-    max-block-size: var(--sheet-full);
   }
-
-  /*
-   * The two resting places, in CSS rather than in numbers the script works out.
-   *
-   * A translate percentage resolves against the element's own height, so
-   * `100% - var(--sheet-peek)` is exactly "push it down until only the peek is
-   * showing", whatever this record's height turns out to be -- no measuring, and
-   * nothing to recompute when the card is re-rendered or the phone is turned.
-   * The max() clamps a card shorter than the peek to no offset at all rather
-   * than lifting it off its anchor.
-   *
-   * The :not()s are load-bearing. Both the entrance and the exit set `translate`
-   * too, at equal specificity and earlier in the file, so without these this
-   * rule would win and the sheet would appear and vanish rather than arrive and
-   * leave. Guarding it here rather than by clearing the attribute in the script
-   * keeps that true however the script is later rearranged.
-   */
-  .panel[data-detent='peek']:not([data-enter]):not([data-leave]) {
-    translate: 0 max(0px, 100% - var(--sheet-peek));
-  }
-  .panel[data-detent='full']:not([data-enter]):not([data-leave]) {
-    translate: 0 0;
-  }
-  /* While a finger is on it the sheet tracks that finger exactly, from an
-     inline translate the script writes; the transition comes back for the snap. */
-  .panel[data-dragging='true'] { transition: none; }
 
   /*
    * The same, said again at the specificity Persian needs.
@@ -1959,12 +1868,9 @@ a.btn { text-decoration: none; }
    * the right thing to lose first.
    */
   @media (max-height: 46rem) {
-    /* The card's height is --sheet-full now, which is already every pixel the
-       stage has less the one gutter it is inset by. This rule used to give it
-       every pixel less TWO gutters, which on a short screen was 12px the card
-       could not spare -- and since the detents arrived it was also overriding
-       the full detent, so a card pulled all the way up stopped short of the
-       top. Left to --sheet-full. */
+    /* Nothing about the card's height here: it is pinned top and bottom by the
+       same gutter above, which is every pixel the stage has to give and is the
+       same on a short screen as on a tall one. */
 
     /* The sheet needs the same treatment for the opposite reason: at 62% of a
        584px stage the count, filters and handle leave the result list about
@@ -1977,7 +1883,6 @@ a.btn { text-decoration: none; }
     .panel__foot { padding: var(--space-2) var(--space-4) var(--space-3); }
   }
 
-  .panel__grip { display: block; }
 
   .map__legend { display: none; }
   .map__tools { inset-block-start: var(--space-2); inset-inline-end: var(--space-2); }

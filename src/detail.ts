@@ -11,12 +11,11 @@ import {
   prettyHost,
   telHref,
 } from './format';
-import { Sheet } from './sheet';
 import type { Plejecenter } from './types';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-/** Below the breakpoint the card is a bottom sheet, and only then does it drag. */
+/** Below the breakpoint the card is a bottom sheet, and only then does it slide. */
 const SHEET = window.matchMedia('(max-width: 60rem)');
 const STILL = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -90,50 +89,6 @@ export class DetailPanel {
         this.onClose();
       }
     });
-
-    this.armDrag();
-  }
-
-  /*
-   * Pull the sheet up to see more of it, down to see less, further down to put
-   * it away.
-   *
-   * Two resting places. `peek` shows the head and the first of the facts with
-   * the map still visible under it; `full` is the whole card. The sheet is laid
-   * out at its full height either way and the peek state is that same box
-   * translated down, so a drag moves one composited layer rather than relaying
-   * out the card on every frame.
-   *
-   * The gesture is an enhancement and never the only way out: the close button
-   * is right there, Escape works, and the grip is aria-hidden precisely so it
-   * does not present itself as a second control doing the same job. A record
-   * too short to have anything hidden gets no detents at all -- see
-   * DETENT_MIN_TRAVEL.
-   *
-   * Only below the breakpoint. Above it the card is a column anchored to the
-   * inline start, and dragging that up or down means nothing.
-   */
-
-  /**
-   * The pull-up gesture, shared with the result rail.
-   *
-   * The card's version dismisses: a pull down past peek puts it away, because
-   * there is a close button and an Escape key saying the same thing and the
-   * gesture is only ever an enhancement. The rail's version has no such state.
-   */
-  private sheet: Sheet | null = null;
-
-  private armDrag(): void {
-    const grip = this.root.querySelector<HTMLElement>('.panel__grip');
-    if (!grip) return;
-    this.sheet = new Sheet({
-      root: this.root,
-      grip,
-      probe: this.root.querySelector<HTMLElement>('.panel__peek'),
-      onDismiss: () => this.onClose(),
-      active: () => !this.root.hidden && this.leaving === null,
-      onMove: () => this.onMove(),
-    });
   }
 
   private fact(iconName: IconName, labelKey: TranslationKey, value: string): string {
@@ -166,9 +121,6 @@ export class DetailPanel {
     }
     delete this.root.dataset.leave;
     this.root.style.translate = '';
-    // A fresh card starts from the bottom detent; whatever the last one was
-    // left in is not this one's business.
-    delete this.root.dataset.detent;
     this.root.hidden = false;
 
     // Entrance: set the "before" state, then release it on the next frame so
@@ -177,14 +129,10 @@ export class DetailPanel {
     this.root.dataset.enter = 'pending';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        // Both in the same frame, and in this order. The detent rules carry
-        // :not([data-enter]), so the offset cannot be read -- or applied --
-        // while the entrance state is still set. Doing both here means one
-        // style change and one transition: the sheet rises from below the
-        // screen straight to peek, rather than arriving fully open and then
-        // dropping to peek in a second movement.
         delete this.root.dataset.enter;
-        this.sheet?.settle(true);
+        // The card is at its full height the moment it arrives, so anything
+        // positioned against it -- the dock -- can measure it now.
+        this.onMove();
       });
     });
 
@@ -227,7 +175,6 @@ export class DetailPanel {
     }
     delete this.root.dataset.leave;
     this.root.style.translate = '';
-    delete this.root.dataset.detent;
     this.root.hidden = true;
     this.body.innerHTML = '';
     this.foot.innerHTML = '';

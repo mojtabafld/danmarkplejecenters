@@ -996,15 +996,11 @@ function paintDockLift(): void {
   /*
    * Whether the dock has anywhere to be.
    *
-   * It used to leave the moment a card opened, which was right when a card
-   * filled the screen. It is not any more: pulled down to peek, a card leaves
-   * the top half of the map on show, and the search, the landsdel picker and
-   * the bookmark went with it for no reason -- the map was there and the three
-   * controls for working with it were not. It leaves only when the card is
-   * expanded, where there is genuinely nothing between the card and the header,
-   * and comes back the moment the card is pulled back down.
+   * A card takes the whole screen on a phone, less a gutter, so while one is
+   * open there is nowhere for the dock to float and nothing under it worth
+   * reaching. It goes, and comes back when the card does.
    */
-  const away = NARROW.matches && cardOpen && panelEl.dataset.detent === 'full';
+  const away = NARROW.matches && cardOpen;
   if (dock.dataset.away !== String(away)) {
     dock.dataset.away = String(away);
     regionEl.dataset.away = String(away);
