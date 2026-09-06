@@ -384,6 +384,26 @@ export class DetailPanel {
       );
     }
 
+    /*
+     * The vacancies, under the centre's own website.
+     *
+     * A row like the ones above it and styled like their links, but with no
+     * label: the rows above pair a label with a value, and this one is a
+     * sentence. "Ledige stillinger: Søg job på dette center" says the same
+     * thing twice. The search icon fills the column the globe and the envelope
+     * use, so the row lines up with them without a word of its own.
+     *
+     * And no "for <name>" hidden on the end either: the link sits inside a card
+     * whose heading is that name, so a screen reader has already said it.
+     */
+    parts.push(
+      `<div class="fact"><span class="fact__icon">${icon('search')}</span>` +
+        `<span><span class="fact__value">` +
+        `<a href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
+        `${esc(t('jobs.search'))}` +
+        `</a></span></span></div>`,
+    );
+
     parts.push('</div>');
 
     // A note the reader wrote comes first: it is what they already know about
@@ -482,18 +502,6 @@ export class DetailPanel {
       muni.textContent = p.municipality
         ? this.i18n.t('panel.municipalityLine', { name: p.municipality })
         : '';
-    }
-
-    // And the third chip, which is a link rather than a label. The icon says
-    // it searches; the name of the centre goes in the accessible name, so a
-    // screen reader hears which centre's vacancies these are rather than
-    // twenty identical links.
-    const jobs = head.querySelector<HTMLAnchorElement>('.panel__eyebrow--jobs');
-    if (jobs) {
-      jobs.href = jobsHref(p);
-      jobs.innerHTML =
-        `${icon('search')}<span>${esc(this.i18n.t('jobs.label'))}</span>` +
-        `<span class="sr-only"> ${esc(this.i18n.t('jobs.search'))}</span>`;
     }
     const title = head.querySelector<HTMLElement>('.panel__title')!;
     title.textContent = p.name;

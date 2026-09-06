@@ -65,11 +65,6 @@
   --p-save-300: #C3D6F7;
   --p-save-700: #0D3B7A;
 
-  /* The vacancies chip's sky blue. Its own value rather than a step of either
-     map blue: it is not on the map, and it is bright where those two are
-     muted -- see --jobs-bg below for why that is the point. */
-  --p-sky-300: #B8E6FE;
-
   --p-clay-100: #FFE0D9;
   --p-clay-300: #FFA89B;
   --p-clay-500: #DC6256;
@@ -244,27 +239,6 @@
   --cat-privat-bg: var(--p-plum-100);
   --cat-privat-mark: var(--p-plum-500);
 
-  /*
-   * The vacancies chip: blue, and not a fourth operator category.
-   *
-   * Blue is spoken for twice on the map already -- where you are, and what you
-   * saved -- and the note above those two says a third blue is a risk. This is
-   * not on the map. It is a chip in the card, sitting beside the operator and
-   * the kommune, and what it has to be distinguishable from is those two: a
-   * teal, a plum and a neutral grey. Against them a blue reads as its own kind
-   * of thing, which is what it is -- the two beside it describe the place, and
-   * this one leaves for somewhere else.
-   *
-   * A sky blue, brighter than either map blue and brighter than the two chips
-   * beside it. That is deliberate: those two are labels and this one is the
-   * only thing in the row that goes anywhere, so it is the one that should
-   * catch the eye of somebody scanning a card for whether to apply.
-   *
-   * The text is the palette's existing dark blue rather than a second new
-   * value. 8.21:1, measured; the floor for this text is 4.5.
-   */
-  --jobs-fg: var(--p-save-700);
-  --jobs-bg: var(--p-sky-300);
 
   /* Map surfaces read by JS via getComputedStyle — still tokens. */
   --map-cluster-bg: var(--p-brand-700);
@@ -502,16 +476,6 @@
   --cat-privat-bg: #26203A;
   --cat-privat-mark: var(--p-plum-300);
 
-  /*
-   * The same sky blue in dark, not an inversion.
-   *
-   * The operator and kommune chips invert here because they are labels and
-   * should sit back into a dark card. This one is a link, it is the reason
-   * most of this audience opened the card, and a bright chip on a dark surface
-   * is how it stays the thing the eye finds. Same pair, same 8.21:1.
-   */
-  --jobs-fg: var(--p-save-700);
-  --jobs-bg: var(--p-sky-300);
 
   --map-cluster-bg: var(--p-brand-400);
   --map-cluster-fg: var(--p-brand-950);
