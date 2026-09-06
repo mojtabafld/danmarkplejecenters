@@ -229,8 +229,10 @@ const html = `<!doctype html>
         <div class="chips" role="group" aria-label="Filtrér på driftsform">
           <button type="button" class="chip" data-own="Kommunal" aria-pressed="true"><span class="chip__mark"></span>Kommunal</button>
           <button type="button" class="chip" data-own="Selvejende" aria-pressed="true"><span class="chip__mark"></span>Selvejende</button>
-          <button type="button" class="chip" data-own="Privat" aria-pressed="false"><span class="chip__mark"></span>Privat</button>
+          <button type="button" class="chip" data-own="Privat" aria-pressed="false" aria-label="Privat / friplejebolig"><span class="chip__mark"></span>Privat</button>
         </div>
+
+        <p class="legend__row"><span class="legend__mark" style="background: var(--map-visited-dot)"></span>Gemt af dig</p>
       </div>
 
       <div class="filters">
@@ -292,13 +294,6 @@ const html = `<!doctype html>
         </div>
         <button type="button" class="map__tool"><span class="sr-only">Vis hele hovedstadsområdet igen</span>${I.frame}</button>
       </div>
-
-      <section class="map__legend" aria-label="Signaturforklaring">
-        <h2>Driftsform</h2>
-        <p class="legend__row" data-own="Kommunal"><span class="legend__mark" style="background: var(--own-mark)"></span>Kommunal</p>
-        <p class="legend__row" data-own="Selvejende"><span class="legend__mark" style="background: var(--own-mark)"></span>Selvejende</p>
-        <p class="legend__row" data-own="Privat"><span class="legend__mark" style="background: var(--own-mark)"></span>Privat / friplejebolig</p>
-      </section>
 
       <p class="map__credit">Kort: <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://carto.com/attributions">CARTO</a></p>
 
