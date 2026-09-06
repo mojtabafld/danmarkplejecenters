@@ -1,9 +1,38 @@
-import maplibregl, {
-  type ExpressionSpecification,
-  type GeoJSONSource,
-  type LngLatBoundsLike,
-  type Map as MLMap,
+/*
+ * Types only. The library itself arrives through a dynamic import in create(),
+ * so its 800-odd kilobytes are not compiled before the app can show anything.
+ *
+ * Measured on a 4x-throttled CPU, the single bundle spent 1964ms -- 41.5% of a
+ * startup profile -- inside V8 with no application function on the stack at
+ * all: parsing and compiling. Nothing on screen could move until it finished,
+ * and the basemap's own style.json was not even requested until 1723ms,
+ * because the code that asks for it had not been compiled yet.
+ */
+import type {
+  ExpressionSpecification,
+  GeoJSONSource,
+  LngLatBoundsLike,
+  Marker as MLMarker,
+  Map as MLMap,
 } from 'maplibre-gl';
+
+/** The module object, once it has arrived. Only ever read after create(). */
+type MapLibre = typeof import('maplibre-gl');
+
+/*
+ * Asked for here, at module scope, rather than inside create().
+ *
+ * The request is what matters: starting it when this module is evaluated puts
+ * the download alongside the app's own compile instead of after it. Left until
+ * create() -- which waits on the container having a real box -- the fetch did
+ * not begin until 567ms, and the basemap's style.json followed at 2129ms,
+ * later than the single-bundle build managed. Started here it overlaps.
+ *
+ * Nothing is awaited at module scope: this is a promise put on the shelf, and
+ * create() picks it up. A failure surfaces there, where there is a map to
+ * report it against, not here where there is nothing to tell.
+ */
+const MAPLIBRE = import('maplibre-gl');
 
 import { ownershipGroup } from './format';
 import {
@@ -272,7 +301,7 @@ export class PlejecenterMap {
   private pending: Plejecenter[] | null = null;
   private selectedId: string | null = null;
   private basemapFailed = false;
-  private userMarker: maplibregl.Marker | null = null;
+  private userMarker: MLMarker | null = null;
   private lastUserFix: { lat: number; lon: number; accuracy: number; label: string } | null = null;
   private lastVisited: (id: string) => boolean = () => false;
   /** Frame handle for the saved-places ripple; null when nothing is running. */
@@ -304,10 +333,32 @@ export class PlejecenterMap {
     // `bounds`; if that read returns zero the map opens at world zoom and never
     // reaches its first idle frame — a black rectangle that no later resize()
     // recovers from.
-    whenSized(container, () => this.create(container, theme));
+    whenSized(container, () => {
+      void this.create(container, theme);
+    });
   }
 
-  private create(container: HTMLElement, theme: Theme): void {
+  /** The library, held for the few places that need it after construction. */
+  private gl: MapLibre | null = null;
+
+  private async create(container: HTMLElement, theme: Theme): Promise<void> {
+    /*
+     * The one await on the startup path.
+     *
+     * Everything above the map -- the header, the dock, the search field, the
+     * result list -- is built from the app's own code and can be on screen and
+     * usable while this is still being fetched and compiled. The map fills in
+     * behind them.
+     *
+     * whenSized has already established that the container has a real box, and
+     * this resolves in the same task ordering as before for every caller: the
+     * queue in run() was always there to hold work until the map existed, and
+     * it holds it for a little longer now.
+     */
+    const gl = await MAPLIBRE;
+    this.gl = gl;
+    const maplibregl = gl.default;
+
     const map = new maplibregl.Map({
       container,
       style: STYLE[theme],
@@ -860,7 +911,7 @@ export class PlejecenterMap {
         m.easeTo({ center: [items[0].lon, items[0].lat], zoom: 14.5, duration: 500 });
         return;
       }
-      const b = new maplibregl.LngLatBounds();
+      const b = new this.gl!.LngLatBounds();
       for (const p of items) b.extend([p.lon, p.lat]);
       m.fitBounds(b, { padding: 72, maxZoom: 14.5, duration: 500 });
     });
@@ -942,7 +993,7 @@ export class PlejecenterMap {
           '<span class="user-dot__ring"></span>' +
           '<span class="user-dot__ring"></span>' +
           '<span class="user-dot__core"></span>';
-        this.userMarker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(m);
+        this.userMarker = new this.gl!.Marker({ element: el }).setLngLat([lon, lat]).addTo(m);
       } else {
         this.userMarker.setLngLat([lon, lat]);
       }
