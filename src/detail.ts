@@ -59,6 +59,8 @@ function titleStep(name: string): 'x' | 'l' | 'm' {
 
 export class DetailPanel {
   private lastFocus: HTMLElement | null = null;
+  /** Timer that puts the copy tile's label back. */
+  private copyReset = 0;
   /** Set while the card is animating out, so a second hide() does not stack. */
   private leaving: number | null = null;
 
@@ -86,6 +88,11 @@ export class DetailPanel {
       }
       if (el.closest('.addr__button')) {
         this.setMapMenu(this.root.querySelector<HTMLElement>('#addrMenu')?.hidden ?? false);
+        return;
+      }
+      const copyBtn = el.closest<HTMLElement>('[data-copy]');
+      if (copyBtn) {
+        void this.copyAddress(copyBtn);
         return;
       }
       // Any other press inside the card closes the balloon, including one on a
@@ -135,6 +142,48 @@ export class DetailPanel {
     // Into the balloon, so a keyboard lands on the first application rather
     // than tabbing through the rest of the card to reach it.
     if (open) menu.querySelector<HTMLElement>('.mapmenu__app')?.focus();
+  }
+
+  /**
+   * Put the address on the clipboard, and say so on the tile itself.
+   *
+   * The confirmation goes where the finger already is rather than in a toast
+   * somewhere else on the screen, and it goes back to "Kopiér" after a moment
+   * so the control does not end up permanently claiming a thing it did once.
+   *
+   * The failure path is not decorative. The clipboard API is unavailable
+   * outside a secure context and can be refused by permission, and a button
+   * that silently does nothing is worse than one that says it could not: the
+   * reader would paste whatever was on the clipboard before.
+   */
+  private async copyAddress(button: HTMLElement): Promise<void> {
+    const text = button.dataset.copy ?? '';
+    const label = button.querySelector<HTMLElement>('.mapmenu__name');
+    if (!text || !label) return;
+
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch {
+      ok = false;
+    }
+
+    button.dataset.copied = String(ok);
+    label.textContent = this.i18n.t(ok ? 'panel.copied' : 'panel.copyFailed');
+    // Announced as well as shown: the label changing under a finger is not an
+    // event a screen reader reports on its own.
+    button.setAttribute('aria-live', 'polite');
+
+    window.clearTimeout(this.copyReset);
+    this.copyReset = window.setTimeout(() => {
+      // The card may have been re-rendered or closed in the meantime, in which
+      // case this element is no longer the one on screen and touching it is
+      // harmless but pointless.
+      if (!button.isConnected) return;
+      delete button.dataset.copied;
+      label.textContent = this.i18n.t('panel.copy');
+    }, 1800);
   }
 
   private fact(iconName: IconName, labelKey: TranslationKey, value: string): string {
@@ -263,6 +312,21 @@ export class DetailPanel {
         `<span class="mapmenu__name">${esc(t(app.label))}</span>` +
         `<span class="sr-only"> ${esc(t('panel.routeTo', { name: p.name }))}</span></a>`,
     ).join('');
+    /*
+     * And a third tile that does not leave the page.
+     *
+     * Copying is the thing people do with an address that they are not
+     * navigating to right now -- pasting it into an application form, or into
+     * a message to somebody. A button rather than a link, because it goes
+     * nowhere; one line rather than two, because that is what pastes into a
+     * field.
+     */
+    const oneLine = `${p.street}, ${p.postcode} ${p.city}`;
+    const copy =
+      `<button type="button" class="mapmenu__app" data-copy="${esc(oneLine)}">` +
+      `<span class="mapmenu__mark mapmenu__mark--action">${icon('copy')}</span>` +
+      `<span class="mapmenu__name">${esc(t('panel.copy'))}</span></button>`;
+
     address =
       `<span class="addr">` +
       `<button type="button" class="addr__button" id="addrButton"` +
@@ -280,7 +344,7 @@ export class DetailPanel {
       ` aria-expanded="false" aria-haspopup="dialog"` +
       ` aria-label="${esc(t('panel.chooseMap'))}">${address}</button>` +
       `<span class="mapmenu" id="addrMenu" hidden role="dialog"` +
-      ` aria-label="${esc(t('panel.chooseMap'))}">${apps}</span>` +
+      ` aria-label="${esc(t('panel.chooseMap'))}">${apps}${copy}</span>` +
       `</span>`;
 
     if (userAt) {

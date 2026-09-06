@@ -1564,10 +1564,24 @@ a.btn { text-decoration: none; }
   color: var(--jobs-fg);
   background: var(--jobs-bg);
   text-decoration: none;
-  /* WCAG 2.5.8 is about the hit area, not the letters: this is a link people
-     tap with a thumb, so the pill keeps a 24px box however small the type. */
-  min-block-size: var(--control-sm);
-  padding-inline: var(--space-3);
+  /*
+   * Exactly the pill the other two are: same padding, same height, same type.
+   * It carried a taller box and wider padding to reach 24px for WCAG 2.5.8,
+   * which made it visibly the odd one in a row of three.
+   *
+   * The hit area is bigger than the pill instead. A pseudo-element spilling
+   * 3px above and below is part of the link's own target and changes no
+   * layout, so a thumb gets 27px while the eye gets 21. Nothing else in this
+   * row is interactive and the nearest control is the close button well above,
+   * so the spacing exception in 2.5.8 covers the pill on its own either way.
+   */
+  position: relative;
+}
+.panel__eyebrow.panel__eyebrow--jobs::after {
+  content: '';
+  position: absolute;
+  inset-block: -3px;
+  inset-inline: 0;
 }
 .panel__eyebrow.panel__eyebrow--jobs:hover { filter: brightness(0.95); }
 .panel__eyebrow--jobs svg {
@@ -1613,7 +1627,7 @@ a.btn { text-decoration: none; }
   padding: 0;
   margin: 0;
   font: inherit;
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   color: var(--text-link);
   text-align: start;
   background: none;
@@ -1644,17 +1658,24 @@ a.btn { text-decoration: none; }
    */
   inset-inline-start: 0;
   /*
-   * Equal columns, each as wide as the widest label needs.
+   * Equal tiles that wrap rather than squeeze.
    *
-   * A flex row with a fixed tile width had to guess that width, and guessed
-   * short: "Google Maps" wrapped to two lines beside a one-line "Apple Maps".
-   * `1fr` on auto-flow columns sizes every column to the largest max-content,
-   * so the tiles stay equal to each other and neither has to wrap -- in any
-   * language, without a number here that a translator can invalidate.
+   * `1fr` keeps them the same width as each other; the minmax floor is what
+   * decides how many fit on a row. Three of them need about 290px and a 320px
+   * phone has 248 to give, so there the third drops to a second row instead of
+   * all three being compressed -- which is what happened first: the balloon ran
+   * to the exact edge of the screen and the columns came out unequal.
+   *
+   * The floor is a length rather than max-content because auto-fit needs a
+   * number to count with. It is set from the longest label the interface has,
+   * "Google Maps"; a longer one in some future language wraps a row earlier
+   * rather than overflowing.
    */
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(5.4rem, 1fr));
+  /* Never wider than the card it hangs in, with a gutter left on the narrow
+     screens where it is anchored close to the edge. */
+  max-inline-size: min(20rem, calc(100vw - 4.5rem));
   gap: var(--space-2);
   padding: var(--space-2);
   /* The thick pane: these are names, and text has to clear 4.5:1 against
@@ -1699,6 +1720,11 @@ a.btn { text-decoration: none; }
 [dir='rtl'] .mapmenu::after { inset-inline: auto var(--space-5); }
 
 .mapmenu__app {
+  /* A button sits among the links here -- copying is not going anywhere -- so
+     the type and the box are reset to match rather than inherit a control's. */
+  font: inherit;
+  cursor: pointer;
+  background: none;
   display: grid;
   justify-items: center;
   gap: var(--space-2);
@@ -1724,6 +1750,20 @@ a.btn { text-decoration: none; }
   box-shadow: 0 0 0 1px var(--border-subtle), var(--shadow-sm);
 }
 .mapmenu__mark svg { display: block; inline-size: 100%; block-size: 100%; }
+
+/*
+ * The copy tile's mark. The two beside it are artwork in their own colours;
+ * this one is an action of this app's, so it takes the app's own ink on the
+ * pane's surface -- the same relationship every other icon here has.
+ */
+.mapmenu__mark--action {
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+}
+.mapmenu__mark--action svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
+.mapmenu__app[data-copied='true'] .mapmenu__mark--action { color: var(--text-link); }
 
 .mapmenu__name {
   /* Never broken across lines: the grid above has already made room for the
