@@ -1431,12 +1431,21 @@ a.btn { text-decoration: none; }
 
 .panel__head {
   display: grid;
+  /* The chip row across the top, then the name and the buttons beside it. */
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'tags tags'
+    'name acts';
   align-items: start;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-4) var(--space-3);
   border-block-end: var(--border-hairline) solid var(--border-subtle);
 }
+
+/* Named explicitly rather than left to auto-placement: with grid-template-areas
+   set, an item without an area is placed wherever the algorithm finds room, and
+   "wherever" is not a layout. */
+.panel__headmain { grid-area: name; min-inline-size: 0; }
 
 /* The name and its mark on one line, the mark first so it reads as belonging
    to the name rather than to the card. */
@@ -1451,6 +1460,7 @@ a.btn { text-decoration: none; }
 /* Save and close, as a pair at the end of the head. Both are --control-md, so
    they sit together without either being resized. */
 .panel__headacts {
+  grid-area: acts;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -1502,6 +1512,179 @@ a.btn { text-decoration: none; }
   padding: 0.125rem var(--space-2);
   border-radius: var(--radius-pill);
   overflow-wrap: anywhere;
+}
+
+/*
+ * The row the two chips sit on.
+ *
+ * They wrap rather than shrink: a kommune name is as long as it is --
+ * "Frederiksberg" beside "SELVEJENDE" does not fit a narrow phone -- and a
+ * chip cut in half says less than a chip on the next line.
+ */
+.panel__tags {
+  grid-area: tags;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  min-inline-size: 0;
+}
+
+/*
+ * The kommune chip. The same shape as the operator chip beside it, and
+ * deliberately not the same colour: the operator chip is colour-coded to a
+ * category the map also uses, and painting a second chip in one of those
+ * colours would claim a meaning it does not have. This one takes the neutral
+ * fallback that .panel__eyebrow already carries.
+ *
+ * Empty for a record with no kommune on it -- there are none in the extract,
+ * but an empty chip is a grey pill saying nothing, so it is not drawn.
+ */
+.panel__eyebrow--muni:empty { display: none; }
+
+/* ====================================================== address balloon === */
+/*
+ * The address, and the two applications it can be handed to.
+ *
+ * The address is a control rather than a link: pressing it does not go
+ * anywhere, it asks where to go. The two real links live in the balloon and
+ * each carries the address, so a long press on either behaves the way a link
+ * should.
+ */
+.addr {
+  position: relative;
+  display: inline-block;
+  min-inline-size: 0;
+}
+
+.addr__button {
+  /* A button that reads as the text it is. The underline is what says it can
+     be pressed; a border would make an address look like a form field. */
+  display: inline;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.addr__button:hover { text-decoration-color: var(--action-primary); }
+.addr__button[aria-expanded='true'] { text-decoration-color: var(--action-primary); }
+
+.mapmenu {
+  position: absolute;
+  z-index: var(--z-toast);
+  inset-block-start: calc(100% + var(--space-3));
+  /*
+   * Hung from the address's start edge -- and in Persian from its end edge
+   * instead, which is the same physical edge.
+   *
+   * This is the one place in the card where the logical property is the wrong
+   * answer. Anchoring is usually about which end of the text a thing belongs
+   * to, and the logical inset says that correctly. Here the balloon is wider
+   * than the address it hangs from -- 202px against 143 -- so the anchor also
+   * decides which way it overflows, and in Persian starting at the address's
+   * inline start sent it 30px off the left of the screen. Both languages want
+   * it growing to the physical right of the address's physical left edge.
+   */
+  inset-inline-start: 0;
+  /*
+   * Equal columns, each as wide as the widest label needs.
+   *
+   * A flex row with a fixed tile width had to guess that width, and guessed
+   * short: "Google Maps" wrapped to two lines beside a one-line "Apple Maps".
+   * `1fr` on auto-flow columns sizes every column to the largest max-content,
+   * so the tiles stay equal to each other and neither has to wrap -- in any
+   * language, without a number here that a translator can invalidate.
+   */
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  /* The thick pane: these are names, and text has to clear 4.5:1 against
+     whatever is behind the card. */
+  background: var(--glass-panel-bg);
+  border: var(--border-hairline) solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
+}
+/* An author `display` beats the browser's `[hidden]`. Three things in this app
+   have learned that the hard way; this one is told in advance. */
+.mapmenu[hidden] { display: none; }
+
+/*
+ * The tail, pointing back at the address it belongs to.
+ *
+ * One square rotated 45 degrees, in the pane's own colour. It started as two --
+ * a lower one carrying the border and an upper one covering the border's inner
+ * half -- which is the right construction for a balloon with a visible border
+ * and the wrong one here: --glass-border is a translucent white, so on a light
+ * card the border layer was white on white and the tail simply could not be
+ * seen. What defines this pane's edge is its shadow, and a tail in the pane's
+ * colour reads against that.
+ */
+.mapmenu::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -5px;
+  inset-inline-start: var(--space-5);
+  inline-size: 11px;
+  block-size: 11px;
+  rotate: 45deg;
+  border-start-start-radius: 2px;
+  background: var(--glass-panel-bg);
+  border-block-start: var(--border-hairline) solid var(--glass-border);
+  border-inline-start: var(--border-hairline) solid var(--glass-border);
+}
+
+[dir='rtl'] .mapmenu { inset-inline: auto 0; }
+[dir='rtl'] .mapmenu::after { inset-inline: auto var(--space-5); }
+
+.mapmenu__app {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid transparent;
+}
+.mapmenu__app:hover { background: var(--interactive-hover-bg); }
+.mapmenu__app:active { background: var(--interactive-active-bg); }
+
+/* The mark is artwork, not a glyph: it keeps its own colours in both themes,
+   the way an application's icon does on a home screen. */
+.mapmenu__mark {
+  display: block;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  /* A hairline of the theme's own border, so a white tile does not float
+     edgeless on a light card. */
+  box-shadow: 0 0 0 1px var(--border-subtle), var(--shadow-sm);
+}
+.mapmenu__mark svg { display: block; inline-size: 100%; block-size: 100%; }
+
+.mapmenu__name {
+  /* Never broken across lines: the grid above has already made room for the
+     longest of them, so a wrap here would mean that sizing had gone wrong. */
+  white-space: nowrap;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  text-align: center;
+  line-height: var(--leading-tight);
 }
 
 .panel__title {
