@@ -127,6 +127,11 @@ const DA = {
 
   'panel.close': 'Luk detaljer om {name}',
   'panel.address': 'Adresse',
+  'act.route': 'Rute',
+  'act.call': 'Ring',
+  'act.mail': 'E-mail',
+  'act.jobs': 'Job',
+  'jobs.label': 'Ledige stillinger',
   /*
    * The last line of the postal address, which is not the same string as the
    * kommune filter above even though it reads the same in Danish.
@@ -359,6 +364,11 @@ const EN: Record<Key, Entry> = {
 
   'panel.close': 'Close details for {name}',
   'panel.address': 'Address',
+  'act.route': 'Route',
+  'act.call': 'Call',
+  'act.mail': 'E-mail',
+  'act.jobs': 'Jobs',
+  'jobs.label': 'Vacancies',
   'panel.municipalityLine': '{name} Kommune',
   'panel.chooseMap': 'Open the address in a map',
   'panel.copy': 'Copy',
@@ -570,6 +580,11 @@ const FA: Record<Key, Entry> = {
 
   'panel.close': 'بستن جزئیات {name}',
   'panel.address': 'نشانی',
+  'act.route': 'مسیر',
+  'act.call': 'تماس',
+  'act.mail': 'ایمیل',
+  'act.jobs': 'شغل',
+  'jobs.label': 'موقعیت‌های شغلی',
   /* Danish, deliberately. See the note on this key in the Danish table. */
   'panel.municipalityLine': '{name} Kommune',
   'panel.chooseMap': 'باز کردن نشانی در نقشه',

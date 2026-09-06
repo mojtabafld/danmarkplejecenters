@@ -1601,9 +1601,17 @@ a.btn { text-decoration: none; }
  * each carries the address, so a long press on either behaves the way a link
  * should.
  */
+/*
+ * Block, not inline-block: it is the balloon's anchor and the row's target.
+ *
+ * Shrunk to its content, the button inside it was 100% of the address rather
+ * than of the row, so the chevron landed against the end of "2200 København N"
+ * instead of at the row's edge like every other one. The balloon still hangs
+ * off this element, which is why it stays positioned.
+ */
 .addr {
   position: relative;
-  display: inline-block;
+  display: block;
   min-inline-size: 0;
 }
 
@@ -1841,6 +1849,19 @@ a.btn { text-decoration: none; }
      card, which spreads the content out as the window gets taller instead of
      leaving the card the size of what is in it. */
   align-content: start;
+  /*
+   * And they are never squeezed the other way either.
+   *
+   * This grid has a definite height -- the card's -- so once its contents are
+   * taller than it, the free space is negative and auto rows are compressed to
+   * fit rather than overflowing into the scroll this element already offers.
+   * The grouped list has `overflow: hidden` to clip its rows to a rounded
+   * corner, which also drops its automatic minimum size to zero, so it went
+   * quietly: 277px of group holding 329px of rows, with the last one laid out,
+   * measurable, and painted nowhere. Content-sized tracks overflow instead,
+   * which is what `overflow-y: auto` above is for.
+   */
+  grid-auto-rows: max-content;
 }
 
 /*
@@ -1862,8 +1883,52 @@ a.btn { text-decoration: none; }
   background: var(--group-bg);
   border-radius: var(--radius-group);
   box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
+  /* Clips the rows to the rounded corner. It also drops this block's automatic
+     minimum size to zero, which is half of why the card used to squeeze it --
+     see grid-auto-rows on .panel__body for the other half. */
   overflow: hidden;
 }
+
+/*
+ * Four things somebody does with a plejecentre, as tiles above the list.
+ *
+ * They are shortcuts to rows below rather than a fifth thing, so they take the
+ * same inner layer and the same brand colour as the links they stand for. The
+ * grid is auto-fit rather than a fixed four: a centre with no phone shows
+ * three, and three tiles filling the width read better than three tiles and a
+ * hole.
+ */
+.qa {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.qa__tile {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-group);
+  background: var(--group-bg);
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
+  color: var(--text-link);
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.qa__tile svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); display: block; }
+.qa__tile span {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-secondary);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.qa__tile:hover { background: var(--interactive-hover-bg); }
+.qa__tile:active { background: var(--interactive-active-bg); }
 
 .fact {
   position: relative;
@@ -1874,6 +1939,43 @@ a.btn { text-decoration: none; }
   padding: var(--space-3) var(--space-4);
   min-inline-size: 0;
 }
+/*
+ * A row that leads somewhere gives its whole width to the thing it leads to.
+ *
+ * The chevron is drawn at the far edge, and it is inside the row's own link or
+ * button rather than beside it -- a mark at the end of a row that is not part
+ * of the target it points at is an invitation to press nothing. Making the
+ * link fill the column is what puts the space between the value and the mark
+ * inside the same hit area.
+ */
+.fact[data-leads='true'] .fact__value > a,
+.fact[data-leads='true'] .addr__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  inline-size: 100%;
+  text-align: start;
+}
+
+/*
+ * The field's name, over its value.
+ *
+ * Small, and in the secondary colour rather than the tertiary one: it sits on
+ * a raised surface where tertiary was the first thing to fall below 4.5:1.
+ */
+.fact__label {
+  display: block;
+  margin-block-end: 0.0625rem;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-secondary);
+}
+
+/* Decorative, and inside the target: the link carries meaning and hit area. */
+.fact__chev { display: flex; flex: none; color: var(--text-tertiary); }
+.fact__chev svg { inline-size: var(--icon-md); block-size: var(--icon-md); display: block; }
 
 /*
  * Between rows, never above the first or below the last: the list already has
@@ -1889,6 +1991,7 @@ a.btn { text-decoration: none; }
   position: absolute;
   inset-block-start: 0;
   inset-inline: calc(var(--space-4) + 1.875rem + var(--space-3)) 0;
+  /* stops at the row's own inset, not the group's edge */
   border-block-start: 0.5px solid var(--group-border);
 }
 
@@ -2234,6 +2337,10 @@ a.btn { text-decoration: none; }
    */
   .panel__body { padding-inline: var(--space-3); }
   .fact { padding-inline: var(--space-3); }
+  /* The chevron is decoration, and on the narrowest phone the 24px it and its
+     gap take are worth more to the address than to the hint that the row
+     leads somewhere -- which the link's own colour already says. */
+  .fact__chev { display: none; }
   .fact + .fact::before { inset-inline: calc(var(--space-3) + 1.875rem + var(--space-3)) 0; }
   .rv { padding: var(--space-3); }
   .result { padding-inline: var(--space-4); }
@@ -2495,10 +2602,19 @@ a.btn { text-decoration: none; }
  * Without the second, 2026-08-22 came out as "2026-08-" at the end of one line
  * and "22." at the start of the next, which reads as two different numbers.
  */
-.fact__value a[dir='ltr'] {
-  unicode-bidi: isolate;
-  white-space: nowrap;
-}
+.fact__value [dir='ltr'] { unicode-bidi: isolate; }
+/*
+ * The nowrap belongs to the runs that break into nonsense, and to those only.
+ *
+ * A phone number split across a line is two numbers, so it keeps the rule that
+ * was written for it. A hostname is not: "boligertilaeldre." and "kk.dk" on
+ * two lines still read as one address, and on a 280px screen at 1.25x text the
+ * alternative was 62px of it hanging off the card. The postal address never
+ * wanted it at all -- it is two lines with a <br> between them, and it only
+ * inherited the rule when this selector was widened to reach the span the
+ * Latin run now sits in.
+ */
+.fact__atom { white-space: nowrap; }
 
 /* ========================================================================== *
    TOUCH: KEEP TEXT FIELDS AT 16px
