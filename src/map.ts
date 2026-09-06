@@ -184,6 +184,51 @@ const SAVED_MAX_ZOOM = 12;
  * leaves exactly the camera choosing Sjælland would have given.
  */
 const BROWSE_MAX_ZOOM = 11;
+/*
+ * Room for the card that floats over the map.
+ *
+ * On a wide screen the count-and-filters card sits in a corner of the map
+ * rather than in a column beside it, so the map now runs underneath it. Fitting
+ * Denmark to the whole canvas therefore puts the western half of Jylland behind
+ * the card. MapLibre takes padding per side, so the side the card is on gets
+ * the card's own width added to it and the fit happens in what is left.
+ *
+ * Measured from the element rather than from the token, because the card is
+ * the sheet below the breakpoint and its width there is the screen's: the test
+ * for "is it a card" is that it does not span the canvas, which is the same
+ * question in both directions and needs no breakpoint repeated in script.
+ */
+function fitPad(base: number): { top: number; bottom: number; left: number; right: number } {
+  const pad = { top: base, bottom: base, left: base, right: base };
+  const rail = document.querySelector('.rail');
+  const stage = document.querySelector('.stage');
+  if (!rail || !stage) return pad;
+  const r = rail.getBoundingClientRect();
+  const s = stage.getBoundingClientRect();
+  // A sheet spans the canvas; a card does not. Only a card is fitted around.
+  if (r.width >= s.width - 1 || r.width === 0) return pad;
+  /*
+   * Its width, on the side it is anchored to -- left in Danish, right in
+   * Persian.
+   *
+   * Reserving the band above instead was tried and is worse where it matters
+   * most. The card is short and wide, so the band is the cheaper rectangle to
+   * give up, but Denmark is only about 1.2 times wider than it is tall on
+   * screen while the canvas left over is 2.1 times wider: height is what
+   * limits that fit, and taking 150px off it zoomed the home view -- the first
+   * thing every visitor sees -- out by a fifth. Reserving the column costs the
+   * width, which the home view has to spare.
+   *
+   * What it does cost is a filtered fit on a narrow desktop: on a 1000px
+   * canvas Sjaelland has 556px to sit in rather than 1000, so it is drawn
+   * smaller than it was when the rail was a real column. That is the trade,
+   * and it buys back the 82% of that column that was blank.
+   */
+  if (r.left - s.left <= s.right - r.right) pad.left = Math.round(r.right - s.left) + base;
+  else pad.right = Math.round(s.right - r.left) + base;
+  return pad;
+}
+
 
 /**
  * Which box covers the parts of the country a set of saved places falls in.
@@ -373,7 +418,7 @@ export class PlejecenterMap {
     });
     this.map = map;
     map.resize();
-    map.fitBounds(HOME_BOUNDS, { padding: 48, duration: 0 });
+    map.fitBounds(HOME_BOUNDS, { padding: fitPad(48), duration: 0 });
 
     // No MapLibre controls at all: NavigationControl and ScaleControl bring
     // their own styling and their own hit sizes, and the scale bar lands on top
@@ -689,7 +734,7 @@ export class PlejecenterMap {
       // is the thing that says the filter is off.
       if (!on) {
         m.fitBounds(released, {
-          padding: 56,
+          padding: fitPad(56),
           maxZoom: BROWSE_MAX_ZOOM,
           duration: REDUCED.matches ? 0 : HOME_MS,
           essential: true,
@@ -706,7 +751,7 @@ export class PlejecenterMap {
       // puts every saved place on screen before anything moves.
       const still = REDUCED.matches;
       m.fitBounds(savedFocusBox(saved), {
-        padding: 56,
+        padding: fitPad(56),
         maxZoom: SAVED_MAX_ZOOM,
         duration: still ? 0 : HOME_MS,
       });
@@ -904,7 +949,7 @@ export class PlejecenterMap {
   fitTo(items: Plejecenter[]): void {
     this.run((m) => {
       if (items.length === 0) {
-        m.fitBounds(HOME_BOUNDS, { padding: 48, duration: 500 });
+        m.fitBounds(HOME_BOUNDS, { padding: fitPad(48), duration: 500 });
         return;
       }
       if (items.length === 1) {
@@ -913,12 +958,12 @@ export class PlejecenterMap {
       }
       const b = new this.gl!.LngLatBounds();
       for (const p of items) b.extend([p.lon, p.lat]);
-      m.fitBounds(b, { padding: 72, maxZoom: 14.5, duration: 500 });
+      m.fitBounds(b, { padding: fitPad(72), maxZoom: 14.5, duration: 500 });
     });
   }
 
   resetView(): void {
-    this.run((m) => m.fitBounds(HOME_BOUNDS, { padding: 48, duration: HOME_MS }));
+    this.run((m) => m.fitBounds(HOME_BOUNDS, { padding: fitPad(48), duration: HOME_MS }));
   }
 
   /**
@@ -931,7 +976,7 @@ export class PlejecenterMap {
   fitBox(box: Box, opts: { instant?: boolean } = {}): void {
     this.run((m) => {
       m.fitBounds(box, {
-        padding: 56,
+        padding: fitPad(56),
         maxZoom: BROWSE_MAX_ZOOM,
         duration: opts.instant || REDUCED.matches ? 0 : REGION_MS,
         essential: true,

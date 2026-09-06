@@ -361,17 +361,46 @@ a.btn { text-decoration: none; }
 .btn--ghost:hover { background: var(--interactive-hover-bg); color: var(--text-primary); }
 .btn--ghost:active { background: var(--interactive-active-bg); }
 
-.btn--icon { padding-inline: var(--space-2); }
+/*
+ * An icon button in the header is square, and the same square as the two
+ * beside it.
+ *
+ * The three controls up there -- account, language, theme -- were 46, 66 and
+ * 34 pixels wide with three different internal paddings, so they read as three
+ * unrelated things that happened to end up in a row rather than as one set.
+ * The two icon-only ones are now the same square as each other, and the
+ * language keeps its extra width because it is showing a word ("DA"), which is
+ * a difference worth seeing.
+ */
+.btn--icon {
+  inline-size: var(--control-md);
+  block-size: var(--control-md);
+  padding: 0;
+}
 
 .btn[disabled] { opacity: var(--opacity-disabled); pointer-events: none; }
 
 /* ========================================================================== *
    BODY: rail + map
  * ========================================================================== */
+/*
+ * One cell. The map fills it and the rail floats over it.
+ *
+ * The rail used to be a 376px column beside the map, and it was empty: the
+ * result list inside it is clipped out of the pointer interface on purpose
+ * (see .results), so all a mouse user ever saw there was the count and three
+ * filter chips -- 136px of content holding open a 744px column. Measured on a
+ * 1280x800 screen, 608px of it, 82%, was blank, and the map was paying for it.
+ *
+ * So the column is now a card: it sizes to what is in it, sits in the corner
+ * of the map, and gives the other 240px of width back to the thing people came
+ * to look at. The phone layout already overlaid the two this way, which is why
+ * this is the base and the sheet rules below only have to restate the edges.
+ */
 .workspace {
   position: relative;
   display: grid;
-  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-block-size: 0;
   min-inline-size: 0;
 }
@@ -379,12 +408,24 @@ a.btn { text-decoration: none; }
 /* ---------------------------------------------------------------- rail --- */
 .rail {
   position: relative;
+  grid-area: 1 / 1;
   z-index: var(--z-rail);
+  /* Anchored to the top corner and sized by its content, so an empty list
+     leaves no empty card. When focus enters the results the list lays out and
+     the card grows into the height below, capped so it never reaches the
+     credit line. */
+  justify-self: start;
+  align-self: start;
+  margin: var(--space-3);
+  inline-size: min(var(--rail-width), calc(100% - var(--space-6)));
+  max-block-size: calc(100% - var(--space-6));
   display: grid;
   /* The lead, then the list taking everything left. */
   grid-template-rows: auto minmax(0, 1fr);
   min-inline-size: 0;
   min-block-size: 0;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
   /*
    * Glass here earns its keep on a phone, where the rail leaves the column and
    * becomes a sheet sitting on top of the map -- the list of plejecentre then
@@ -393,9 +434,10 @@ a.btn { text-decoration: none; }
    * material without the view, which is the same trade the header makes.
    */
   background: var(--glass-panel-bg);
-  border-inline-end: var(--border-hairline) solid var(--glass-border);
+  border: var(--border-hairline) solid var(--glass-border);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-sheen);
 }
 
 .rail__lead {
@@ -764,7 +806,7 @@ a.btn { text-decoration: none; }
 /* --------------------------------------------------------------- footer -- */
 
 /* ============================================================== map ====== */
-.stage { position: relative; min-inline-size: 0; min-block-size: 0; }
+.stage { position: relative; grid-area: 1 / 1; min-inline-size: 0; min-block-size: 0; }
 
 .map {
   position: absolute;
@@ -775,15 +817,28 @@ a.btn { text-decoration: none; }
 
 .map:focus-visible { outline: none; box-shadow: inset var(--shadow-focus); }
 
+/*
+ * Locate, zoom and reset: one pane, not three.
+ *
+ * They were three separate glass boxes with 8px of map between them, which is
+ * three floating objects in a corner where one will do. Grouped, the column is
+ * read as one control for the map -- the way the dock is one control for the
+ * search -- and there is one edge and one shadow over the tiles instead of
+ * six. The buttons inside are holes in this pane, not panes of their own; a
+ * second layer of glass over the first would double the tint and blur the
+ * blur, which is the same reason the zoom pair already worked this way.
+ */
 .map__tools {
   position: absolute;
   z-index: var(--z-map-ui);
   inset-block-start: var(--space-3);
   inset-inline-end: var(--space-3);
   display: grid;
-  gap: var(--space-2);
-  justify-items: end;
+  justify-items: stretch;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
+.map__tools > * + * { border-block-start: var(--border-hairline) solid var(--glass-border); }
 
 /*
  * The glass panes: the dock, the standalone map buttons, and the zoom pair as
@@ -801,8 +856,7 @@ a.btn { text-decoration: none; }
  * effect is borrowed from.
  */
 .dock,
-.map__tool,
-.map__toolgroup {
+.map__tools {
   background: var(--glass-bg);
   border: var(--border-hairline) solid var(--glass-border);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -810,23 +864,7 @@ a.btn { text-decoration: none; }
   box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-sheen);
 }
 
-/* Zoom in / zoom out read as one control, so they share one pane. */
-.map__toolgroup {
-  display: grid;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-/* Inside the group the buttons are holes in the group's pane, not panes of
-   their own: a second layer of glass over the first would double the tint and
-   blur the blur. */
-.map__toolgroup .map__tool {
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
+.map__toolgroup { display: grid; }
 .map__toolgroup .map__tool + .map__tool {
   border-block-start: var(--border-hairline) solid var(--glass-border);
 }
@@ -838,7 +876,9 @@ a.btn { text-decoration: none; }
   block-size: var(--control-lg);
   padding: 0;
   color: var(--text-primary);
-  border-radius: var(--radius-md);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out),
               box-shadow var(--duration-fast) var(--ease-out),
@@ -1256,36 +1296,23 @@ a.btn { text-decoration: none; }
   .dock { inset-block-end: calc(var(--dock-lift, 0px) + var(--space-2)); }
 }
 
-.map__legend {
-  position: absolute;
-  z-index: var(--z-map-ui);
-  inset-block-end: var(--space-3);
-  inset-inline-start: var(--space-3);
-  display: grid;
-  gap: var(--space-2);
-  max-inline-size: min(16rem, calc(100vw - var(--space-8)));
-  padding: var(--space-3);
-  background: var(--surface-map-shade);
-  backdrop-filter: blur(0.5rem);
-  border: var(--border-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-}
-
-.map__legend h2 {
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
+/*
+ * The key, which is now one row rather than a card.
+ *
+ * It used to be a titled panel floating at the bottom corner of the map,
+ * listing the three operator colours -- the same three colours, with the same
+ * three names, that the filter chips a few pixels away were already showing.
+ * The chips are the key; the panel was a second copy of it taking a corner of
+ * the map. What only the panel said was the saved colour, so that is what is
+ * left, under the chips, and only once something is saved.
+ */
 .legend__row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin-block-start: var(--space-3);
   font-size: var(--text-xs);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   min-inline-size: 0;
 }
 
@@ -1318,22 +1345,34 @@ a.btn { text-decoration: none; }
 }
 .map__fallback[hidden] { display: none; }
 
+/*
+ * Attribution, which is a credit and not a control.
+ *
+ * The rounded box and the two underlined brand-coloured links made it read as
+ * a chip somebody had left on the map -- loudest of all on a phone, where it
+ * lands directly under the header. It still needs a ground to be legible over
+ * tiles, so the shade stays; what goes is everything that made it look
+ * pressable. The links keep their own colour so they are still findable, and
+ * get their underline back on hover and focus.
+ */
 .map__credit {
   position: absolute;
   z-index: var(--z-map-ui);
-  inset-block-end: var(--space-1);
-  inset-inline-end: var(--space-2);
+  inset-block-end: 0;
+  inset-inline-end: 0;
   font-size: var(--text-2xs);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   background: var(--surface-map-shade);
-  padding-inline: var(--space-2);
-  border-radius: var(--radius-xs);
+  padding: 0 var(--space-2);
+  border-start-start-radius: var(--radius-xs);
   max-inline-size: calc(100% - var(--space-4));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.map__credit a { color: var(--text-link); }
+.map__credit a { color: var(--text-secondary); text-decoration: none; }
+.map__credit a:hover,
+.map__credit a:focus-visible { text-decoration: underline; }
 
 /* ============================================================== panel ==== */
 .panel {
@@ -1786,38 +1825,72 @@ a.btn { text-decoration: none; }
   align-content: start;
 }
 
+/*
+ * The register's data, as one list rather than six loose paragraphs.
+ *
+ * What is drawn now is an icon in a soft round badge, the value beside it, and
+ * a hairline between each row -- the shape a settings list or a map
+ * application's place card has, and the reason it reads as one block of facts
+ * instead of a stack of unrelated lines. The uppercase labels that used to
+ * sit over each value are gone from the page and live in the accessibility
+ * tree instead; see the comment on `fact()` in detail.ts.
+ */
 .facts {
   display: grid;
-  gap: var(--space-3);
   align-content: start;
 }
 
 .fact {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-3);
-  align-items: start;
-  align-content: start;
+  align-items: center;
+  padding-block: var(--space-3);
   min-inline-size: 0;
 }
 
-.fact__icon {
-  margin-block-start: 0.1rem;
-  color: var(--text-tertiary);
-  inline-size: var(--icon-md);
-  block-size: var(--icon-md);
-  flex: none;
+/*
+ * Between rows, never above the first or below the last: the list already has
+ * the card's padding on both ends, and a rule there would double it.
+ *
+ * Inset to where the text starts, so the badges run down an uninterrupted
+ * gutter instead of being chopped into cells by a full-width rule. It is drawn
+ * as a pseudo-element rather than a border because the row's own padding sits
+ * outside a border but inside this.
+ */
+.fact + .fact::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: calc(2rem + var(--space-3)) 0;
+  border-block-start: var(--border-hairline) solid var(--border-subtle);
 }
 
-.fact__label {
-  display: block;
-  margin-block-end: var(--space-1);
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-tertiary);
+/*
+ * A badge, not a bare glyph.
+ *
+ * At 16px on the page background the icons read as specks, and six of them in
+ * a column had no weight against the values they belong to. The disc gives the
+ * column an edge to line up on and the icon something to sit in.
+ */
+.fact__icon {
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  flex: none;
 }
+.fact__icon svg {
+  inline-size: var(--icon-md);
+  block-size: var(--icon-md);
+  display: block;
+}
+
+.fact__body { min-inline-size: 0; }
 
 .fact__value {
   display: block;
@@ -1826,11 +1899,19 @@ a.btn { text-decoration: none; }
   line-height: var(--leading-snug);
   overflow-wrap: anywhere;
 }
+
+/* The distance is an aside to the address above it, not a second address. */
+.fact__distance {
+  margin-block-start: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
 /*
- * Contact values are standalone fields under their own icon and label, not
- * links buried in a paragraph, so the underline is not carrying the "this is a
- * link" job here. It comes back on hover and focus, which keeps the affordance
- * without the ruled-through look of six underlined rows stacked up.
+ * Contact values are standalone fields on their own row, not links buried in a
+ * paragraph, so the underline is not carrying the "this is a link" job here --
+ * the badge, the rule under the row and the colour do. It comes back on hover
+ * and focus, which keeps the affordance without the ruled-through look of six
+ * underlined rows stacked up.
  */
 .fact__value a {
   text-decoration: none;
@@ -1960,19 +2041,24 @@ a.btn { text-decoration: none; }
  * ========================================================================== */
 
 @media (max-width: 60rem) {
-  .workspace { grid-template-columns: minmax(0, 1fr); }
-
-  .stage { grid-area: 1 / 1; }
-
+  /*
+   * The card becomes the sheet: same element, same layer, but pinned to the
+   * bottom edge at full width instead of floating in the corner. Everything
+   * here undoes a property the card sets -- the inset margin, the four
+   * borders, the four rounded corners -- so the two states are one rule apart
+   * and neither can drift from the other.
+   */
   .rail {
-    grid-area: 1 / 1;
     z-index: var(--z-sheet);
+    justify-self: stretch;
     align-self: end;
+    margin: 0;
     inline-size: 100%;
     max-block-size: min(62%, 34rem);
     grid-template-rows: auto minmax(0, 1fr);
-    border-inline-end: 0;
+    border: 0;
     border-block-start: var(--border-hairline) solid var(--border-default);
+    border-radius: 0;
     border-start-start-radius: var(--radius-xl);
     border-start-end-radius: var(--radius-xl);
     padding-block-end: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
@@ -2085,21 +2171,23 @@ a.btn { text-decoration: none; }
        taps meant for it. */
     .rail { max-block-size: calc(100% - var(--space-6)); }
     .panel__body { gap: var(--space-3); padding: var(--space-3) var(--space-4); }
-    .facts { gap: var(--space-2); }
+    .fact { padding-block: var(--space-2); }
     .panel__head { padding-block: var(--space-3) var(--space-2); }
     .panel__foot { padding: var(--space-2) var(--space-4) var(--space-3); }
   }
 
 
-  .map__legend { display: none; }
   .map__tools { inset-block-start: var(--space-2); inset-inline-end: var(--space-2); }
 
   /* The sheet covers the bottom of the map, so the attribution moves out from
      under it. Left where it was it would be invisible but still focusable,
      which is a keyboard stop on a link nobody can see. */
+  /* The bottom edge is the sheet's, so the credit sits under the header
+     instead. Floating rather than cornered there, so it rounds on all four. */
   .map__credit {
     inset-block: var(--space-2) auto;
     inset-inline: var(--space-2) auto;
+    border-radius: var(--radius-xs);
     max-inline-size: calc(100% - var(--control-lg) - var(--space-6));
   }
 }
@@ -2245,9 +2333,11 @@ a.btn { text-decoration: none; }
 .langpick__button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   min-block-size: var(--control-md);
-  padding-inline: var(--space-2) var(--space-3);
+  min-inline-size: var(--control-md);
+  padding-inline: var(--space-2);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--text-secondary);
@@ -2268,6 +2358,10 @@ a.btn { text-decoration: none; }
 }
 
 .langpick__code { font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-wide); }
+/* Signed out, the account button has no code to show, and an empty span still
+   claimed the flex gap next to the icon -- so the one icon-only control in the
+   header was 6px wider than the other and would not line up with it. */
+.langpick__code:empty { display: none; }
 
 /*
  * The language menu and the account panel -- sign-in and signed-in both -- are

@@ -188,11 +188,25 @@
               <button type="button" class="chip" data-own="Selvejende" data-group="Selvejende" aria-pressed="true">
                 <span class="chip__mark"></span><span data-i18n="ownership.Selvejende"></span>
               </button>
-              <button type="button" class="chip" data-own="Privat" data-group="Privat" aria-pressed="true">
+              <!-- The visible label is the short one, so the three chips stay
+                   one row wide; the accessible name is the long one, which is
+                   the only place "friplejebolig" was ever written and is now
+                   the only place it needs to be. It contains the visible text,
+                   so Label in Name still holds. -->
+              <button type="button" class="chip" data-own="Privat" data-group="Privat" aria-pressed="true"
+                      data-i18n-aria="ownership.PrivatLong">
                 <span class="chip__mark"></span><span data-i18n="ownership.Privat"></span>
               </button>
 
             </div>
+
+            <!-- The one thing the chips above do not already say: what the
+                 other colour on the map means. Only once there is something
+                 saved -- a key to a colour that is not on the map is worse
+                 than no row at all. -->
+            <p class="legend__row" id="legendSaved" hidden>
+              <span class="legend__mark" style="background: var(--map-visited-dot)"></span><span data-i18n="map.legendSaved"></span>
+            </p>
           </div>
 
           <nav class="results" id="results" data-i18n-aria="results.label"></nav>
@@ -323,25 +337,6 @@
               <span class="sr-only" data-i18n="map.reset"></span>
             </button>
           </div>
-
-          <section class="map__legend" data-i18n-aria="map.legend">
-            <h2 data-i18n="map.legendTitle"></h2>
-            <p class="legend__row" data-own="Kommunal">
-              <span class="legend__mark" style="background: var(--own-mark)"></span><span data-i18n="ownership.Kommunal"></span>
-            </p>
-            <p class="legend__row" data-own="Selvejende">
-              <span class="legend__mark" style="background: var(--own-mark)"></span><span data-i18n="ownership.Selvejende"></span>
-            </p>
-            <p class="legend__row" data-own="Privat">
-              <span class="legend__mark" style="background: var(--own-mark)"></span><span data-i18n="ownership.PrivatLong"></span>
-            </p>
-
-            <!-- Only once there is something saved: a legend explaining a
-                 colour that is not on the map is worse than no row at all. -->
-            <p class="legend__row" id="legendSaved" hidden>
-              <span class="legend__mark" style="background: var(--map-visited-dot)"></span><span data-i18n="map.legendSaved"></span>
-            </p>
-          </section>
 
           <p class="map__credit">
             <span data-i18n="map.credit"></span>

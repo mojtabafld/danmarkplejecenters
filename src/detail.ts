@@ -186,10 +186,21 @@ export class DetailPanel {
     }, 1800);
   }
 
+  /*
+   * One row of the register's own data.
+   *
+   * The label is spoken, not drawn. "ADRESSE" over a street name, "TELEFON"
+   * over eight digits and "OFFICIEL HJEMMESIDE" over a hostname each say a
+   * second time what the icon beside them and the value under them already
+   * say, and six of them stacked up turned the card into a column of small
+   * grey capitals with the actual content indented beneath it. The value's own
+   * shape identifies it; the label stays in the accessibility tree, where it
+   * is the only place the naming still does any work.
+   */
   private fact(iconName: IconName, labelKey: TranslationKey, value: string): string {
     return (
       `<div class="fact"><span class="fact__icon">${icon(iconName)}</span>` +
-      `<span><span class="fact__label">${esc(this.i18n.t(labelKey))}</span>` +
+      `<span class="fact__body"><span class="sr-only">${esc(this.i18n.t(labelKey))}</span>` +
       `<span class="fact__value">${value}</span></span></div>`
     );
   }
@@ -398,7 +409,7 @@ export class DetailPanel {
      */
     parts.push(
       `<div class="fact"><span class="fact__icon">${icon('search')}</span>` +
-        `<span><span class="fact__value">` +
+        `<span class="fact__body"><span class="fact__value">` +
         `<a href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
         `${esc(t('jobs.search'))}` +
         `</a></span></span></div>`,

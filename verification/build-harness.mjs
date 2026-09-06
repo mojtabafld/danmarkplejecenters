@@ -138,9 +138,11 @@ const mapApp = (id, name) =>
   `<a class="mapmenu__app" data-app="${id}" href="https://example.invalid/">` +
   `<span class="mapmenu__mark"></span><span class="mapmenu__name">${name}</span></a>`;
 
+// The label is spoken only; see the comment on `fact()` in src/detail.ts.
 const fact = (ic, label, value) =>
   `<div class="fact"><span class="fact__icon">${ic}</span>` +
-  `<span><span class="fact__label">${label}</span><span class="fact__value">${value}</span></span></div>`;
+  `<span class="fact__body"><span class="sr-only">${label}</span>` +
+  `<span class="fact__value">${value}</span></span></div>`;
 
 const detail = pick('Plejecenter Sølund');
 
@@ -227,8 +229,10 @@ const html = `<!doctype html>
         <div class="chips" role="group" aria-label="Filtrér på driftsform">
           <button type="button" class="chip" data-own="Kommunal" aria-pressed="true"><span class="chip__mark"></span>Kommunal</button>
           <button type="button" class="chip" data-own="Selvejende" aria-pressed="true"><span class="chip__mark"></span>Selvejende</button>
-          <button type="button" class="chip" data-own="Privat" aria-pressed="false"><span class="chip__mark"></span>Privat</button>
+          <button type="button" class="chip" data-own="Privat" aria-pressed="false" aria-label="Privat / friplejebolig"><span class="chip__mark"></span>Privat</button>
         </div>
+
+        <p class="legend__row"><span class="legend__mark" style="background: var(--map-visited-dot)"></span>Gemt af dig</p>
       </div>
 
       <div class="filters">
@@ -291,13 +295,6 @@ const html = `<!doctype html>
         <button type="button" class="map__tool"><span class="sr-only">Vis hele hovedstadsområdet igen</span>${I.frame}</button>
       </div>
 
-      <section class="map__legend" aria-label="Signaturforklaring">
-        <h2>Driftsform</h2>
-        <p class="legend__row" data-own="Kommunal"><span class="legend__mark" style="background: var(--own-mark)"></span>Kommunal</p>
-        <p class="legend__row" data-own="Selvejende"><span class="legend__mark" style="background: var(--own-mark)"></span>Selvejende</p>
-        <p class="legend__row" data-own="Privat"><span class="legend__mark" style="background: var(--own-mark)"></span>Privat / friplejebolig</p>
-      </section>
-
       <p class="map__credit">Kort: <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://carto.com/attributions">CARTO</a></p>
 
     </main>
@@ -359,7 +356,7 @@ const panel = `<!doctype html>
             ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}">82 32 50 50</a>`)}
             ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}">${esc(detail.email ?? 'kontakt@kk.dk')}</a>`)}
             ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}">boligertilaeldre.kk.dk<span class="sr-only"> (åbner i ny fane)</span></a>`)}
-            <div class="fact"><span class="fact__icon">${I.search}</span><span><span class="fact__value"><a href="https://www.google.com/search?q=x">Søg job på dette center<span class="sr-only"> (åbner i ny fane)</span></a></span></span></div>
+            <div class="fact"><span class="fact__icon">${I.search}</span><span class="fact__body"><span class="fact__value"><a href="https://www.google.com/search?q=x">Søg job på dette center<span class="sr-only"> (åbner i ny fane)</span></a></span></span></div>
           </div>
         </div>
         <div class="panel__foot">

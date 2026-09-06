@@ -104,8 +104,6 @@ const DA = {
   'map.zoomIn': 'Zoom ind på kortet',
   'map.zoomOut': 'Zoom ud på kortet',
   'map.reset': 'Vis hele området igen',
-  'map.legend': 'Signaturforklaring',
-  'map.legendTitle': 'Driftsform',
   'map.legendSaved': 'Gemt af dig',
   'map.credit': 'Kort:',
   'map.fallback':
@@ -339,8 +337,6 @@ const EN: Record<Key, Entry> = {
   'map.zoomIn': 'Zoom in',
   'map.zoomOut': 'Zoom out',
   'map.reset': 'Show the whole area again',
-  'map.legend': 'Legend',
-  'map.legendTitle': 'Operator',
   'map.legendSaved': 'Saved by you',
   'map.credit': 'Map:',
   'map.fallback':
@@ -553,8 +549,6 @@ const FA: Record<Key, Entry> = {
   'map.zoomIn': 'بزرگ‌نمایی نقشه',
   'map.zoomOut': 'کوچک‌نمایی نقشه',
   'map.reset': 'نمایش دوبارهٔ کل منطقه',
-  'map.legend': 'راهنمای نقشه',
-  'map.legendTitle': 'نوع اداره',
   'map.legendSaved': 'ذخیرهٔ شما',
   'map.credit': 'نقشه:',
   'map.fallback':
