@@ -343,6 +343,20 @@
    * makes it glass rather than a solid card.
    */
   --glass-panel-bg: rgb(255 255 255 / 0.92);
+  /*
+   * The detail card's own pane, and the one place in the product that is
+   * really glass rather than a tinted card.
+   *
+   * It can be, because nothing reads against it any more: the rows sit on the
+   * grouped list's own fill and the chips on theirs, so the only text left on
+   * the pane is the heading. Swept from 0.92 down in eight steps with the
+   * pixels read back each time, over a black basemap and a white one in both
+   * themes, everything still cleared at 0.48 -- and the heading, which is what
+   * the pane carries, was down to 3.57:1 by then. 0.60 is the thinnest step
+   * where it still clears 4.5, the bar for ordinary text rather than the 3:1
+   * its size would let it settle for: measured 5.35.
+   */
+  --card-glass-bg: rgb(255 255 255 / 0.6);
 
   /* ------------------------------------------------- grouped-list layer --
    *
@@ -356,7 +370,7 @@
    * on a grey ground in light, lifted grey cells on black in dark.
    */
   --card-ground: rgb(18 22 22 / 0.03);
-  --group-bg: rgb(255 255 255 / 0.9);
+  --group-bg: rgb(255 255 255 / 0.94);
   --group-border: rgb(18 22 22 / 0.06);
   --group-sheen: rgb(255 255 255 / 0.9);
   /* The specular line along the top of a floating pane, and the hairline that
@@ -559,8 +573,19 @@
   --glass-active: rgb(255 255 255 / 0.16);
   --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.6);
   --glass-panel-bg: rgb(30 33 33 / 0.92);
+  --card-glass-bg: rgb(30 33 33 / 0.6);
   --card-ground: rgb(0 0 0 / 0.22);
-  --group-bg: rgb(255 255 255 / 0.06);
+  /*
+   * A surface of its own, not a 6% wash.
+   *
+   * A translucent tint over a translucent pane is still the pane: with the
+   * card thinned to glass, the rows were reading against whatever the map was
+   * showing and the labels fell to 2.3:1 over a light street. The grouped
+   * cells carry their own near-opaque fill instead -- which is what a phone's
+   * dark grouped list actually is -- so the pane between them is free to be
+   * thin.
+   */
+  --group-bg: rgb(44 49 49 / 0.94);
   --group-border: rgb(255 255 255 / 0.09);
   --group-sheen: rgb(255 255 255 / 0.14);
   --pane-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.08);
