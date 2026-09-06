@@ -130,6 +130,18 @@ const DA = {
 
   'panel.close': 'Luk detaljer om {name}',
   'panel.address': 'Adresse',
+  /*
+   * The last line of the postal address, which is not the same string as the
+   * kommune filter above even though it reads the same in Danish.
+   *
+   * The filter is interface: it names a place to narrow the map to, and it is
+   * translated like every other label. This is part of an address -- the thing
+   * a reader writes on an application or reads out to a driver -- and it keeps
+   * the Danish word in every language, the way the street and the city already
+   * do. In Persian it said "شهرداری Københavns", which is the right word for a
+   * municipality and the wrong one for an address in Denmark.
+   */
+  'panel.municipalityLine': '{name} Kommune',
   'panel.ownership': 'Driftsform',
   'panel.phone': 'Telefon',
   'panel.email': 'E-mail',
@@ -341,6 +353,7 @@ const EN: Record<Key, Entry> = {
 
   'panel.close': 'Close details for {name}',
   'panel.address': 'Address',
+  'panel.municipalityLine': '{name} Kommune',
   'panel.ownership': 'Operator',
   'panel.phone': 'Phone',
   'panel.email': 'Email',
@@ -550,6 +563,8 @@ const FA: Record<Key, Entry> = {
 
   'panel.close': 'بستن جزئیات {name}',
   'panel.address': 'نشانی',
+  /* Danish, deliberately. See the note on this key in the Danish table. */
+  'panel.municipalityLine': '{name} Kommune',
   'panel.ownership': 'نوع اداره',
   'panel.phone': 'تلفن',
   'panel.email': 'ایمیل',
