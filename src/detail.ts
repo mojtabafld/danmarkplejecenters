@@ -241,8 +241,10 @@ export class DetailPanel {
       `<button type="button" class="qa__tile" data-act="route">` +
         `${icon('navigation')}<span>${esc(t('act.route'))}</span></button>`,
     ];
-    if (p.phone) out.push(tile(`href="${esc(telHref(p.phone))}"`, 'phone', t('act.call')));
+    // E-mail before the call: writing is the approach somebody applying for a
+    // job makes first, and the phone is the follow-up.
     if (p.email) out.push(tile(`href="mailto:${esc(p.email)}"`, 'mail', t('act.mail')));
+    if (p.phone) out.push(tile(`href="${esc(telHref(p.phone))}"`, 'phone', t('act.call')));
     out.push(
       tile(`href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer"`, 'search', t('act.jobs')),
     );

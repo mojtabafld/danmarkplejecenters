@@ -1403,7 +1403,7 @@ a.btn { text-decoration: none; }
    * background anybody chose. 0.92 keeps that text at a contrast that does not
    * depend on where the reader happened to pan to.
    */
-  background: linear-gradient(var(--card-ground), var(--card-ground)), var(--glass-panel-bg);
+  background: linear-gradient(var(--card-ground), var(--card-ground)), var(--card-glass-bg);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: var(--border-hairline) solid var(--glass-border);
@@ -1918,7 +1918,12 @@ a.btn { text-decoration: none; }
   font: inherit;
   transition: background-color var(--duration-fast) var(--ease-out);
 }
-.qa__tile svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); display: block; }
+.qa__tile svg {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  display: block;
+  stroke-width: 2.25;
+}
 .qa__tile span {
   font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
@@ -2004,21 +2009,32 @@ a.btn { text-decoration: none; }
  * and being brand-filled rather than grey, it is the one place colour marks
  * the rows without colouring the text they carry.
  */
+/*
+ * Drawn a shade heavier and a shade larger than the set's default, which is
+ * what separates a glyph in Apple's set from the same shape in a line set:
+ * the stroke carries more weight and the mark fills more of the square it
+ * sits in. `stroke-width` on the source SVG is a presentation attribute, so a
+ * stylesheet outranks it and nothing in the markup has to know.
+ *
+ * The container is a squircle at roughly 30% of its own size rather than the
+ * 20% a general-purpose radius gives, for the same reason.
+ */
 .fact__icon {
   display: grid;
   place-items: center;
   inline-size: 1.875rem;
   block-size: 1.875rem;
-  border-radius: var(--radius-sm);
+  border-radius: 0.5625rem;
   background: var(--brand-ramp);
   color: var(--text-on-brand);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28);
   flex: none;
 }
 .fact__icon svg {
-  inline-size: 1.0625rem;
-  block-size: 1.0625rem;
+  inline-size: 1.1875rem;
+  block-size: 1.1875rem;
   display: block;
+  stroke-width: 2.25;
 }
 
 .fact__body { min-inline-size: 0; }
