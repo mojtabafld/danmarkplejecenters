@@ -365,14 +365,6 @@
                  is the accessible way out, so a second tab stop doing the same
                  job would be noise. Dragging it down is an enhancement on top
                  of that, the way an iOS sheet works. -->
-            <div class="panel__grip" id="panelGrip" aria-hidden="true"></div>
-            <!-- Nothing to look at: a zero-width box the height of the peek
-                 detent, so the script can ask the browser what that height is
-                 in pixels. --sheet-peek cannot be read directly -- a custom
-                 property computes to its own text -- and `translate` keeps its
-                 percentage unresolved, so this is the one way to get the number
-                 without writing it down twice. -->
-            <div class="panel__peek" id="panelPeek" aria-hidden="true"></div>
 
             <div class="panel__head" id="panelHead">
               <div>
