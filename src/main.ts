@@ -76,7 +76,6 @@ const geoNote = $('#geoNote');
 const geoNoteText = $('#geoNoteText');
 const railEl = $('#rail');
 const stageEl = $('.stage');
-const legendSaved = $('#legendSaved');
 const live = $('#live');
 const langButton = $<HTMLButtonElement>('#langButton');
 const langMenu = $('#langMenu');
@@ -85,9 +84,11 @@ const accountEl = $('#account');
 const accountButton = $<HTMLButtonElement>('#accountButton');
 const accountPanel = $('#accountPanel');
 const accountCode = $('#accountCode');
+const savedHint = $('#savedHint');
 const dock = $('#dock');
 const dockSearchBtn = $<HTMLButtonElement>('#dockSearchBtn');
 const dockSearchIcon = $('#dockSearchIcon');
+const dockSavedBtn = $<HTMLButtonElement>('#dockSaved');
 const dockFields = $('#dockFields');
 const dockSearchInput = $<HTMLInputElement>('#dockSearch');
 const dockClear = $<HTMLButtonElement>('#dockClear');
@@ -95,6 +96,7 @@ const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
 const regionEl = $('#dockpick');
 const regionButton = $<HTMLButtonElement>('#dockRegion');
 const regionMenu = $('#regionMenu');
+const dockSplit = $('#dockSplit');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -119,6 +121,7 @@ langButton.insertAdjacentHTML('afterbegin', icon('globe'));
 $('#dockRegionIcon').innerHTML = icon('map');
 $('#dockFieldIcon').innerHTML = icon('search');
 dockClear.insertAdjacentHTML('beforeend', icon('x'));
+$('#dockSavedIcon').innerHTML = icon('bookmark');
 
 /* --------------------------------------------------------------- language */
 
@@ -503,7 +506,6 @@ function renderAccount(): void {
             (account.pendingEmail ? pendingMarkup(account.pendingEmail) : signedOutMarkup()));
 
   paintDock();
-  paintLegendSaved();
   if (!account.user && store.filters.visitedOnly) store.setVisitedOnly(false);
 }
 
@@ -659,6 +661,7 @@ async function submitCredentials(kind: 'signin' | 'signup'): Promise<void> {
   verifiedNotice = null;
   if (kind === 'signin') {
     setAccountOpen(false);
+    showSavedHint();
   }
 }
 
@@ -712,6 +715,7 @@ accountPanel.addEventListener('click', (e) => {
   if (act === 'signup') void submitCredentials('signup');
   else if (act === 'signout') {
     void account.signOut().then(() => {
+      hideSavedHint();
       setAccountOpen(false);
     });
   }
@@ -771,6 +775,77 @@ document.addEventListener(
   true,
 );
 
+/**
+ * The one-time tip pointing at the saved-places control.
+ *
+ * Shown once and never again, on whichever comes first: signing in, or simply
+ * arriving with a session that is still valid. The flag lives in
+ * localStorage, so "once" means once on this device rather than once per
+ * account -- which is the right unit anyway: the tip explains where a control
+ * is, and that is something you learn on the device you are holding.
+ *
+ * It fades after five seconds and can be dismissed sooner by touching it. It
+ * is supplementary throughout: the control it points at carries its own
+ * accessible name, so nothing is lost if the tip is missed.
+ */
+const HINT_KEY = 'plejekort.savedHintSeen';
+let hintShownThisSession = false;
+let hintTimers: number[] = [];
+
+function showSavedHint(): void {
+  if (!account.user || hintShownThisSession) return;
+  try {
+    if (localStorage.getItem(HINT_KEY)) return;
+    localStorage.setItem(HINT_KEY, '1');
+  } catch {
+    // Private mode: no way to remember, so show it once for this page and
+    // leave it at that rather than on every sign-in.
+  }
+  hintShownThisSession = true;
+
+  savedHint.textContent = t('visit.hint');
+  savedHint.setAttribute('title', t('visit.hintDismiss'));
+  delete savedHint.dataset.fading;
+  savedHint.hidden = false;
+  pointHintAtSaved();
+
+  hintTimers.push(
+    window.setTimeout(() => {
+      savedHint.dataset.fading = 'true';
+      // Hidden only once the fade has finished, so it does not vanish mid-way.
+      hintTimers.push(window.setTimeout(() => hideSavedHint(), 400));
+    }, 5000),
+  );
+}
+
+/**
+ * Put the tip's pointer on the saved segment, measured rather than assumed.
+ *
+ * The obvious constant -- the dock's padding plus half a segment -- is wrong,
+ * because the segments are centred in a bar wider than they are and the slack
+ * either side moves with the dock's width and with how many segments there
+ * are. Reading the two boxes is exact at any width and mirrors for free: the
+ * offset is taken from whichever edge is the inline end in the current
+ * direction, so Persian needs no second rule.
+ */
+function pointHintAtSaved(): void {
+  const tip = savedHint.getBoundingClientRect();
+  const seg = dockSavedBtn.getBoundingClientRect();
+  if (!tip.width || !seg.width) return;
+  const centre = seg.left + seg.width / 2;
+  const fromEnd =
+    document.documentElement.dir === 'rtl' ? centre - tip.left : tip.right - centre;
+  savedHint.style.setProperty('--coach-arrow', `${fromEnd}px`);
+}
+
+function hideSavedHint(): void {
+  for (const id of hintTimers) window.clearTimeout(id);
+  hintTimers = [];
+  savedHint.hidden = true;
+  delete savedHint.dataset.fading;
+}
+
+savedHint.addEventListener('click', () => hideSavedHint());
 
 /* ------------------------------------------------------------------- dock */
 
@@ -792,21 +867,8 @@ let dockOpen = false;
  * own visible state, and a button that offered to clear them from over here
  * would be undoing things somebody set somewhere else.
  */
-/*
- * Whether the search segment should be wearing the funnel.
- *
- * "Saved places only" counts, and has to. It used to have a button of its own
- * in the dock that both turned it on and turned it off, so nothing else needed
- * to know about it. It is now switched on from the account panel and there is
- * no second press to switch it off -- which, without this, would leave a
- * reader looking at three centres out of 907 and no visible way back.
- */
 function dockFiltered(): boolean {
-  return (
-    store.filters.query !== '' ||
-    store.filters.municipality !== null ||
-    store.filters.visitedOnly
-  );
+  return store.filters.query !== '' || store.filters.municipality !== null;
 }
 
 function setDockOpen(open: boolean): void {
@@ -821,18 +883,24 @@ function setDockOpen(open: boolean): void {
   if (open) dockSearchInput.focus();
 }
 
-/**
- * The legend's saved row, shown only once there is something saved.
- *
- * A legend explaining a colour that is not on the map is worse than no row at
- * all -- and signed out there are no saved places, so the blue never appears.
- */
-function paintLegendSaved(): void {
-  legendSaved.hidden = !account.user || account.visited.size === 0;
-}
-
 /** Icon only, so the label is the accessible name and the title on hover. */
 function paintDock(): void {
+  /*
+   * The saved segment is always there -- but only where an account is possible
+   * at all. Without a database the server disables accounts outright, and a
+   * button whose whole job is to reach them would be a dead end rather than an
+   * invitation. That is the one case it stays away for.
+   *
+   * There are two dividers now and they behave differently. The first sits
+   * between the search and the picker, both of which are always present, so it
+   * is always between two things and never hides. The second sits in front of
+   * the bookmark and hides with it.
+   */
+  dockSavedBtn.hidden = !account.available;
+  // The divider in front of it goes with it: a dock that ends on a line with
+  // nothing after it looks like a control failed to load.
+  dockSplit.hidden = !account.available;
+
   /*
    * The search segment has three jobs, and wears a different face for each.
    *
@@ -853,6 +921,23 @@ function paintDock(): void {
   dockSearchBtn.setAttribute('aria-label', search);
   dockSearchBtn.setAttribute('title', search);
 
+  /*
+   * Signed out it is not a toggle, and must not claim to be one. `aria-pressed`
+   * would announce it as a two-state control that is currently off, when what
+   * it actually does is open the account panel -- so the attribute comes off
+   * and `aria-haspopup` goes on, and the name says what pressing it gets you.
+   */
+  const signedIn = Boolean(account.user);
+  const saved = t(signedIn ? 'visit.filter' : 'dock.savedSignedOut');
+  dockSavedBtn.setAttribute('aria-label', saved);
+  dockSavedBtn.setAttribute('title', saved);
+  if (signedIn) {
+    dockSavedBtn.removeAttribute('aria-haspopup');
+    dockSavedBtn.setAttribute('aria-pressed', String(store.filters.visitedOnly));
+  } else {
+    dockSavedBtn.removeAttribute('aria-pressed');
+    dockSavedBtn.setAttribute('aria-haspopup', 'dialog');
+  }
 }
 
 /**
@@ -875,10 +960,12 @@ function syncDock(): void {
   const muni = store.filters.municipality ?? '';
   if (dockMuni !== document.activeElement && dockMuni.value !== muni) dockMuni.value = muni;
 
+  // Only when it is a toggle; paintDock owns the signed-out shape of it.
+  if (account.user) dockSavedBtn.setAttribute('aria-pressed', String(store.filters.visitedOnly));
+
   // The search segment's face depends on the filters, so it is repainted with
   // them rather than only when the dock is opened or the language changes.
   paintDock();
-  paintLegendSaved();
 }
 
 /**
@@ -965,14 +1052,21 @@ dockSearchBtn.addEventListener('click', () => {
     dockSearchInput.value = '';
     store.setQuery('');
     store.setMunicipality(null);
-    // And the saved filter, which no longer has a control of its own to
-    // release it. "Put every plejecentre back on the map" has to mean every
-    // one, or this button is the way out of some filters and not others.
-    store.setVisitedOnly(false);
     map.fitTo(store.visible);
     return;
   }
   setDockOpen(!dockOpen);
+});
+
+dockSavedBtn.addEventListener('click', () => {
+  // Signed out the button is the way in rather than a filter: somebody
+  // pressing "saved places" is asking for their saved places, and the honest
+  // answer is the sign-in panel rather than nothing happening.
+  if (!account.user) {
+    setAccountOpen(true);
+    return;
+  }
+  store.setVisitedOnly(!store.filters.visitedOnly);
 });
 
 dockClear.addEventListener('click', () => {
@@ -1582,7 +1676,11 @@ paintDockLift();
 // Told once: every setData afterwards carries the marks with it.
 map.setVisitedPredicate((id) => account.isVisited(id));
 render();
-void account.load();
+// Also when a session is simply still valid. Somebody who signed up before
+// this tip existed never performs a sign-in -- their cookie lasts two months --
+// so hanging the tip off the sign-in alone would mean the people who most
+// need pointing at the control are the only ones who never get pointed at it.
+void account.load().then(() => showSavedHint());
 
 /*
  * The scores for every plejecentre, in one request, and the page view that

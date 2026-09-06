@@ -232,7 +232,6 @@ const html = `<!doctype html>
           <button type="button" class="chip" data-own="Privat" aria-pressed="false" aria-label="Privat / friplejebolig"><span class="chip__mark"></span>Privat</button>
         </div>
 
-        <p class="legend__row"><span class="legend__mark" style="background: var(--map-visited-dot)"></span>Gemt af dig</p>
       </div>
 
       <div class="filters">
@@ -542,6 +541,15 @@ const states = `<!doctype html>
     <h2>Greb</h2>
     <button type="button" class="grabber" style="display:block; max-inline-size: 20rem"
             aria-expanded="true" aria-label="Skjul søgefelterne"></button>
+  </section>
+
+  <section class="stack">
+    <h2>Førstegangstip</h2>
+    <div style="position: relative; padding-block-start: var(--space-8)">
+      <div class="coach" style="position: static; max-inline-size: 15rem" role="status">
+        Dine gemte steder finder du her.
+      </div>
+    </div>
   </section>
 
   <section class="stack">

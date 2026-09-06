@@ -199,14 +199,6 @@
               </button>
 
             </div>
-
-            <!-- The one thing the chips above do not already say: what the
-                 other colour on the map means. Only once there is something
-                 saved -- a key to a colour that is not on the map is worse
-                 than no row at all. -->
-            <p class="legend__row" id="legendSaved" hidden>
-              <span class="legend__mark" style="background: var(--map-visited-dot)"></span><span data-i18n="map.legendSaved"></span>
-            </p>
           </div>
 
           <nav class="results" id="results" data-i18n-aria="results.label"></nav>
@@ -230,19 +222,16 @@
             The dock: a pill over the map, and the quickest way into the two
             things people come here to do.
 
-            Two segments -- search, and which part of the country. Pressing
-            search grows the pill into a card with the field and the kommune
-            list in it. Both are bound to the same store as the pair in the
-            rail, so whichever one you use, the other says the same thing.
-
-            There was a third: a bookmark that cut the map to the places you
-            had saved. Saved places are still their own view, reached from the
-            account panel, which is where the rest of what an account gets you
-            already lives.
+            One segment while nobody is signed in -- search -- and two once
+            somebody is, because "the places I saved" only means anything to
+            an account. Pressing search grows the pill into a card with the
+            field and the kommune list in it. Both are bound to the same store
+            as the pair in the rail, so whichever one you use, the other says
+            the same thing.
 
             The buttons carry no text: the label is set in script as the
-            accessible name and the hover title, because the search segment's
-            name changes when it opens.
+            accessible name and the hover title, the way the visited filter
+            does, because the search segment's name changes when it opens.
           -->
           <div class="dock" id="dock" data-open="false">
             <div class="dock__bar">
@@ -260,9 +249,9 @@
 
               <!--
                 Which part of the country. In the dock rather than floating
-                over the map, because both things you can do to what the map
-                is showing now live in one pill: search it, or narrow it to a
-                landsdel.
+                over the map, next to the bookmark, because all three things
+                you can do to what the map is showing now live in one pill:
+                search it, narrow it to a landsdel, cut it to what you saved.
 
                 Icon only. The three names are places, so they are set in
                 Danish in every language and never translated -- the same rule
@@ -281,6 +270,20 @@
                 </button>
                 <div class="dockpick__menu" id="regionMenu" hidden></div>
               </div>
+
+              <span class="dock__split" id="dockSplit" aria-hidden="true" hidden></span>
+
+              <button type="button" class="dock__seg" id="dockSaved" aria-pressed="false" hidden>
+                <span class="dock__icon" id="dockSavedIcon"></span>
+              </button>
+            </div>
+
+            <!-- Shown once, the first time somebody signs in, pointing down at
+                 the saved segment above. It lives in the dock because that is
+                 where the control it is about lives; role="status" so it is
+                 announced rather than only seen. -->
+            <div class="coach" id="savedHint" role="status" hidden>
+              <span data-i18n="visit.hint"></span>
             </div>
 
             <div class="dock__fields" id="dockFields" hidden>
