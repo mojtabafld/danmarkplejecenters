@@ -381,8 +381,10 @@ a.btn { text-decoration: none; }
   position: relative;
   z-index: var(--z-rail);
   display: grid;
-  /* The lead, then the list taking everything left. */
-  grid-template-rows: auto minmax(0, 1fr);
+  /* The grip, the lead, then the list taking everything left. The grip is
+     display:none above the breakpoint, so its row collapses to nothing there
+     rather than needing a second template. */
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-inline-size: 0;
   min-block-size: 0;
   /*
@@ -631,7 +633,7 @@ a.btn { text-decoration: none; }
  * canvas, so they cannot be tabbed to or announced. So it is hidden the way a
  * skip link is -- clipped to nothing until focus enters it, then laid out
  * normally. A pointer user never sees it; a keyboard or screen-reader user
- * still gets all 148.
+ * still gets all of them.
  */
 .results:not(:focus-within) {
   position: absolute;
@@ -1433,6 +1435,40 @@ a.btn { text-decoration: none; }
 }
 .panel__grip:active { cursor: grabbing; }
 
+/*
+ * The rail's bar, and its measuring stick. Same shape and same behaviour as the
+ * detail card's, because it is the same gesture; only the resting heights
+ * differ. Hidden above the breakpoint, where the rail is a column.
+ */
+.rail__grip {
+  display: none;
+  padding-block: var(--space-3) var(--space-1);
+  touch-action: none;
+  cursor: grab;
+}
+.rail__grip:active { cursor: grabbing; }
+.rail__grip::before {
+  content: '';
+  display: block;
+  inline-size: 2.25rem;
+  block-size: 0.3125rem;
+  margin-inline: auto;
+  border-radius: var(--radius-pill);
+  background: var(--border-default);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.rail[data-dragging='true'] .rail__grip::before,
+.rail__grip:active::before { background: var(--border-strong); }
+
+.rail__peek {
+  position: absolute;
+  inset-block-start: 0;
+  inline-size: 0;
+  block-size: var(--rail-peek, 0px);
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* The measuring stick for the peek detent. Absolutely positioned so it is not
    a grid item, zero-width and hidden so it draws nothing, and with no
    transition so it can be read at any moment -- including mid-animation, which
@@ -1800,7 +1836,20 @@ a.btn { text-decoration: none; }
     align-self: end;
     inline-size: 100%;
     max-block-size: min(62%, 34rem);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    /*
+     * How much of the rail the collapsed state leaves on screen: the bar, and
+     * nothing else.
+     *
+     * The list inside this sheet is clipped to a pixel unless focus enters it
+     * -- it exists so a keyboard or a screen reader can reach a plejecenter
+     * that is otherwise only a dot in a canvas -- so what is actually on screen
+     * here is the count and the three ownership chips, about 98px of it.
+     * Collapsing that to the bar alone hands roughly 70px back to the map,
+     * which on a phone is most of a row of it, and the bar is what offers the
+     * way back.
+     */
+    --rail-peek: 2rem;
     border-inline-end: 0;
     border-block-start: var(--border-hairline) solid var(--border-default);
     border-start-start-radius: var(--radius-xl);
@@ -1813,6 +1862,21 @@ a.btn { text-decoration: none; }
     transition: translate var(--duration-base) var(--ease-out);
   }
 
+
+  /*
+   * Collapsed, so the map can have the screen.
+   *
+   * The same translate trick as the detail card: the rail keeps its height and
+   * is pushed down until only --rail-peek is showing, so the drag moves a
+   * composited layer and nothing inside is relaid out. Unlike the card there is
+   * no state past this one -- a sheet that can be pulled away with no way back
+   * is worse than one in the way -- so the bar itself never leaves.
+   */
+  .rail[data-detent='peek'] { translate: 0 max(0px, 100% - var(--rail-peek)); }
+  .rail[data-detent='full'] { translate: 0 0; }
+  .rail[data-dragging='true'] { transition: none; }
+
+  .rail__grip { display: block; }
 
   /*
    * While the detail card is open, the sheet leaves entirely.
@@ -1883,7 +1947,18 @@ a.btn { text-decoration: none; }
      * card's `calc(100% - var(--space-6))` and opened a sheet 764px tall over
      * a 788px stage -- the whole map covered, and nothing to pull down to.
      */
-    --sheet-full: min(88%, 44rem);
+    /*
+     * All the way to the top of the stage. It used to stop at min(88%, 44rem),
+     * which on a 788px stage left the card 139px short of the top -- a gap of
+     * map that the reader could not use and could not close, on a card they had
+     * deliberately pulled all the way up. The stage already excludes the
+     * header, so this reaches exactly as far as the app has to give.
+     *
+     * Less the bottom gutter, not a flat 100%: the card is inset from the
+     * bottom by that much, so a full 100% would put a tall record's top edge
+     * the same distance ABOVE the stage and tuck it under the header.
+     */
+    --sheet-full: calc(100% - var(--space-3));
     /*
      * How much of the sheet the peek state leaves on screen. A length rather
      * than a share of anything, because it is answering "enough for the name,
@@ -1943,10 +2018,12 @@ a.btn { text-decoration: none; }
    * the right thing to lose first.
    */
   @media (max-height: 46rem) {
-    /* Every pixel the stage has, less the gutter. Per-cent here measures the
-       stage, which already excludes the header, so a fraction of it would give
-       away height the card cannot spare on a short screen. */
-    .panel { max-block-size: calc(100% - var(--space-6)); }
+    /* The card's height is --sheet-full now, which is already every pixel the
+       stage has less the one gutter it is inset by. This rule used to give it
+       every pixel less TWO gutters, which on a short screen was 12px the card
+       could not spare -- and since the detents arrived it was also overriding
+       the full detent, so a card pulled all the way up stopped short of the
+       top. Left to --sheet-full. */
 
     /* The sheet needs the same treatment for the opposite reason: at 62% of a
        584px stage the count, filters and handle leave the result list about
