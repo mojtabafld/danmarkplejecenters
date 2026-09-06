@@ -1786,9 +1786,18 @@ a.btn { text-decoration: none; }
   align-content: start;
 }
 
+/*
+ * The register's data, as one list rather than six loose paragraphs.
+ *
+ * What is drawn now is an icon in a soft round badge, the value beside it, and
+ * a hairline between each row -- the shape a settings list or a map
+ * application's place card has, and the reason it reads as one block of facts
+ * instead of a stack of unrelated lines. The uppercase labels that used to
+ * sit over each value are gone from the page and live in the accessibility
+ * tree instead; see the comment on `fact()` in detail.ts.
+ */
 .facts {
   display: grid;
-  gap: var(--space-3);
   align-content: start;
 }
 
@@ -1796,28 +1805,53 @@ a.btn { text-decoration: none; }
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-3);
-  align-items: start;
-  align-content: start;
+  align-items: center;
+  padding-block: var(--space-3);
   min-inline-size: 0;
 }
 
-.fact__icon {
-  margin-block-start: 0.1rem;
-  color: var(--text-tertiary);
-  inline-size: var(--icon-md);
-  block-size: var(--icon-md);
-  flex: none;
+/*
+ * Between rows, never above the first or below the last: the list already has
+ * the card's padding on both ends, and a rule there would double it.
+ *
+ * Inset to where the text starts, so the badges run down an uninterrupted
+ * gutter instead of being chopped into cells by a full-width rule. It is drawn
+ * as a pseudo-element rather than a border because the row's own padding sits
+ * outside a border but inside this.
+ */
+.fact { position: relative; }
+.fact + .fact::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: calc(2rem + var(--space-3)) 0;
+  border-block-start: var(--border-hairline) solid var(--border-subtle);
 }
 
-.fact__label {
-  display: block;
-  margin-block-end: var(--space-1);
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-tertiary);
+/*
+ * A badge, not a bare glyph.
+ *
+ * At 16px on the page background the icons read as specks, and six of them in
+ * a column had no weight against the values they belong to. The disc gives the
+ * column an edge to line up on and the icon something to sit in.
+ */
+.fact__icon {
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  flex: none;
 }
+.fact__icon svg {
+  inline-size: var(--icon-md);
+  block-size: var(--icon-md);
+  display: block;
+}
+
+.fact__body { min-inline-size: 0; }
 
 .fact__value {
   display: block;
@@ -1826,11 +1860,19 @@ a.btn { text-decoration: none; }
   line-height: var(--leading-snug);
   overflow-wrap: anywhere;
 }
+
+/* The distance is an aside to the address above it, not a second address. */
+.fact__distance {
+  margin-block-start: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
 /*
- * Contact values are standalone fields under their own icon and label, not
- * links buried in a paragraph, so the underline is not carrying the "this is a
- * link" job here. It comes back on hover and focus, which keeps the affordance
- * without the ruled-through look of six underlined rows stacked up.
+ * Contact values are standalone fields on their own row, not links buried in a
+ * paragraph, so the underline is not carrying the "this is a link" job here --
+ * the badge, the rule under the row and the colour do. It comes back on hover
+ * and focus, which keeps the affordance without the ruled-through look of six
+ * underlined rows stacked up.
  */
 .fact__value a {
   text-decoration: none;
@@ -2085,7 +2127,7 @@ a.btn { text-decoration: none; }
        taps meant for it. */
     .rail { max-block-size: calc(100% - var(--space-6)); }
     .panel__body { gap: var(--space-3); padding: var(--space-3) var(--space-4); }
-    .facts { gap: var(--space-2); }
+    .fact { padding-block: var(--space-2); }
     .panel__head { padding-block: var(--space-3) var(--space-2); }
     .panel__foot { padding: var(--space-2) var(--space-4) var(--space-3); }
   }

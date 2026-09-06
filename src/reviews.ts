@@ -224,6 +224,17 @@ export class ReviewSection {
   }
 
   private comments(d: PlaceReviews): string {
+    /*
+     * A place nobody has rated has nothing to say about its comments.
+     *
+     * A comment only exists as the text of a rating, so with no ratings the
+     * card was drawing two empty states in a row -- "no ratings yet" followed
+     * by a heading and "no comments yet" -- which between them took a third of
+     * the card's height to report the same absence twice. Once there is at
+     * least one rating the two are different facts again, and both are shown.
+     */
+    if (!d.count) return '';
+
     const fmt = new Intl.DateTimeFormat(this.ctx.i18n.locale, { dateStyle: 'long' });
     let out = `<h4 class="rv__subtitle">${esc(this.t('rating.comments'))}</h4>`;
     if (!d.reviews.length) return out + `<p class="rv__quiet">${esc(this.t('rating.noComments'))}</p>`;

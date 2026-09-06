@@ -138,9 +138,11 @@ const mapApp = (id, name) =>
   `<a class="mapmenu__app" data-app="${id}" href="https://example.invalid/">` +
   `<span class="mapmenu__mark"></span><span class="mapmenu__name">${name}</span></a>`;
 
+// The label is spoken only; see the comment on `fact()` in src/detail.ts.
 const fact = (ic, label, value) =>
   `<div class="fact"><span class="fact__icon">${ic}</span>` +
-  `<span><span class="fact__label">${label}</span><span class="fact__value">${value}</span></span></div>`;
+  `<span class="fact__body"><span class="sr-only">${label}</span>` +
+  `<span class="fact__value">${value}</span></span></div>`;
 
 const detail = pick('Plejecenter Sølund');
 
@@ -359,7 +361,7 @@ const panel = `<!doctype html>
             ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}">82 32 50 50</a>`)}
             ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}">${esc(detail.email ?? 'kontakt@kk.dk')}</a>`)}
             ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}">boligertilaeldre.kk.dk<span class="sr-only"> (åbner i ny fane)</span></a>`)}
-            <div class="fact"><span class="fact__icon">${I.search}</span><span><span class="fact__value"><a href="https://www.google.com/search?q=x">Søg job på dette center<span class="sr-only"> (åbner i ny fane)</span></a></span></span></div>
+            <div class="fact"><span class="fact__icon">${I.search}</span><span class="fact__body"><span class="fact__value"><a href="https://www.google.com/search?q=x">Søg job på dette center<span class="sr-only"> (åbner i ny fane)</span></a></span></span></div>
           </div>
         </div>
         <div class="panel__foot">
