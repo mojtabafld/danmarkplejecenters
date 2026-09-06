@@ -194,7 +194,7 @@ export class DetailPanel {
     // translated one cannot be posted to or read out to a driver.
     let address =
       `${esc(p.street)}<br>${esc(p.postcode)} ${esc(p.city)}<br>` +
-      `<span class="fact__value">${esc(t('filter.municipalitySuffix', { name: p.municipality }))}</span>`;
+      `<span class="fact__value">${esc(t('panel.municipalityLine', { name: p.municipality }))}</span>`;
 
     if (userAt) {
       const km = distanceKm(userAt, p);
