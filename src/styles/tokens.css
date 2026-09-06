@@ -239,6 +239,24 @@
   --cat-privat-bg: var(--p-plum-100);
   --cat-privat-mark: var(--p-plum-500);
 
+  /*
+   * The vacancies chip: blue, and not a fourth operator category.
+   *
+   * Blue is spoken for twice on the map already -- where you are, and what you
+   * saved -- and the note above those two says a third blue is a risk. This is
+   * not on the map. It is a chip in the card, sitting beside the operator and
+   * the kommune, and what it has to be distinguishable from is those two: a
+   * teal, a plum and a neutral grey. Against them a blue reads as its own kind
+   * of thing, which is what it is -- the two beside it describe the place, and
+   * this one leaves for somewhere else.
+   *
+   * Built from the saved-place blue rather than a new hue, so the palette does
+   * not grow a colour for one chip. 7.42:1 in light and 8.36:1 in dark,
+   * measured; the floor for this text is 4.5.
+   */
+  --jobs-fg: var(--p-save-700);
+  --jobs-bg: var(--p-save-300);
+
   /* Map surfaces read by JS via getComputedStyle — still tokens. */
   --map-cluster-bg: var(--p-brand-700);
   --map-cluster-fg: var(--p-neutral-0);
@@ -474,6 +492,11 @@
   --cat-privat-fg: var(--p-plum-300);
   --cat-privat-bg: #26203A;
   --cat-privat-mark: var(--p-plum-300);
+
+  /* The pale end of the live-location blue on a deep one, the way the operator
+     chips invert here. 8.36:1. */
+  --jobs-fg: var(--p-live-300);
+  --jobs-bg: #122A4A;
 
   --map-cluster-bg: var(--p-brand-400);
   --map-cluster-fg: var(--p-brand-950);

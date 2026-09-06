@@ -320,24 +320,6 @@ export class DetailPanel {
       );
     }
 
-    /*
-     * The vacancies, last in the list.
-     *
-     * It used to sit under the name, above everything. It is the reason most
-     * of this audience is here, but it is still a link to somewhere else, and
-     * up there it separated the name from the facts about the place. Below the
-     * centre's own website it reads as the second of two ways out to the
-     * employer, which is what it is.
-     */
-    parts.push(
-      this.fact(
-        'search',
-        'jobs.label',
-        `<a href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
-          `${esc(t('jobs.search'))}</a>`,
-      ),
-    );
-
     parts.push('</div>');
 
     // A note the reader wrote comes first: it is what they already know about
@@ -436,6 +418,18 @@ export class DetailPanel {
       muni.textContent = p.municipality
         ? this.i18n.t('panel.municipalityLine', { name: p.municipality })
         : '';
+    }
+
+    // And the third chip, which is a link rather than a label. The icon says
+    // it searches; the name of the centre goes in the accessible name, so a
+    // screen reader hears which centre's vacancies these are rather than
+    // twenty identical links.
+    const jobs = head.querySelector<HTMLAnchorElement>('.panel__eyebrow--jobs');
+    if (jobs) {
+      jobs.href = jobsHref(p);
+      jobs.innerHTML =
+        `${icon('search')}<span>${esc(this.i18n.t('jobs.label'))}</span>` +
+        `<span class="sr-only"> ${esc(this.i18n.t('jobs.search'))}</span>`;
     }
     const title = head.querySelector<HTMLElement>('.panel__title')!;
     title.textContent = p.name;

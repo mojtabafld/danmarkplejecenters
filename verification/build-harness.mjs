@@ -342,6 +342,7 @@ const panel = `<!doctype html>
           <p class="panel__tags">
             <span class="panel__eyebrow" data-own="Kommunal">Kommunal</span>
             <span class="panel__eyebrow panel__eyebrow--muni" lang="da">${esc(detail.municipality)} Kommune</span>
+            <a class="panel__eyebrow panel__eyebrow--jobs" href="https://www.google.com/search?q=x" target="_blank" rel="noopener noreferrer">${I.search}<span>Ledige stillinger</span></a>
           </p>
         </div>
         <div class="panel__body">
@@ -355,7 +356,6 @@ const panel = `<!doctype html>
             ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}">82 32 50 50</a>`)}
             ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}">${esc(detail.email ?? 'kontakt@kk.dk')}</a>`)}
             ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}">boligertilaeldre.kk.dk<span class="sr-only"> (åbner i ny fane)</span></a>`)}
-            ${fact(I.search, 'Ledige stillinger', '<a href="https://www.google.com/search?q=x">Søg på dette center<span class="sr-only"> (åbner i ny fane)</span></a>')}
           </div>
         </div>
         <div class="panel__foot">
