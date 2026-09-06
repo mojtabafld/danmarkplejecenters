@@ -135,6 +135,11 @@
   --radius-md: 0.625rem;
   --radius-lg: 0.875rem;
   --radius-xl: 1.25rem;
+  /* The floating sheets, and the grouped lists inside them. Concentric: the
+     inner radius is the outer one less the padding between them, or the two
+     curves fight each other at the corner. */
+  --radius-2xl: 1.75rem;
+  --radius-group: 1.25rem;
   --radius-pill: 62.4375rem;
 
   /* Border widths */
@@ -294,7 +299,21 @@
    * `--glass-sheen` is the specular edge: one bright inset line along the top,
    * which is what reads as a lit surface rather than a translucent rectangle.
    */
-  --glass-blur: blur(1.25rem) saturate(180%);
+  /*
+   * 1.75rem, up from 1.25.
+   *
+   * The radius is what a backdrop-filter costs, and every pane pays it on
+   * every frame the map moves under it -- so this was measured rather than
+   * chosen: a scripted pan with the CPU throttled 4x, eleven runs each way.
+   * Median task time came to 707ms against 693 for the old material, a
+   * difference that sits well inside a spread running from 380 to 1060ms. In
+   * other words the cost is real but too small to separate from the noise
+   * here, and 1.75 rather than 2 is what keeps it that way.
+   *
+   * Honest limit: that is a throttled desktop Chromium, not a phone. The
+   * number to distrust is any claim this is free on old hardware.
+   */
+  --glass-blur: blur(1.75rem) saturate(190%);
   /*
    * 0.7, not lower, and the number is a floor rather than a taste.
    *
@@ -324,6 +343,39 @@
    * makes it glass rather than a solid card.
    */
   --glass-panel-bg: rgb(255 255 255 / 0.92);
+
+  /* ------------------------------------------------- grouped-list layer --
+   *
+   * A second surface inside a panel, for the rows of a grouped list.
+   *
+   * The panel itself cannot get any thinner -- 0.92 is the floor recorded
+   * above, and it is what body text over an unknown map needs -- so the depth
+   * has to come from layering rather than from transparency: a faint ground
+   * under the card's content, and the rows raised off it. Which way round
+   * flips with the theme, the way a grouped list does on a phone: white cells
+   * on a grey ground in light, lifted grey cells on black in dark.
+   */
+  --card-ground: rgb(18 22 22 / 0.03);
+  --group-bg: rgb(255 255 255 / 0.9);
+  --group-border: rgb(18 22 22 / 0.06);
+  --group-sheen: rgb(255 255 255 / 0.9);
+  /* The specular line along the top of a floating pane, and the hairline that
+     draws its edge from the inside so it survives a border-radius. */
+  --pane-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.35);
+
+  /*
+   * Two ramps, because the two things they fill need different contrast.
+   *
+   * The glyph tile carries an icon, which is a graphic and needs 3:1; the
+   * capsule at the foot of the card carries a word, which needs 4.5. A single
+   * ramp light enough to look like a tile puts white text at 3.2:1 on its top
+   * edge, so the button gets a darker one rather than the label getting
+   * smaller. Both are measured against the LIGHT end, which is the worst case
+   * for the white sitting on them.
+   */
+  --brand-ramp: linear-gradient(180deg, var(--p-brand-500), var(--p-brand-700));
+  --brand-ramp-cta: linear-gradient(180deg, var(--p-brand-700), var(--p-brand-900));
+  --brand-ramp-glow: 0 6px 16px -8px rgb(0 109 99 / 0.7);
 
   --shadow-xs: 0 1px 2px rgb(18 22 22 / 0.06);
   --shadow-sm: 0 1px 2px rgb(18 22 22 / 0.06), 0 2px 6px rgb(18 22 22 / 0.05);
@@ -393,7 +445,9 @@
   --button-destructive-bg-active: var(--action-destructive-active);
   --button-destructive-fg: var(--text-on-destructive);
 
-  --button-radius: var(--radius-md);
+  /* Capsules. Every filled control in the product is one, so the shape is a
+     token rather than a rule repeated per button. */
+  --button-radius: var(--radius-pill);
 
   --menu-bg: var(--surface-overlay);
   --menu-border: var(--border-default);
@@ -505,6 +559,17 @@
   --glass-active: rgb(255 255 255 / 0.16);
   --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.6);
   --glass-panel-bg: rgb(30 33 33 / 0.92);
+  --card-ground: rgb(0 0 0 / 0.22);
+  --group-bg: rgb(255 255 255 / 0.06);
+  --group-border: rgb(255 255 255 / 0.09);
+  --group-sheen: rgb(255 255 255 / 0.14);
+  --pane-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.08);
+  /* Both ramps lighten in dark, so the tiles read as lit rather than as holes;
+     the glyph and the label on them are dark, so here the DARK end is the worst
+     case and the ramps stay well above it. */
+  --brand-ramp: linear-gradient(180deg, var(--p-brand-300), var(--p-brand-500));
+  --brand-ramp-cta: linear-gradient(180deg, var(--p-brand-200), var(--p-brand-400));
+  --brand-ramp-glow: 0 6px 16px -8px rgb(0 0 0 / 0.6);
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.5);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.4);

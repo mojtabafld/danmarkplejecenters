@@ -197,6 +197,8 @@ a { color: var(--text-link); }
    */
   position: relative;
   border-block-end: var(--border-hairline) solid var(--glass-border);
+  border-end-start-radius: var(--radius-xl);
+  border-end-end-radius: var(--radius-xl);
 }
 
 .masthead::before {
@@ -211,6 +213,8 @@ a { color: var(--text-link); }
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: inset 0 -1px 0 var(--glass-sheen);
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
 }
 
 .masthead__mark {
@@ -220,8 +224,9 @@ a { color: var(--text-link); }
   block-size: var(--control-md);
   flex: none;
   color: var(--text-on-brand);
-  background: var(--action-primary);
+  background: var(--brand-ramp);
   border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--radius-xs);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), var(--brand-ramp-glow);
 }
 .masthead__mark svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
 
@@ -343,9 +348,10 @@ a { color: var(--text-link); }
 a.btn { text-decoration: none; }
 
 .btn--primary {
-  background: var(--button-primary-bg);
+  background: var(--brand-ramp-cta);
   color: var(--button-primary-fg);
-  border-color: var(--button-primary-bg);
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.26), var(--brand-ramp-glow);
 }
 .btn--primary:hover { background: var(--button-primary-bg-hover); border-color: var(--button-primary-bg-hover); }
 .btn--primary:active { background: var(--button-primary-bg-active); border-color: var(--button-primary-bg-active); }
@@ -376,6 +382,13 @@ a.btn { text-decoration: none; }
   inline-size: var(--control-md);
   block-size: var(--control-md);
   padding: 0;
+}
+/* The header's controls read as one set of capsules on the bar's own layer. */
+.masthead .btn--icon,
+.masthead .langpick__button {
+  background: var(--group-bg);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
 }
 
 .btn[disabled] { opacity: var(--opacity-disabled); pointer-events: none; }
@@ -433,11 +446,11 @@ a.btn { text-decoration: none; }
    * a desktop there is nothing behind it but the page, and it degrades to the
    * material without the view, which is the same trade the header makes.
    */
-  background: var(--glass-panel-bg);
+  background: linear-gradient(var(--card-ground), var(--card-ground)), var(--glass-panel-bg);
   border: var(--border-hairline) solid var(--glass-border);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-sheen);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-sheen), var(--pane-edge);
 }
 
 .rail__lead {
@@ -636,8 +649,9 @@ a.btn { text-decoration: none; }
   font-weight: var(--weight-medium);
   white-space: nowrap;
   color: var(--chip-fg);
-  background: var(--chip-bg);
-  border: var(--border-hairline) solid var(--chip-border);
+  background: var(--group-bg);
+  border: 0;
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out),
@@ -836,7 +850,7 @@ a.btn { text-decoration: none; }
   inset-inline-end: var(--space-3);
   display: grid;
   justify-items: stretch;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-2xl);
   overflow: hidden;
 }
 .map__tools > * + * { border-block-start: var(--border-hairline) solid var(--glass-border); }
@@ -858,7 +872,7 @@ a.btn { text-decoration: none; }
  */
 .dock,
 .map__tools {
-  background: var(--glass-bg);
+  background: var(--glass-bg-strong);
   border: var(--border-hairline) solid var(--glass-border);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
@@ -1155,7 +1169,7 @@ a.btn { text-decoration: none; }
    * sits on it is not -- so the icons are crisp now and the map still shows
    * through behind them.
    */
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-pill);
   transition: padding var(--duration-fast) var(--ease-out),
               background-color var(--duration-fast) var(--ease-out),
               translate var(--duration-base) var(--ease-out);
@@ -1186,6 +1200,9 @@ a.btn { text-decoration: none; }
 .dock[data-open='true'] {
   inline-size: min(21rem, var(--dock-room));
   padding: var(--space-2);
+  /* Open it is a card holding two fields, not a row of round buttons, so the
+     capsule relaxes into a radius that can hold a corner. */
+  border-radius: var(--radius-2xl);
 }
 
 /* Centred in the rectangle, across and down: one icon lands in the middle on
@@ -1256,7 +1273,8 @@ a.btn { text-decoration: none; }
 .dock__seg[aria-pressed='true'],
 .dock__seg[data-filtered='true'] {
   color: var(--button-primary-fg);
-  background: var(--action-primary);
+  background: var(--brand-ramp);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), var(--brand-ramp-glow);
 }
 .dock__seg[aria-expanded='true']:hover,
 .dock__seg[aria-pressed='true']:hover,
@@ -1331,10 +1349,22 @@ a.btn { text-decoration: none; }
   inset-block-end: 0;
   inset-inline-end: 0;
   font-size: var(--text-2xs);
-  color: var(--text-tertiary);
-  background: var(--surface-map-shade);
-  padding: 0 var(--space-2);
-  border-start-start-radius: var(--radius-xs);
+  /*
+   * Secondary on the panel pane, not tertiary on the map shade.
+   *
+   * Small print is still text and still owes 4.5:1, and this sits over a map
+   * whose darkest is not ours to choose. Measured against a black basemap the
+   * tertiary colour on the lighter shade came to 3.85:1; this pair is 5.4.
+   */
+  color: var(--text-secondary);
+  /* Opaque enough not to need a blur behind it, and deliberately without one:
+     a backdrop-filter is a pane the compositor has to redraw on every frame of
+     every pan, and at 92% there is nothing behind this label to see. */
+  background: var(--glass-panel-bg);
+  padding: 0.1875rem var(--space-2);
+  inset-block-end: var(--space-1);
+  inset-inline-end: var(--space-2);
+  border-radius: var(--radius-pill);
   max-inline-size: calc(100% - var(--space-4));
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1373,12 +1403,15 @@ a.btn { text-decoration: none; }
    * background anybody chose. 0.92 keeps that text at a contrast that does not
    * depend on where the reader happened to pan to.
    */
-  background: var(--glass-panel-bg);
+  background: linear-gradient(var(--card-ground), var(--card-ground)), var(--glass-panel-bg);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: var(--border-hairline) solid var(--glass-border);
-  border-radius: var(--panel-radius);
-  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen);
+  border-radius: var(--radius-2xl);
+  /* Three layers of edge: the drop shadow that floats it, the specular line
+     along the top that makes it read as lit, and a half-pixel inner hairline
+     that draws the rounded edge from the inside where a border cannot. */
+  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-sheen), var(--pane-edge);
   overflow: hidden;
 
   /*
@@ -1447,8 +1480,7 @@ a.btn { text-decoration: none; }
     'tags tags';
   align-items: start;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-4) var(--space-3);
-  border-block-end: var(--border-hairline) solid var(--border-subtle);
+  padding: var(--space-5) var(--space-4) var(--space-4);
 }
 
 /* Named explicitly rather than left to auto-placement: with grid-template-areas
@@ -1486,13 +1518,13 @@ a.btn { text-decoration: none; }
   inline-size: var(--control-md);
   block-size: var(--control-md);
   padding: 0;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: var(--border-hairline) solid var(--border-default);
-  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  background: var(--group-bg);
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out),
-              border-color var(--duration-fast) var(--ease-out),
               color var(--duration-fast) var(--ease-out);
 }
 .panel__visit svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
@@ -1503,23 +1535,29 @@ a.btn { text-decoration: none; }
 .panel__visit[aria-pressed='true'] {
   color: var(--text-on-brand);
   background: var(--action-primary);
-  border-color: var(--action-primary);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
 }
-.panel__visit[aria-pressed='true']:hover {
-  background: var(--action-primary-hover);
-  border-color: var(--action-primary-hover);
-}
+.panel__visit[aria-pressed='true']:hover { background: var(--action-primary-hover); }
 
 .panel__eyebrow {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-2xs);
+  /*
+   * Sentence case, not small capitals.
+   *
+   * These are two nouns -- who runs the place, and which kommune it is in --
+   * and setting a proper noun in tracked-out capitals makes it shout a
+   * category rather than name a thing. At this size the capitals also cost
+   * legibility: 11px letter-spaced uppercase is the hardest text on the card
+   * to read, and it sits directly under the largest.
+   */
+  font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  padding: 0.125rem var(--space-2);
+  letter-spacing: var(--tracking-snug);
+  padding: 0.3125rem var(--space-3);
   border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
   overflow-wrap: anywhere;
 }
 
@@ -1740,9 +1778,9 @@ a.btn { text-decoration: none; }
 }
 
 .panel__title {
-  margin-block-start: var(--space-2);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
+  margin-block-start: var(--space-1);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-snug);
   overflow-wrap: anywhere;
@@ -1760,7 +1798,16 @@ a.btn { text-decoration: none; }
    address, the mark and the job link off a phone screen. Set from the name's
    length in detail.ts, where it can be counted; see titleStep there for why
    the steps are 24 and 40. */
-.panel__title[data-len='l'] { font-size: var(--text-lg); }
+.panel__title[data-len='l'] { font-size: var(--text-xl); }
+/*
+ * The smallest step stays at 16px, where it was before the heading grew.
+ *
+ * The steps exist so a long name does not push the address off a phone, and
+ * that guarantee was measured at these sizes: at 18px the longest name in the
+ * register -- "Distrikt 12, 13 og 14 Hybyhus plejecenter" -- took five lines
+ * in a 170px column instead of four. The first two steps carry the larger
+ * heading; this one carries the promise.
+ */
 .panel__title[data-len='m'] {
   font-size: var(--text-md);
   letter-spacing: normal;
@@ -1773,9 +1820,10 @@ a.btn { text-decoration: none; }
   block-size: var(--control-md);
   padding: 0;
   color: var(--text-secondary);
-  background: transparent;
-  border: var(--border-hairline) solid transparent;
-  border-radius: var(--radius-md);
+  background: var(--group-bg);
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
   cursor: pointer;
 }
 .panel__close svg { inline-size: var(--icon-lg); block-size: var(--icon-lg); }
@@ -1786,7 +1834,7 @@ a.btn { text-decoration: none; }
   min-block-size: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-4);
   display: grid;
   gap: var(--space-4);
   /* Rows keep their natural height. Without this they stretch to fill the
@@ -1808,6 +1856,13 @@ a.btn { text-decoration: none; }
 .facts {
   display: grid;
   align-content: start;
+  /* Raised off the card's ground as one block, the way a grouped list is on a
+     phone. The radius is the card's less the padding between them, so the two
+     curves are concentric rather than fighting at the corner. */
+  background: var(--group-bg);
+  border-radius: var(--radius-group);
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
+  overflow: hidden;
 }
 
 .fact {
@@ -1816,7 +1871,7 @@ a.btn { text-decoration: none; }
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-3);
   align-items: center;
-  padding-block: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   min-inline-size: 0;
 }
 
@@ -1833,30 +1888,33 @@ a.btn { text-decoration: none; }
   content: '';
   position: absolute;
   inset-block-start: 0;
-  inset-inline: calc(2rem + var(--space-3)) 0;
-  border-block-start: var(--border-hairline) solid var(--border-subtle);
+  inset-inline: calc(var(--space-4) + 1.875rem + var(--space-3)) 0;
+  border-block-start: 0.5px solid var(--group-border);
 }
 
 /*
- * A badge, not a bare glyph.
+ * A tile, not a bare glyph.
  *
  * At 16px on the page background the icons read as specks, and six of them in
- * a column had no weight against the values they belong to. The disc gives the
- * column an edge to line up on and the icon something to sit in.
+ * a column had no weight against the values they belong to. The rounded square
+ * gives the column an edge to line up on and the icon something to sit in --
+ * and being brand-filled rather than grey, it is the one place colour marks
+ * the rows without colouring the text they carry.
  */
 .fact__icon {
   display: grid;
   place-items: center;
-  inline-size: 2rem;
-  block-size: 2rem;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-secondary);
+  inline-size: 1.875rem;
+  block-size: 1.875rem;
+  border-radius: var(--radius-sm);
+  background: var(--brand-ramp);
+  color: var(--text-on-brand);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28);
   flex: none;
 }
 .fact__icon svg {
-  inline-size: var(--icon-md);
-  block-size: var(--icon-md);
+  inline-size: 1.0625rem;
+  block-size: 1.0625rem;
   display: block;
 }
 
@@ -1897,8 +1955,7 @@ a.btn { text-decoration: none; }
  */
 .panel__foot {
   padding: var(--space-3) var(--space-4) var(--space-4);
-  background: var(--panel-bg);
-  border-block-start: var(--border-hairline) solid var(--border-subtle);
+  box-shadow: inset 0 0.5px 0 var(--group-border);
 }
 .panel__foot:empty { display: none; }
 
@@ -2029,8 +2086,8 @@ a.btn { text-decoration: none; }
     border: 0;
     border-block-start: var(--border-hairline) solid var(--border-default);
     border-radius: 0;
-    border-start-start-radius: var(--radius-xl);
-    border-start-end-radius: var(--radius-xl);
+    border-start-start-radius: var(--radius-2xl);
+    border-start-end-radius: var(--radius-2xl);
     padding-block-end: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
     /* The specular line goes on the top edge, which is the one edge of the
        sheet a reader sees. On a desktop that edge is the top of a full-height
@@ -2142,6 +2199,7 @@ a.btn { text-decoration: none; }
     .rail { max-block-size: calc(100% - var(--space-6)); }
     .panel__body { gap: var(--space-3); padding: var(--space-3) var(--space-4); }
     .fact { padding-block: var(--space-2); }
+    .panel__body { padding-block: var(--space-2) var(--space-3); }
     .panel__head { padding-block: var(--space-3) var(--space-2); }
     .panel__foot { padding: var(--space-2) var(--space-4) var(--space-3); }
   }
@@ -2157,13 +2215,27 @@ a.btn { text-decoration: none; }
   .map__credit {
     inset-block: var(--space-2) auto;
     inset-inline: var(--space-2) auto;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-pill);
     max-inline-size: calc(100% - var(--control-lg) - var(--space-6));
   }
 }
 
 @media (max-width: 26rem) {
   .rail__lead { padding-inline: var(--space-4); }
+
+  /*
+   * The grouped list gives its padding back on the narrowest phone.
+   *
+   * The card is 256px wide at 280, and the row spends 30 on the tile, 12 on
+   * the gap and 32 on its own inset before the value gets any -- which left
+   * "boligertilaeldre.kk.dk" 150px to fit 160 into, and a hostname carries
+   * nowrap on purpose, so it overflowed rather than wrapping. Sixteen pixels
+   * back from the two paddings is enough, and the list still reads as inset.
+   */
+  .panel__body { padding-inline: var(--space-3); }
+  .fact { padding-inline: var(--space-3); }
+  .fact + .fact::before { inset-inline: calc(var(--space-3) + 1.875rem + var(--space-3)) 0; }
+  .rv { padding: var(--space-3); }
   .result { padding-inline: var(--space-4); }
   .results__group { padding-inline: var(--space-4); }
   /* The masthead's own narrow-screen rules live with the masthead, further up.
@@ -2855,10 +2927,19 @@ a.btn { text-decoration: none; }
  * the screen-reader announcement all come from the browser; the only thing
  * this stylesheet does is decide what a checked radio looks like.
  */
+/*
+ * The ratings, as a second group under the register's own.
+ *
+ * The rule that used to separate them is gone: on a grounded card the gap
+ * between two raised blocks already separates them, and a hairline across a
+ * card that has no other full-width lines reads as a seam.
+ */
 .rv {
-  margin-block-start: var(--space-5);
-  padding-block-start: var(--space-4);
-  border-block-start: var(--border-hairline) solid var(--border-subtle);
+  margin-block-start: var(--space-2);
+  padding: var(--space-4);
+  background: var(--group-bg);
+  border-radius: var(--radius-group);
+  box-shadow: inset 0 0 0 0.5px var(--group-border), inset 0 1px 0 var(--group-sheen);
 }
 .rv__title {
   margin: 0 0 var(--space-3);
