@@ -68,7 +68,7 @@
   /* The vacancies chip's sky blue. Its own value rather than a step of either
      map blue: it is not on the map, and it is bright where those two are
      muted -- see --jobs-bg below for why that is the point. */
-  --p-sky-300: #74D4FF;
+  --p-sky-300: #B8E6FE;
 
   --p-clay-100: #FFE0D9;
   --p-clay-300: #FFA89B;
@@ -261,7 +261,7 @@
    * catch the eye of somebody scanning a card for whether to apply.
    *
    * The text is the palette's existing dark blue rather than a second new
-   * value. 6.55:1, measured; the floor for this text is 4.5.
+   * value. 8.21:1, measured; the floor for this text is 4.5.
    */
   --jobs-fg: var(--p-save-700);
   --jobs-bg: var(--p-sky-300);
@@ -508,7 +508,7 @@
    * The operator and kommune chips invert here because they are labels and
    * should sit back into a dark card. This one is a link, it is the reason
    * most of this audience opened the card, and a bright chip on a dark surface
-   * is how it stays the thing the eye finds. Same pair, same 6.55:1.
+   * is how it stays the thing the eye finds. Same pair, same 8.21:1.
    */
   --jobs-fg: var(--p-save-700);
   --jobs-bg: var(--p-sky-300);
