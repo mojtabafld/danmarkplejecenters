@@ -481,60 +481,6 @@ a.btn { text-decoration: none; }
 
 .field { position: relative; display: block; min-inline-size: 0; }
 
-/*
- * The one-time tip pointing at the saved segment in the dock.
- *
- * It hangs off the dock itself, above it, and anchors to the inline end --
- * which is the side the saved segment is on, and mirrors on its own, so it
- * still points at the right icon in Persian without a second rule.
- */
-.coach {
-  position: absolute;
-  inset-block-end: calc(100% + var(--space-2));
-  inset-inline-end: 0;
-  z-index: var(--z-map-ui);
-  /*
-   * `max-content`, or the tip is as narrow as the dock.
-   *
-   * An absolutely positioned box shrink-to-fits against the space between its
-   * containing block's start edge and whatever it is anchored to -- 128px of
-   * dock here -- so the sentence wrapped to four lines and the max-width below
-   * never came into it. Sized to its content it reaches past the dock, which
-   * is what a tip pointing at one corner of a small control should do.
-   */
-  inline-size: max-content;
-  max-inline-size: min(15rem, calc(100vw - var(--space-10)));
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-  line-height: var(--leading-snug);
-  color: var(--text-on-brand);
-  background: var(--action-primary);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  cursor: pointer;
-  overflow-wrap: anywhere;
-  transition: opacity var(--duration-slow) var(--ease-out);
-}
-.coach[hidden] { display: none; }
-.coach[data-fading='true'] { opacity: 0; }
-
-/*
- * The pointer, on the centre line of the segment it belongs to: the dock's
- * padding plus half a segment in from the inline end, so it lands on the icon
- * rather than merely near it.
- */
-.coach::after {
-  content: '';
-  position: absolute;
-  inset-block-start: 100%;
-  /* `--coach-arrow` is the distance from the tip's inline end to the centre of
-     the saved segment, measured in script; the half-triangle is taken off so
-     the point of it, not its edge, lands on that centre. */
-  inset-inline-end: calc(var(--coach-arrow, 2rem) - var(--space-2));
-  margin-block-start: calc(var(--border-thick) * -1);
-  border: var(--space-2) solid transparent;
-  border-block-start-color: var(--action-primary);
-}
 
 
 .field__icon {
@@ -1161,13 +1107,11 @@ a.btn { text-decoration: none; }
 }
 /*
  * Opened, or being used, the pane thickens. A search field and a kommune list
- * want a ground you are not reading the streets through, and the same is true
- * while the one-time tip is pointing at it.
+ * want a ground you are not reading the streets through.
  */
 .dock:hover,
 .dock:focus-within,
-.dock[data-open='true'],
-.dock:has(.coach:not([hidden])) { background: var(--glass-bg-strong); }
+.dock[data-open='true'] { background: var(--glass-bg-strong); }
 
 /*
  * Away with the sheet, while a detail card has the bottom of the map. Matches
