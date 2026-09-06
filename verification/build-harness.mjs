@@ -62,6 +62,10 @@ const icon = (paths) =>
 const I = {
   search: icon('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
   x: icon('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+  copy: icon(
+    '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>' +
+      '<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  ),
   moon: icon('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'),
   pin: icon('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
   plus: icon('<path d="M5 12h14"/><path d="M12 5v14"/>'),
@@ -351,7 +355,7 @@ const panel = `<!doctype html>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
           <div class="facts">
-            ${fact(I.pin, 'Adresse', `<span class="addr"><button type="button" class="addr__button" dir="ltr" lang="da" aria-expanded="false" aria-haspopup="dialog" aria-label="Åbn adressen i et kort">${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}</button><span class="mapmenu" hidden role="dialog" aria-label="Åbn adressen i et kort">${mapApp('apple', 'Apple Maps')}${mapApp('google', 'Google Maps')}</span></span>`)}
+            ${fact(I.pin, 'Adresse', `<span class="addr"><button type="button" class="addr__button" dir="ltr" lang="da" aria-expanded="false" aria-haspopup="dialog" aria-label="Åbn adressen i et kort">${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}</button><span class="mapmenu" hidden role="dialog" aria-label="Åbn adressen i et kort">${mapApp('apple', 'Apple Maps')}${mapApp('google', 'Google Maps')}<button type="button" class="mapmenu__app" data-copy="x"><span class="mapmenu__mark mapmenu__mark--action">${I.copy}</span><span class="mapmenu__name">Kopiér</span></button></span></span>`)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}
             ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}">82 32 50 50</a>`)}
             ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}">${esc(detail.email ?? 'kontakt@kk.dk')}</a>`)}
