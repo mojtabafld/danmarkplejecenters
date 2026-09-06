@@ -67,6 +67,11 @@
          `node scripts/make-icons.mjs`. iOS 15+ tints the status bar in a
          standalone window from theme-color above, which the theme keeps in
          step, so no apple-mobile-web-app-status-bar-style is declared here. -->
+    <!-- The basemap's style and every tile come from here. Opening the
+         connection now means the map is not paying for DNS and a TLS handshake
+         at the moment it finally has code to ask with. -->
+    <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
@@ -361,6 +366,13 @@
                  job would be noise. Dragging it down is an enhancement on top
                  of that, the way an iOS sheet works. -->
             <div class="panel__grip" id="panelGrip" aria-hidden="true"></div>
+            <!-- Nothing to look at: a zero-width box the height of the peek
+                 detent, so the script can ask the browser what that height is
+                 in pixels. --sheet-peek cannot be read directly -- a custom
+                 property computes to its own text -- and `translate` keeps its
+                 percentage unresolved, so this is the one way to get the number
+                 without writing it down twice. -->
+            <div class="panel__peek" id="panelPeek" aria-hidden="true"></div>
 
             <div class="panel__head" id="panelHead">
               <div>

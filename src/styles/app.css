@@ -1426,10 +1426,25 @@ a.btn { text-decoration: none; }
 .panel__grip {
   display: none;
   padding-block: var(--space-3) var(--space-1);
+  /* The browser must not claim the vertical gesture for a scroll: this is the
+     one element on the sheet whose whole job is to receive it. */
   touch-action: none;
   cursor: grab;
 }
 .panel__grip:active { cursor: grabbing; }
+
+/* The measuring stick for the peek detent. Absolutely positioned so it is not
+   a grid item, zero-width and hidden so it draws nothing, and with no
+   transition so it can be read at any moment -- including mid-animation, which
+   is exactly when the offset has to be worked out. */
+.panel__peek {
+  position: absolute;
+  inset-block-start: 0;
+  inline-size: 0;
+  block-size: var(--sheet-peek, 0px);
+  visibility: hidden;
+  pointer-events: none;
+}
 .panel__grip::before {
   content: '';
   display: block;
@@ -1438,7 +1453,12 @@ a.btn { text-decoration: none; }
   margin-inline: auto;
   border-radius: var(--radius-pill);
   background: var(--border-default);
+  /* Darkens under the finger, so the bar reads as the thing being held rather
+     than as a line drawn on the sheet. */
+  transition: background var(--duration-fast) var(--ease-out);
 }
+.panel[data-dragging='true'] .panel__grip::before,
+.panel__grip:active::before { background: var(--border-strong); }
 
 /* Anchored on the right in Persian, so it arrives from the right. */
 :root[dir='rtl'] .panel {
@@ -1845,7 +1865,61 @@ a.btn { text-decoration: none; }
     --enter-scale: 1;
     --enter-opacity: 1;
     --panel-origin: bottom;
+
+    /*
+     * Two heights, and the sheet is always laid out at the taller one.
+     *
+     * --sheet-full is what it can grow to; the peek state is that same box
+     * translated down so only the top of it is on screen. Doing it that way
+     * rather than by swapping the height means the drag moves a composited
+     * layer instead of relaying out the card on every frame, and the finger
+     * gets to push a sheet rather than watch one resize.
+     *
+     * The card still sizes to its content: a sparse record is a short card
+     * with nothing to expand to, and the script leaves it alone.
+     *
+     * This used to sit inside the `:root[dir='rtl'] .panel` block below, so
+     * only Persian ever got it. Danish and English fell back to the desktop
+     * card's `calc(100% - var(--space-6))` and opened a sheet 764px tall over
+     * a 788px stage -- the whole map covered, and nothing to pull down to.
+     */
+    --sheet-full: min(88%, 44rem);
+    /*
+     * How much of the sheet the peek state leaves on screen. A length rather
+     * than a share of anything, because it is answering "enough for the name,
+     * the job link and the first facts", which is a number of lines and not a
+     * fraction of a phone. The svh cap keeps it from being most of the screen
+     * on a short one.
+     */
+    --sheet-peek: min(22rem, 50svh);
+    max-block-size: var(--sheet-full);
   }
+
+  /*
+   * The two resting places, in CSS rather than in numbers the script works out.
+   *
+   * A translate percentage resolves against the element's own height, so
+   * `100% - var(--sheet-peek)` is exactly "push it down until only the peek is
+   * showing", whatever this record's height turns out to be -- no measuring, and
+   * nothing to recompute when the card is re-rendered or the phone is turned.
+   * The max() clamps a card shorter than the peek to no offset at all rather
+   * than lifting it off its anchor.
+   *
+   * The :not()s are load-bearing. Both the entrance and the exit set `translate`
+   * too, at equal specificity and earlier in the file, so without these this
+   * rule would win and the sheet would appear and vanish rather than arrive and
+   * leave. Guarding it here rather than by clearing the attribute in the script
+   * keeps that true however the script is later rearranged.
+   */
+  .panel[data-detent='peek']:not([data-enter]):not([data-leave]) {
+    translate: 0 max(0px, 100% - var(--sheet-peek));
+  }
+  .panel[data-detent='full']:not([data-enter]):not([data-leave]) {
+    translate: 0 0;
+  }
+  /* While a finger is on it the sheet tracks that finger exactly, from an
+     inline translate the script writes; the transition comes back for the snap. */
+  .panel[data-dragging='true'] { transition: none; }
 
   /*
    * The same, said again at the specificity Persian needs.
@@ -1858,13 +1932,6 @@ a.btn { text-decoration: none; }
    */
   :root[dir='rtl'] .panel {
     --enter-x: 0;
-
-    /* Tall enough that the contact rows -- phone, e-mail, website -- are all
-       on screen without scrolling, which is what people open the card for.
-       The list sheet is slid away while the card is open, so this height is
-       not competing with anything; the card still sizes to its content, so a
-       sparse record makes a short card rather than a tall empty one. */
-    max-block-size: min(82%, 44rem);
   }
 
   /*
