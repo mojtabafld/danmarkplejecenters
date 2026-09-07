@@ -67,7 +67,6 @@ export class DetailPanel {
   constructor(
     private root: HTMLElement,
     private body: HTMLElement,
-    private foot: HTMLElement,
     private i18n: I18n,
     private onClose: () => void,
     /**
@@ -196,11 +195,10 @@ export class DetailPanel {
   /*
    * One row of the register's own data: a tile, a label, a value.
    *
-   * The chevron is drawn only where the row leads somewhere, and it is drawn
-   * INSIDE the row's own link or button rather than beside it -- a mark at the
-   * far edge that is not part of the target it points at is an invitation to
-   * press nothing. The rows that only state a fact, like the operator, get no
-   * chevron and no wider hit area, because they do not act.
+   * A row that leads somewhere is marked by `leads`, which widens its hit area
+   * to the whole row. There is no chevron at the end of it any more: with the
+   * value itself already coloured as a link, the mark was a second thing
+   * saying what the first had said, on every row but one.
    */
   private fact(
     iconName: IconName,
@@ -217,21 +215,26 @@ export class DetailPanel {
     );
   }
 
-  /** The mark on a row that leads somewhere, drawn inside the thing it marks. */
-  private static chev(): string {
-    return `<span class="fact__chev" aria-hidden="true">${icon('chevronRight')}</span>`;
-  }
-
   /*
    * The four things somebody does with a plejecentre, above the list that
    * spells them out.
    *
-   * Each is a shortcut to a row below rather than a fifth thing: route opens
-   * the same balloon the address does, and the rest are the same links. A
-   * shortcut to something that is not there is worse than one fewer shortcut,
-   * so a centre with no phone gets three tiles.
+   * Three of them are shortcuts to a row below rather than a fifth thing:
+   * route opens the same balloon the address does, and the others are the same
+   * links. The note is the one that is not -- it is the only thing on this
+   * card that writes rather than reads -- and it takes the phone's tile
+   * because it is the more common of the two: somebody comparing places to
+   * work leaves themselves a line about each, where the call comes once, at
+   * the end, and the number is still a row below.
+   *
+   * A shortcut to something that is not there is worse than one fewer
+   * shortcut, so a centre with no e-mail gets three tiles. Being signed out is
+   * not that case: the note tile stays, and asks for an account when it is
+   * pressed, which is the same answer the bookmark beside the name gives and
+   * the honest one -- hiding it would keep notes a secret from exactly the
+   * readers who have not found accounts yet.
    */
-  private quickActions(p: Plejecenter): string {
+  private quickActions(p: Plejecenter, canVisit: boolean, note: string): string {
     const t = this.i18n.t.bind(this.i18n);
     const tile = (attrs: string, iconName: IconName, label: string) =>
       `<a class="qa__tile" ${attrs}>${icon(iconName)}<span>${esc(label)}</span></a>`;
@@ -241,10 +244,17 @@ export class DetailPanel {
       `<button type="button" class="qa__tile" data-act="route">` +
         `${icon('navigation')}<span>${esc(t('act.route'))}</span></button>`,
     ];
-    // E-mail before the call: writing is the approach somebody applying for a
-    // job makes first, and the phone is the follow-up.
     if (p.email) out.push(tile(`href="mailto:${esc(p.email)}"`, 'mail', t('act.mail')));
-    if (p.phone) out.push(tile(`href="${esc(telHref(p.phone))}"`, 'phone', t('act.call')));
+    // The visible word is the same in all three states, so the tile does not
+    // change width under the reader as they write; which state it is in is
+    // said to a screen reader, and shown to everybody else by the note itself,
+    // which sits at the top of this card whenever there is one.
+    const noteLabel = canVisit ? (note ? 'note.edit' : 'note.add') : 'note.signInFirst';
+    out.push(
+      `<button type="button" class="qa__tile" data-note="${esc(p.id)}">` +
+        `${icon('notePen')}<span>${esc(t('act.note'))}</span>` +
+        `<span class="sr-only"> ${esc(t(noteLabel))}</span></button>`,
+    );
     out.push(
       tile(`href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer"`, 'search', t('act.jobs')),
     );
@@ -262,8 +272,7 @@ export class DetailPanel {
     } = {},
   ): void {
     this.lastFocus = opts.restoreFocusTo ?? null;
-    this.body.innerHTML = this.markup(p, opts.userAt ?? null, opts.note ?? '');
-    this.foot.innerHTML = this.actions(p, opts.canVisit ?? false, opts.note ?? '');
+    this.body.innerHTML = this.markup(p, opts.userAt ?? null, opts.note ?? '', opts.canVisit ?? false);
     this.renderVisit(p, opts.visited ?? false, opts.canVisit ?? false);
     // A card opening while the last one is still leaving cancels the exit:
     // otherwise the timer below would hide the new one.
@@ -329,18 +338,22 @@ export class DetailPanel {
     this.root.style.translate = '';
     this.root.hidden = true;
     this.body.innerHTML = '';
-    this.foot.innerHTML = '';
     // The card is gone; whatever was floating above it belongs to the sheet
     // underneath again.
     this.onMove();
   }
 
-  private markup(p: Plejecenter, userAt: { lat: number; lon: number } | null, note: string): string {
+  private markup(
+    p: Plejecenter,
+    userAt: { lat: number; lon: number } | null,
+    note: string,
+    canVisit: boolean,
+  ): string {
     const t = this.i18n.t.bind(this.i18n);
     const group = ownershipGroup(p);
     const parts: string[] = [];
 
-    parts.push(this.quickActions(p));
+    parts.push(this.quickActions(p, canVisit, note));
     parts.push('<div class="facts">');
 
     // The address itself stays in Danish: it is a postal address, and a
@@ -400,7 +413,7 @@ export class DetailPanel {
        */
       ` aria-expanded="false" aria-haspopup="dialog"` +
       ` aria-label="${esc(t('panel.chooseMap'))}">` +
-      `<span dir="ltr" lang="da">${address}</span>${DetailPanel.chev()}</button>` +
+      `<span dir="ltr" lang="da">${address}</span></button>` +
       `<span class="mapmenu" id="addrMenu" hidden role="dialog"` +
       ` aria-label="${esc(t('panel.chooseMap'))}">${apps}${copy}</span>` +
       `</span>`;
@@ -421,8 +434,7 @@ export class DetailPanel {
           'panel.phone',
           // The number is dialled, so it is never localised into Persian digits.
           `<a href="${esc(telHref(p.phone))}">` +
-            `<span dir="ltr" class="fact__atom">${esc(formatPhone(p.phone))}</span>` +
-            `${DetailPanel.chev()}</a>`,
+            `<span dir="ltr" class="fact__atom">${esc(formatPhone(p.phone))}</span></a>`,
           { leads: true },
         ),
       );
@@ -434,7 +446,7 @@ export class DetailPanel {
           'mail',
           'panel.email',
           `<a href="mailto:${esc(p.email)}">` +
-            `<span dir="ltr">${esc(p.email)}</span>${DetailPanel.chev()}</a>`,
+            `<span dir="ltr">${esc(p.email)}</span></a>`,
           { leads: true },
         ),
       );
@@ -446,24 +458,16 @@ export class DetailPanel {
           'globe',
           'panel.website',
           `<a href="${esc(p.web)}" target="_blank" rel="noopener noreferrer">` +
-            `<span dir="ltr">${esc(prettyHost(p.web))}</span>${DetailPanel.chev()}</a>`,
+            `<span dir="ltr">${esc(prettyHost(p.web))}</span></a>`,
           { leads: true },
         ),
       );
     }
 
-    // The vacancies, under the centre's own website, and a row like the rest:
-    // every other row names its field above its value, and the one that did
-    // not was the one that looked like a stray line.
-    parts.push(
-      this.fact(
-        'search',
-        'jobs.label',
-        `<a href="${esc(jobsHref(p))}" target="_blank" rel="noopener noreferrer">` +
-          `${esc(t('jobs.search'))}${DetailPanel.chev()}</a>`,
-        { leads: true },
-      ),
-    );
+    // No vacancies row: the job search is the tile at the top of the card, and
+    // spelling the same link out again at the bottom of the list was the one
+    // row that repeated a quick action rather than standing for a field of the
+    // register.
 
     parts.push('</div>');
 
@@ -481,42 +485,6 @@ export class DetailPanel {
     parts.push('<div class="rv__host" id="reviewHost"></div>');
 
     return `<span class="sr-only" data-own="${group}"></span>` + parts.join('');
-  }
-
-  /**
-   * The pinned foot. Kept out of the scrolling body on purpose: routing to the
-   * place is the most common reason this card is open, and burying it under
-   * the register's small print made it something you had to go looking for.
-   */
-  private actions(p: Plejecenter, canVisit: boolean, note: string): string {
-    const t = this.i18n.t.bind(this.i18n);
-
-    // One row: what you do with this plejecenter -- write something about it,
-    // or read what it says about itself. Both buttons look the same because
-    // neither outranks the other.
-    const top: string[] = [];
-    if (canVisit) {
-      top.push(
-        `<button type="button" class="btn btn--primary" data-note="${esc(p.id)}">` +
-          `${icon('pencil')}${esc(t(note ? 'note.edit' : 'note.add'))}</button>`,
-      );
-    }
-    if (p.web) {
-      top.push(
-        `<a class="btn btn--primary" href="${esc(p.web)}" target="_blank" rel="noopener noreferrer">` +
-          `${icon('external')}${esc(t('panel.visit'))}` +
-          `<span class="sr-only"> ${esc(t('panel.visitFor', { name: p.name }))}</span></a>`,
-      );
-    }
-
-    // No route buttons down here any more. Handing the address to a map
-    // application is something you do TO the address, so it is offered at the
-    // address -- see the balloon in markup() above.
-    return (
-      '<div class="panel__actions">' +
-      (top.length ? `<div class="nav-links">${top.join('')}</div>` : '') +
-      '</div>'
-    );
   }
 
   /**
@@ -543,11 +511,10 @@ export class DetailPanel {
   }
 
   /**
-   * Head is rendered separately so the title can stay above the scroll area.
-   *
-   * The job search sits here, under the name, rather than in the body: it is
-   * about this centre as a place to work, which is the same register of
-   * information as the name itself, and up here it survives scrolling.
+   * Head is rendered separately so the title can stay above the scroll area:
+   * the name, the operator and the kommune are what tell you which card you
+   * are reading, and scrolling to the bottom of a long one should not take
+   * them away.
    */
   renderHead(p: Plejecenter, head: HTMLElement): void {
     const group = ownershipGroup(p);
