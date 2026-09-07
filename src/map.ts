@@ -465,37 +465,21 @@ export class PlejecenterMap {
   /**
    * Colours come from the live theme, never from literals in this file.
    *
-   * A marked plejecenter keeps its operator colour. Greying the dot did
-   * separate the shortlist, but it read as disabled and it threw away the one
-   * thing the map is colour-coded to say. The grey ring around it carries
-   * "marked" on its own, as a shape rather than a repaint.
-   */
-  /**
-   * A saved place is blue; everything else is coloured by who runs it.
+   * Two states, and only two: saved, and not. There used to be a third axis
+   * here -- a `match` on the operator painting the dot teal, ochre or plum --
+   * and it is gone. Three hues at 10px over a basemap with its own colours
+   * turned the map into a chart of who runs the places, which is not the
+   * question anybody opens a map to ask. The operator is still on the card,
+   * still in the list beside its swatch, and still a filter.
    *
-   * The saved case has to come first, or the operator match would answer for
-   * every dot and the flag would never be read.
+   * The saved case still has to come first: it is the narrower one.
    */
   private markColor(): ExpressionSpecification {
     return [
       'case',
       ['==', ['get', 'visited'], true],
       token('--map-visited-dot'),
-      this.groupColor(),
-    ];
-  }
-
-  private groupColor(): ExpressionSpecification {
-    return [
-      'match',
-      ['get', 'group'],
-      'Kommunal',
-      token('--cat-kommunal-mark'),
-      'Selvejende',
-      token('--cat-selvejende-mark'),
-      'Privat',
-      token('--cat-privat-mark'),
-      token('--border-strong'),
+      token('--map-pin-bg'),
     ];
   }
 
@@ -592,9 +576,10 @@ export class PlejecenterMap {
       },
     });
 
-    // Marked plejecentre get an outer ring. Deliberately a shape rather than a
-    // fourth colour: the three operator hues already mean something, and the
-    // ring reads as "one of yours" without arguing with them.
+    // Marked plejecentre get an outer ring. It is the signal, not the fill:
+    // the saved dot is the deep end of the same blue as every other dot, so
+    // side by side you can see the difference and in a field of them you
+    // could not. The ring is what you actually pick out.
     map.addLayer({
       id: 'pin-visited',
       type: 'circle',

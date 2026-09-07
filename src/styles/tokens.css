@@ -382,7 +382,11 @@
   --text-on-destructive: var(--p-neutral-0);
 
   /* Ownership categories. Colour is never the sole carrier — the word is
-     always printed next to the swatch, in the list and in the panel. */
+     always printed next to the swatch, in the list and in the panel.
+
+     These now live only in the results list and the filter chips. The map is
+     painted in one colour, so a swatch here names a category rather than a
+     dot you can go and find. */
   --cat-kommunal-fg: var(--p-brand-700);
   --cat-kommunal-bg: var(--p-brand-50);
   --cat-kommunal-mark: var(--p-brand-600);
@@ -394,26 +398,38 @@
   --cat-privat-mark: var(--p-plum-500);
 
 
-  /* Map surfaces read by JS via getComputedStyle — still tokens. */
-  --map-cluster-bg: var(--p-brand-700);
+  /* Map surfaces read by JS via getComputedStyle — still tokens.
+
+     One colour for every plejecenter, and it is the app's own tint.
+
+     The dots used to be painted by operator: teal, ochre and plum, three hues
+     at 10px against a basemap that already has its own. It made the map a
+     chart of who runs the places rather than a map of where they are, and at
+     a national zoom it read as noise -- there is no useful question that a
+     third of Denmark being ochre answers. The operator is still written on
+     every card, still filterable, and still colour-coded in the list and the
+     chips, where a swatch sits beside its own name.
+
+     Pin and cluster share the value on purpose: a cluster is only some pins
+     too close together to draw apart, so it should not be a different
+     colour. 5.27:1 against white for the count inside it. */
+  --map-pin-bg: var(--p-blue-700);
+  --map-cluster-bg: var(--p-blue-700);
   --map-cluster-fg: var(--p-neutral-0);
   --map-cluster-ring: rgb(255 255 255 / 0.9);
   --map-pin-ring: var(--p-neutral-0);
-  --map-pin-selected-halo: var(--p-brand-500);
-  /* Neutral, not brand: a mark you made is a note to yourself, not a
-     category of plejecenter. 6.27:1 on the light basemap. The dot keeps its
-     operator colour: the ring says "marked" by its shape, and repainting the
-     dot as well read as disabled. */
+  /* Vivid rather than the pin's own blue: the halo is 28% opaque under the
+     dot it belongs to, and the darker value disappeared into it. */
+  --map-pin-selected-halo: var(--p-blue-500);
   /*
-   * Saved places are blue, and the dot itself rather than only its ring.
+   * Saved places: the deep end of the same blue, plus the ring.
    *
-   * The ring alone was the earlier answer, on the grounds that the three
-   * operator hues already mean something and a fourth colour would argue with
-   * them. It does argue with them -- a saved kommunal centre no longer shows
-   * that it is kommunal on the map -- and that is the trade being made
-   * deliberately: finding your own places at a glance is worth more than
-   * reading their operator off the dot, which the card and the list both still
-   * say.
+   * This used to be a fourth hue against three operator colours. Now that
+   * every other dot is one blue, it is a weight rather than a hue -- 2.07:1
+   * against the ordinary pin, which is a difference you can see side by side
+   * and not one you could pick out of a field of them. So the ring is doing
+   * the work it was always doing, and the fill only backs it up. That is the
+   * same division of labour as before; only the colours moved.
    */
   --map-visited-dot: var(--p-save-700);
   --map-visited-ring: var(--p-save-700);
@@ -718,11 +734,15 @@
   --cat-privat-mark: var(--p-plum-300);
 
 
-  --map-cluster-bg: var(--p-brand-400);
-  --map-cluster-fg: var(--p-brand-950);
+  /* The dark tint's blue, the same one the links take. Against it the count
+     needs a dark ink: 6.40:1 on blue-300, where blue-400 would have left it
+     at 4.26. */
+  --map-pin-bg: var(--p-blue-300);
+  --map-cluster-bg: var(--p-blue-300);
+  --map-cluster-fg: var(--p-blue-950);
   --map-cluster-ring: rgb(0 0 0 / 0.85);
   --map-pin-ring: var(--p-neutral-1000);
-  --map-pin-selected-halo: var(--p-brand-300);
+  --map-pin-selected-halo: var(--p-blue-300);
   --map-visited-dot: var(--p-save-300);
   --map-visited-ring: var(--p-save-300);
 
