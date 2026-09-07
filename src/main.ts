@@ -1130,7 +1130,6 @@ function openNoteEditor(id: string): void {
   $('#noteDialogTitle').textContent = t('note.label');
   $('#noteClose').setAttribute('aria-label', t('note.cancel'));
   $('#noteClose').innerHTML = icon('x');
-  $('#noteSave').innerHTML = icon('check') + esc(t('note.save'));
   $('#noteCancel').textContent = t('note.cancel');
   noteText.placeholder = t('note.placeholder');
   $('#noteDateLabel').textContent = t('note.date');
@@ -1147,6 +1146,7 @@ function openNoteEditor(id: string): void {
    */
   noteDate.value = existing ? existing.visitedOn : todayISO();
   paintNoteDate();
+  paintNoteAction();
   noteError.hidden = true;
 
   noteDialog.hidden = false;
@@ -1171,6 +1171,28 @@ function paintNoteDate(): void {
     : t('note.dateHint');
 }
 for (const ev of ['input', 'change']) noteDate.addEventListener(ev, paintNoteDate);
+
+/*
+ * Empty the words and the button says so.
+ *
+ * The words are the note. A day is something a note carries, not a note on its
+ * own -- which matters because the day is filled in FOR the reader, so a note
+ * emptied of text would otherwise be kept alive by a date nobody chose. That
+ * is what happened: clearing the words left "Din note — 7. sep. 2026" on the
+ * card, a heading over nothing.
+ *
+ * Saving an empty box therefore deletes, and the button has to say that before
+ * it is pressed rather than after. It only says it when there is something to
+ * delete; on a note that does not exist yet an empty box saves nothing and the
+ * label stays "Gem note", which is the truth there too.
+ */
+function paintNoteAction(): void {
+  const removing = noteText.value.trim() === '' && !!noteFor && !!account.noteFor(noteFor);
+  $('#noteSave').innerHTML =
+    icon(removing ? 'trash' : 'check') + esc(t(removing ? 'note.delete' : 'note.save'));
+  $('#noteSave').classList.toggle('btn--danger', removing);
+}
+noteText.addEventListener('input', paintNoteAction);
 
 function closeNoteEditor(): void {
   noteFor = null;
@@ -1219,13 +1241,17 @@ $('#noteSave').addEventListener('click', () => {
     noteDate.focus();
     return;
   }
-  void account.saveNote(id, noteText.value, noteDate.value).then((ok) => {
+  // An empty box clears the date too. The API deletes a note only when both
+  // are empty, and the date was put there by the app rather than chosen, so
+  // sending it back would keep a note the reader had just emptied.
+  const removing = noteText.value.trim() === '';
+  void account.saveNote(id, noteText.value, removing ? '' : noteDate.value).then((ok) => {
     if (!ok) {
       noteError.textContent = t('note.failed');
       noteError.hidden = false;
       return;
     }
-    live.textContent = t('note.saved');
+    live.textContent = t(removing ? 'note.deleted' : 'note.saved');
     closeNoteEditor();
     refreshCard();
   });
