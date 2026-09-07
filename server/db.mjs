@@ -183,6 +183,15 @@ CREATE TABLE IF NOT EXISTS visitor_days (
 -- Added after the first release, so it has to be an ALTER rather than part of
 -- the CREATE: an existing database already has the table and would skip it.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
+
+-- Also added later: the day the note is ABOUT, which the reader picks.
+--
+-- Not the same fact as updated_at, and that is the whole reason for the
+-- column: updated_at is when the row was written, and somebody typing up four
+-- visits on a Sunday evening needs to say which day each of them was. A DATE
+-- rather than a timestamp, because nobody wants to record the minute they
+-- walked in, and nullable, because a note without a date is still a note.
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS visited_on DATE;
 `;
 
 /**

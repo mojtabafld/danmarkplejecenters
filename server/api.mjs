@@ -465,21 +465,61 @@ async function listVisits(req, res) {
 
 const NOTE_MAX = 2000;
 
+/**
+ * The day a note is about, as the reader typed it, or null.
+ *
+ * Returns undefined for anything that is not a date, which the caller turns
+ * into a 400 -- distinct from null, which is the reader clearing the field.
+ *
+ * The round trip through Date is what rejects the 31st of February: the shape
+ * test passes it and the parse quietly rolls it into March, so the only honest
+ * check is whether the parsed date still spells the string it came from. The
+ * bounds are deliberately wide -- a date can be in the future, because an
+ * interview next week is exactly the kind of thing somebody writes down.
+ */
+function noteDate(raw) {
+  if (raw === null || raw === undefined || raw === '') return null;
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return undefined;
+  const d = new Date(`${raw}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== raw) return undefined;
+  const year = Number(raw.slice(0, 4));
+  if (year < 1900 || year > 2100) return undefined;
+  return raw;
+}
+
+/*
+ * `to_char`, not the DATE itself.
+ *
+ * node-pg hands a DATE back as a JS Date at local midnight, and this process
+ * runs in whatever zone the platform gives it -- west of UTC that is the
+ * previous day the moment it is serialised, so a note dated the 1st would come
+ * back to the browser as the 31st. Formatting in Postgres keeps the day the
+ * reader chose the day everybody sees.
+ */
+const NOTE_COLUMNS = "body, to_char(visited_on, 'YYYY-MM-DD') AS visited_on";
+
+const noteShape = (row) => ({ body: row.body, visitedOn: row.visited_on ?? null });
+
 async function listNotes(req, res) {
   const user = await currentUser(req);
   if (!requireUser(res, user)) return true;
   const { rows } = await db.query(
-    'SELECT plejecenter_id, body FROM notes WHERE user_id = $1',
+    `SELECT plejecenter_id, ${NOTE_COLUMNS} FROM notes WHERE user_id = $1`,
     [user.id],
   );
-  send(res, 200, { notes: Object.fromEntries(rows.map((r) => [r.plejecenter_id, r.body])) });
+  send(res, 200, { notes: Object.fromEntries(rows.map((r) => [r.plejecenter_id, noteShape(r)])) });
   return true;
 }
 
 /**
- * Write or clear one note. An empty body deletes rather than storing a blank
- * row, so clearing the box is the way to remove it and there is no second
- * control to explain.
+ * Write or clear one note: some text, a date the reader picked, or both.
+ *
+ * Emptying BOTH deletes rather than storing a blank row, so clearing the
+ * fields is the way to remove a note and there is no second control to
+ * explain. Emptying only one keeps the row: a date with no words is a record
+ * that you were there, and words with no date are what every note was until
+ * this column existed. Deleting on an empty body alone would have thrown away
+ * a date the reader had just chosen.
  */
 async function changeNote(req, res, id, method) {
   const user = await currentUser(req);
@@ -492,23 +532,26 @@ async function changeNote(req, res, id, method) {
     return true;
   }
 
-  const { body } = await readJson(req);
+  const { body, visitedOn } = await readJson(req);
   const text = String(body ?? '').trim();
   if (text.length > NOTE_MAX) { send(res, 400, { error: 'note_too_long', max: NOTE_MAX }); return true; }
+  const day = noteDate(visitedOn);
+  if (day === undefined) { send(res, 400, { error: 'bad_date' }); return true; }
 
-  if (text === '') {
+  if (text === '' && day === null) {
     await db.query('DELETE FROM notes WHERE user_id = $1 AND plejecenter_id = $2', [user.id, id]);
     send(res, 200, { note: null });
     return true;
   }
 
-  await db.query(
-    `INSERT INTO notes (user_id, plejecenter_id, body) VALUES ($1, $2, $3)
+  const { rows } = await db.query(
+    `INSERT INTO notes (user_id, plejecenter_id, body, visited_on) VALUES ($1, $2, $3, $4)
      ON CONFLICT (user_id, plejecenter_id)
-     DO UPDATE SET body = EXCLUDED.body, updated_at = now()`,
-    [user.id, id, text],
+     DO UPDATE SET body = EXCLUDED.body, visited_on = EXCLUDED.visited_on, updated_at = now()
+     RETURNING ${NOTE_COLUMNS}`,
+    [user.id, id, text, day],
   );
-  send(res, 200, { note: text });
+  send(res, 200, { note: noteShape(rows[0]) });
   return true;
 }
 

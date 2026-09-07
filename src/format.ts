@@ -91,6 +91,44 @@ export function compare(a: string, b: string): number {
   return collator.compare(a, b);
 }
 
+/**
+ * A day the reader chose (YYYY-MM-DD), written in their language.
+ *
+ * Built from the three numbers rather than parsed from the string: `new
+ * Date('2026-09-01')` is midnight UTC, and formatted in any zone west of
+ * Greenwich that is the 31st of August -- the day before the one they picked.
+ * `new Date(y, m - 1, d)` is local midnight, which formats back to itself
+ * everywhere.
+ *
+ * `medium` rather than `long`, because this sits on one line beside a label
+ * rather than in a paragraph of its own.
+ */
+export function formatDay(iso: string, locale: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  return new Intl.DateTimeFormat(dayLocale(locale), { dateStyle: 'medium' }).format(
+    new Date(y, m - 1, d),
+  );
+}
+
+/*
+ * Persian script, Gregorian calendar.
+ *
+ * Intl's default for `fa` is the Persian calendar, and the 1st of March 2026
+ * comes out of it as 10 Esfand 1404 -- a different number from the one the
+ * reader typed, because every browser that ships a date picker ships a
+ * Gregorian one. A day somebody chose has to read back as the day they chose.
+ *
+ * This is why the ratings dates further on are left alone: nobody types those,
+ * so there is no number of the reader's to contradict, and the calendar they
+ * read every other date in is the right one there.
+ */
+function dayLocale(locale: string): string {
+  if (locale === 'da') return 'da-DK';
+  if (locale === 'fa') return 'fa-IR-u-ca-gregory';
+  return locale;
+}
+
 /* ------------------------------------------------------------------ jobs -- */
 
 /**

@@ -3,6 +3,7 @@ import type { I18n, TranslationKey } from './i18n';
 import { icon, type IconName } from './icons';
 import { MAP_APPS } from './mapapps';
 import {
+  formatDay,
   formatPhone,
   jobsHref,
   ownershipDetailKey,
@@ -10,6 +11,7 @@ import {
   prettyHost,
   telHref,
 } from './format';
+import type { Note } from './account';
 import type { Plejecenter } from './types';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -234,7 +236,7 @@ export class DetailPanel {
    * the honest one -- hiding it would keep notes a secret from exactly the
    * readers who have not found accounts yet.
    */
-  private quickActions(p: Plejecenter, canVisit: boolean, note: string): string {
+  private quickActions(p: Plejecenter, canVisit: boolean, note: Note | null): string {
     const t = this.i18n.t.bind(this.i18n);
     const tile = (attrs: string, iconName: IconName, label: string) =>
       `<a class="qa__tile" ${attrs}>${icon(iconName)}<span>${esc(label)}</span></a>`;
@@ -268,11 +270,11 @@ export class DetailPanel {
       userAt?: { lat: number; lon: number } | null;
       visited?: boolean;
       canVisit?: boolean;
-      note?: string;
+      note?: Note | null;
     } = {},
   ): void {
     this.lastFocus = opts.restoreFocusTo ?? null;
-    this.body.innerHTML = this.markup(p, opts.userAt ?? null, opts.note ?? '', opts.canVisit ?? false);
+    this.body.innerHTML = this.markup(p, opts.userAt ?? null, opts.note ?? null, opts.canVisit ?? false);
     this.renderVisit(p, opts.visited ?? false, opts.canVisit ?? false);
     // A card opening while the last one is still leaving cancels the exit:
     // otherwise the timer below would hide the new one.
@@ -346,7 +348,7 @@ export class DetailPanel {
   private markup(
     p: Plejecenter,
     userAt: { lat: number; lon: number } | null,
-    note: string,
+    note: Note | null,
     canVisit: boolean,
   ): string {
     const t = this.i18n.t.bind(this.i18n);
@@ -473,10 +475,20 @@ export class DetailPanel {
 
     // A note the reader wrote comes first: it is what they already know about
     // this place, and it outranks the register's own fields.
+    //
+    // The date sits in the label row rather than over the text, because it is
+    // not part of what they wrote -- it says which day the words are about,
+    // which is exactly the register the label is in. A note can be one or the
+    // other: a day with no words still records that you were there.
     if (note) {
+      const when = note.visitedOn
+        ? `<time class="note__when" datetime="${esc(note.visitedOn)}">` +
+          `${esc(formatDay(note.visitedOn, this.i18n.locale))}</time>`
+        : '';
       parts.unshift(
-        `<div class="note"><p class="note__label">${esc(t('note.label'))}</p>` +
-          `<p class="note__body">${esc(note)}</p></div>`,
+        `<div class="note"><p class="note__label">${esc(t('note.label'))}${when}</p>` +
+          (note.body ? `<p class="note__body">${esc(note.body)}</p>` : '') +
+          `</div>`,
       );
     }
 

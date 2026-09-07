@@ -180,6 +180,16 @@ const DA = {
   'note.edit': 'Rediger note',
   'note.label': 'Din note',
   'note.placeholder': 'Fx hvornår du søgte, hvem du talte med, og hvad de sagde.',
+  /*
+   * The day the note is ABOUT, which is not the day it was written.
+   *
+   * The label says "besøg" rather than "dato" on its own, because a bare date
+   * field next to a text box reads as metadata about the text. This one is
+   * part of what you are recording.
+   */
+  'note.date': 'Dato for besøg',
+  'note.dateHint': 'Valgfrit — fx den dag du var der eller ringede.',
+  'note.badDate': 'Datoen kunne ikke forstås. Vælg en dag.',
   'note.save': 'Gem note',
   'note.cancel': 'Annullér',
   'note.saved': 'Noten er gemt.',
@@ -395,6 +405,9 @@ const EN: Record<Key, Entry> = {
   'note.edit': 'Edit note',
   'note.label': 'Your note',
   'note.placeholder': 'When you applied, who you spoke to, what they said.',
+  'note.date': 'Date of visit',
+  'note.dateHint': 'Optional — the day you were there or called.',
+  'note.badDate': 'That date could not be read. Pick a day.',
   'note.save': 'Save note',
   'note.cancel': 'Cancel',
   'note.saved': 'Note saved.',
@@ -609,6 +622,9 @@ const FA: Record<Key, Entry> = {
   'note.edit': 'ویرایش یادداشت',
   'note.label': 'یادداشت شما',
   'note.placeholder': 'برای نمونه کِی درخواست دادید، با چه کسی حرف زدید و چه گفتند.',
+  'note.date': 'تاریخ بازدید',
+  'note.dateHint': 'اختیاری — برای نمونه روزی که آنجا بودید یا تماس گرفتید.',
+  'note.badDate': 'تاریخ خوانده نشد. یک روز انتخاب کنید.',
   'note.save': 'ذخیرهٔ یادداشت',
   'note.cancel': 'انصراف',
   'note.saved': 'یادداشت ذخیره شد.',

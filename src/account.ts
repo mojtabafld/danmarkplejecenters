@@ -57,12 +57,38 @@ async function call(
   return { status: res.status, data };
 }
 
+/**
+ * One note: what the reader wrote, and the day they are writing about.
+ *
+ * `visitedOn` is theirs to choose and is not when the row was saved -- that is
+ * the server's `updated_at`, which nobody is shown. Somebody typing up four
+ * visits on a Sunday evening needs to say which day each of them was. Empty
+ * string, not null, so the value drops straight into an <input type="date">.
+ */
+export interface Note {
+  body: string;
+  /** ISO YYYY-MM-DD, or '' when no day has been chosen. */
+  visitedOn: string;
+}
+
+/**
+ * The server has sent notes as a bare string in the past and as an object
+ * since the date was added. Reading both costs four lines and means a browser
+ * holding the previous bundle through a deploy shows the note rather than
+ * nothing.
+ */
+function toNote(raw: unknown): Note {
+  if (typeof raw === 'string') return { body: raw, visitedOn: '' };
+  const o = (raw ?? {}) as { body?: unknown; visitedOn?: unknown };
+  return { body: String(o.body ?? ''), visitedOn: typeof o.visitedOn === 'string' ? o.visitedOn : '' };
+}
+
 export class Account {
   user: AccountUser | null = null;
   /** Plejecenter ids this user has marked. Empty when signed out. */
   visited = new Set<string>();
-  /** Free text the reader has written, by plejecenter id. */
-  notes = new Map<string, string>();
+  /** What the reader has written, by plejecenter id. */
+  notes = new Map<string, Note>();
   /** False when the server has no database, so the feature is hidden entirely. */
   available = true;
   /** Set after sign-up: the address waiting on a confirmation link. */
@@ -118,7 +144,11 @@ export class Account {
       this.visited = visits.status === 200 ? new Set(visits.data.visits as string[]) : new Set();
       this.notes =
         notes.status === 200
-          ? new Map(Object.entries((notes.data.notes ?? {}) as Record<string, string>))
+          ? new Map(
+              Object.entries((notes.data.notes ?? {}) as Record<string, unknown>).map(
+                ([id, raw]) => [id, toNote(raw)] as const,
+              ),
+            )
           : new Map();
     } catch {
       this.visited = new Set();
@@ -126,21 +156,30 @@ export class Account {
     }
   }
 
-  noteFor(id: string): string {
-    return this.notes.get(id) ?? '';
+  /** The note itself, or null. */
+  noteFor(id: string): Note | null {
+    return this.notes.get(id) ?? null;
   }
 
   /**
-   * Write or clear a note. Empty text removes it, so clearing the box is how
-   * you delete one and there is no second control to explain.
+   * Write or clear a note.
+   *
+   * Emptying both the text and the date removes it, so clearing the fields is
+   * how you delete one and there is no second control to explain. Emptying
+   * only one keeps it: a date with no words still records that you were
+   * there, and words with no date are what every note was before the field
+   * existed.
    */
-  async saveNote(id: string, body: string): Promise<boolean> {
+  async saveNote(id: string, body: string, visitedOn: string): Promise<boolean> {
     if (!this.user) return false;
     const text = body.trim();
     try {
-      const { status, data } = await call('PUT', `/api/notes/${encodeURIComponent(id)}`, { body: text });
+      const { status, data } = await call('PUT', `/api/notes/${encodeURIComponent(id)}`, {
+        body: text,
+        visitedOn: visitedOn || null,
+      });
       if (status !== 200) return false;
-      if (data.note) this.notes.set(id, data.note as string);
+      if (data.note) this.notes.set(id, toNote(data.note));
       else this.notes.delete(id);
       this.emit();
       return true;

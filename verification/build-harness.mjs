@@ -355,7 +355,7 @@ const panel = `<!doctype html>
         </div>
         <div class="panel__body">
           <div class="note">
-            <p class="note__label">Din note</p>
+            <p class="note__label">Din note<time class="note__when" datetime="2026-03-01">1. mar. 2026</time></p>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
           <div class="qa">
@@ -471,13 +471,19 @@ const states = `<!doctype html>
       </div>
       <textarea class="noteedit__text" id="hNote" rows="4"
         placeholder="Fx ventetid, hvem du talte med, hvad du så.">Ringede tirsdag, venteliste omkring fire måneder.</textarea>
+      <div class="noteedit__field">
+        <label class="noteedit__label" for="hNoteDate">Dato for besøg</label>
+        <input class="noteedit__date" type="date" id="hNoteDate" value="2026-03-01"
+          min="1900-01-01" max="2100-12-31" aria-describedby="hNoteHint">
+        <p class="noteedit__hint" id="hNoteHint">Valgfrit — fx den dag du var der eller ringede.</p>
+      </div>
       <div class="notedlg__actions">
         <button type="button" class="btn btn--primary">${I.check}Gem note</button>
         <button type="button" class="btn btn--secondary">Annullér</button>
       </div>
     </div>
     <div class="note">
-      <p class="note__label">Din note</p>
+      <p class="note__label">Din note<time class="note__when" datetime="2026-03-01">1. mar. 2026</time></p>
       <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
     </div>
   </section>
