@@ -348,8 +348,11 @@ a { color: var(--text-link); }
   border-radius: var(--button-radius);
   border: var(--border-hairline) solid transparent;
   background: transparent;
-  /* Body, like an iOS button label -- it was Footnote, two steps down. */
-  font-size: var(--text-base);
+  /* Subhead. It was Footnote at 13, then Body at 17, and 17 is the size iOS
+     gives the single confirm button across the bottom of a sheet -- not a
+     button sharing a row with a Cancel in a 280px panel, which is what these
+     are. 15 is the rung for that. */
+  font-size: var(--text-subhead);
   font-weight: var(--weight-medium);
   cursor: pointer;
   /* Labels wrap instead of setting a min-content width the layout cannot meet.
