@@ -62,6 +62,44 @@
    * ideal; the saved dot also carries a ring no other dot has, and the legend
    * names it.
    */
+  /*
+   * iOS system blue -- the tint.
+   *
+   * This is what a link, a value and a filled button are coloured in on an
+   * iPhone, and it is what this app had in teal. The teal stays where it means
+   * something: Kommunal on the map and in the chips, beside ochre for
+   * Selvejende and plum for Privat. A legend is not a tint, and repainting it
+   * would have cost the map its key.
+   *
+   * Four of these are Apple's own, read off the HIG colour swatches:
+   *
+   *   500  #0088FF  systemBlue, light            \  the June 2025 values;
+   *   400  #0091FF  systemBlue, dark              |  the #007AFF and #0A84FF
+   *   600  #1E6EF4  Increase Contrast, light      |  most references still
+   *   300  #5CB8FF  Increase Contrast, dark      /   give are the old set
+   *
+   * 700 is the one that does the work in light mode, and it is not Apple's.
+   * systemBlue is 3.52:1 on white and 3.15:1 on the grey page -- iOS puts it
+   * on white at Body size and accepts that, and it also ships an Increase
+   * Contrast switch. Even that switch's #1E6EF4 only reaches 4.10:1 on the
+   * grey. So 700 is #1E6EF4 carried down until it clears 4.5 on the page AND
+   * through the card's glass over a dark map, which is the same reasoning, and
+   * the same conclusion, as --text-secondary further down.
+   *
+   * The rest are the tints and shades that hover, focus and fill need.
+   */
+  --p-blue-50:  #EAF2FE;
+  --p-blue-100: #D6E7FD;
+  --p-blue-200: #ADCFFB;
+  --p-blue-300: #5CB8FF;  /* Increase Contrast blue, dark  -- Apple */
+  --p-blue-400: #0091FF;  /* systemBlue, dark              -- Apple */
+  --p-blue-500: #0088FF;  /* systemBlue, light             -- Apple */
+  --p-blue-600: #1E6EF4;  /* Increase Contrast blue, light -- Apple */
+  --p-blue-700: #1C65E0;  /* the link colour; see above */
+  --p-blue-800: #1A57C0;
+  --p-blue-900: #16468F;
+  --p-blue-950: #0D2A55;
+
   --p-save-300: #C3D6F7;
   --p-save-700: #0D3B7A;
 
@@ -278,7 +316,7 @@
   --surface-inset: var(--p-neutral-0);
   --surface-overlay: var(--p-neutral-0);
   --surface-scrim: rgb(0 0 0 / 0.45);
-  --surface-brand-subtle: var(--p-brand-50);
+  --surface-brand-subtle: var(--p-blue-50);
   --surface-map-shade: rgb(242 242 247 / 0.86);
 
   /*
@@ -308,18 +346,18 @@
   --text-secondary: var(--p-neutral-600);
   --text-tertiary: var(--p-neutral-500);
   --text-on-brand: var(--p-neutral-0);
-  --text-brand: var(--p-brand-700);
-  --text-link: var(--p-brand-700);
-  --text-link-hover: var(--p-brand-800);
+  --text-brand: var(--p-blue-700);
+  --text-link: var(--p-blue-700);
+  --text-link-hover: var(--p-blue-800);
 
   --border-subtle: var(--p-neutral-200);
   --border-default: var(--p-neutral-300);
   --border-strong: var(--p-neutral-500);
-  --border-brand: var(--p-brand-600);
+  --border-brand: var(--p-blue-600);
 
-  --action-primary: var(--p-brand-700);
-  --action-primary-hover: var(--p-brand-800);
-  --action-primary-active: var(--p-brand-900);
+  --action-primary: var(--p-blue-700);
+  --action-primary-hover: var(--p-blue-800);
+  --action-primary-active: var(--p-blue-900);
   --action-secondary-fg: var(--p-neutral-950);
   --action-secondary-border: var(--p-neutral-500);
   --action-secondary-hover-bg: var(--p-neutral-100);
@@ -327,10 +365,10 @@
 
   --interactive-hover-bg: var(--p-neutral-100);
   --interactive-active-bg: var(--p-neutral-200);
-  --interactive-selected-bg: var(--p-brand-50);
-  --interactive-selected-border: var(--p-brand-600);
+  --interactive-selected-bg: var(--p-blue-50);
+  --interactive-selected-border: var(--p-blue-600);
 
-  --focus-ring: var(--p-brand-500);
+  --focus-ring: var(--p-blue-500);
   --focus-ring-offset: var(--p-neutral-0);
 
   --feedback-error-fg: var(--p-clay-700);
@@ -498,8 +536,8 @@
    * smaller. Both are measured against the LIGHT end, which is the worst case
    * for the white sitting on them.
    */
-  --brand-ramp: linear-gradient(180deg, var(--p-brand-500), var(--p-brand-700));
-  --brand-ramp-cta: linear-gradient(180deg, var(--p-brand-700), var(--p-brand-900));
+  --brand-ramp: linear-gradient(180deg, var(--p-blue-500), var(--p-blue-700));
+  --brand-ramp-cta: linear-gradient(180deg, var(--p-blue-700), var(--p-blue-900));
   /*
    * The grouped list's glyph tiles: flat, tinted, and one accent.
    *
@@ -509,9 +547,9 @@
    * and the chips a few pixels above these rows. A row of icons in those same
    * colours would be claiming a meaning it does not have.
    */
-  --tile-bg: var(--p-brand-200);
-  --tile-fg: var(--p-brand-700);
-  --brand-ramp-glow: 0 6px 16px -8px rgb(0 109 99 / 0.7);
+  --tile-bg: var(--p-blue-100);
+  --tile-fg: var(--p-blue-700);
+  --brand-ramp-glow: 0 6px 16px -8px rgb(28 101 224 / 0.7);
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.06);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.05);
@@ -614,7 +652,7 @@
   --surface-inset: var(--p-neutral-900);
   --surface-overlay: var(--p-neutral-950);
   --surface-scrim: rgb(0 0 0 / 0.62);
-  --surface-brand-subtle: #0B2926;
+  --surface-brand-subtle: #0A2540;
   --surface-map-shade: rgb(0 0 0 / 0.86);
 
   /*
@@ -629,19 +667,23 @@
   --text-primary: #FFFFFF;
   --text-secondary: #ADADB4;
   --text-tertiary: var(--p-neutral-500);
-  --text-on-brand: var(--p-brand-950);
-  --text-brand: var(--p-brand-300);
-  --text-link: var(--p-brand-300);
-  --text-link-hover: var(--p-brand-200);
+  --text-on-brand: var(--p-blue-950);
+  /* Increase Contrast blue, dark -- Apple's own #5CB8FF, 7.90:1 on the
+     card and 6.47:1 on the grouped cell. systemBlue dark (#0091FF) would
+     have cleared the card at 5.26 but only reaches 4.31 on the cell, and
+     the cell is where most of the links in this app are. */
+  --text-brand: var(--p-blue-300);
+  --text-link: var(--p-blue-300);
+  --text-link-hover: var(--p-blue-200);
 
   --border-subtle: #38383A;  /* opaqueSeparator, dark */
   --border-default: var(--p-neutral-700);
   --border-strong: var(--p-neutral-500);
-  --border-brand: var(--p-brand-400);
+  --border-brand: var(--p-blue-400);
 
-  --action-primary: var(--p-brand-300);
-  --action-primary-hover: var(--p-brand-200);
-  --action-primary-active: var(--p-brand-100);
+  --action-primary: var(--p-blue-300);
+  --action-primary-hover: var(--p-blue-200);
+  --action-primary-active: var(--p-blue-100);
   --action-secondary-fg: var(--p-neutral-100);
   --action-secondary-border: var(--p-neutral-500);
   --action-secondary-hover-bg: var(--p-neutral-900);
@@ -649,10 +691,10 @@
 
   --interactive-hover-bg: var(--p-neutral-900);
   --interactive-active-bg: var(--p-neutral-800);
-  --interactive-selected-bg: #0B2926;
-  --interactive-selected-border: var(--p-brand-400);
+  --interactive-selected-bg: #0A2540;
+  --interactive-selected-border: var(--p-blue-400);
 
-  --focus-ring: var(--p-brand-300);
+  --focus-ring: var(--p-blue-300);
   --focus-ring-offset: var(--p-neutral-1000);
 
   --feedback-error-fg: var(--p-clay-300);
@@ -723,12 +765,12 @@
   /* Both ramps lighten in dark, so the tiles read as lit rather than as holes;
      the glyph and the label on them are dark, so here the DARK end is the worst
      case and the ramps stay well above it. */
-  --brand-ramp: linear-gradient(180deg, var(--p-brand-300), var(--p-brand-500));
-  --brand-ramp-cta: linear-gradient(180deg, var(--p-brand-200), var(--p-brand-400));
+  --brand-ramp: linear-gradient(180deg, var(--p-blue-300), var(--p-blue-500));
+  --brand-ramp-cta: linear-gradient(180deg, var(--p-blue-200), var(--p-blue-400));
   /* The tint is the accent held back rather than a lighter grey, so the tile
      still reads as coloured against a near-black row. */
-  --tile-bg: rgb(39 162 149 / 0.18);
-  --tile-fg: var(--p-brand-300);
+  --tile-bg: rgb(92 184 255 / 0.16);
+  --tile-fg: var(--p-blue-300);
   --brand-ramp-glow: 0 6px 16px -8px rgb(0 0 0 / 0.6);
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.5);
