@@ -10,7 +10,7 @@ import { I18n, LOCALES, LOCALE_META, type Locale, type TranslationKey } from './
 import { icon, iconDataUri } from './icons';
 import { ResultList } from './list';
 import { PlejecenterMap } from './map';
-import { formatDay, setCollatorLocale } from './format';
+import { formatDay, setCollatorLocale, todayISO } from './format';
 import { Store, resortForLocale } from './store';
 import {
   DENMARK_BOX,
@@ -1136,7 +1136,16 @@ function openNoteEditor(id: string): void {
   $('#noteDateLabel').textContent = t('note.date');
   const existing = account.noteFor(id);
   noteText.value = existing?.body ?? '';
-  noteDate.value = existing?.visitedOn ?? '';
+  /*
+   * A new note opens on today; an existing one opens on what it holds.
+   *
+   * Most notes are written the day they are about, so today is the answer more
+   * often than not and pre-filling it saves the commonest interaction. But
+   * only for a note that does not exist yet: a reader who cleared the date on
+   * a note they had already written chose to have none, and putting today back
+   * every time they reopened it would write a day they never picked.
+   */
+  noteDate.value = existing ? existing.visitedOn : todayISO();
   paintNoteDate();
   noteError.hidden = true;
 
