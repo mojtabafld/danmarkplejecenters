@@ -199,14 +199,31 @@
    *
    * --text-lg was 18, which is not an iOS size at all. Title 3 is 20.
    *
-   * Subhead (15) and Large Title (34) are the two rungs of the ladder nothing
-   * here stands on, so they are not defined: the supporting text in this app
-   * is Caption 1 and Footnote, and nothing leads a screen at 34. They are
-   * named in this comment so the gap is a decision rather than an oversight.
+   * Large Title (34) is the one rung of the ladder nothing here stands on, so
+   * it is not defined: nothing leads a screen at that size. It is named here
+   * so the gap stays a decision rather than an oversight.
+   *
+   * Subhead (15) was the other, and now the buttons stand on it -- see
+   * --text-subhead below.
    */
   --text-2xs: 0.6875rem;   /* 11 — Caption 2 */
   --text-xs:  0.75rem;     /* 12 — Caption 1 */
   --text-sm:  0.8125rem;   /* 13 — Footnote */
+  /*
+   * Named for its rung rather than fitted into the t-shirt sizes, because it
+   * lands between --text-sm and --text-md and renaming the scale around it
+   * would be a bigger change than the one it is here for. --text-display does
+   * the same at the other end.
+   *
+   * Button labels. They were Body at 17, which is what iOS puts on the big
+   * confirm button at the bottom of a sheet -- and this app's buttons are not
+   * that: they sit in a 280px panel, two to a row, next to a Cancel. At 17
+   * they were the loudest thing in the dialog. Subhead is the rung iOS itself
+   * uses for a button that is one control among several, and it leaves the
+   * button's 44pt height alone, because that comes from --control-lg and has
+   * nothing to do with the type inside it.
+   */
+  --text-subhead: 0.9375rem; /* 15 — Subhead */
   --text-md:  1rem;        /* 16 — Callout */
   --text-base: 1.0625rem;  /* 17 — Body, and Headline at semibold */
   --text-lg:  1.25rem;     /* 20 — Title 3 */
