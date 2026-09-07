@@ -1671,25 +1671,6 @@ a.btn { text-decoration: none; }
 .addr__button:focus-visible,
 .addr__button[aria-expanded='true'] { text-decoration: underline; }
 
-/*
- * In Persian the address hangs from the left of the card, not the right.
- *
- * It is the only value in the list that runs to two lines, and a two-line
- * Latin block at the start edge of an RTL row is a block whose ragged edge IS
- * the edge of the column: "Humlehusene 1A" stopped 40px short of "2620
- * Albertslund" and the pair of them broke the flush line that the phone, the
- * e-mail and the hostname keep. At the far edge it starts where a Latin
- * address is read from, its ragged edge falls in the middle of the card where
- * nothing lines up against it, and it finally sits over the balloon's tail --
- * which has always been pinned to this side (see .mapmenu below) because a
- * balloon wider than the address cannot hang from the other one without going
- * off the screen.
- *
- * `flex-end`, not `inset` or `text-align`: the button still fills the row, so
- * the hit area is the whole width either way. Only the box inside it moves.
- */
-:root[dir='rtl'] .fact[data-leads='true'] .addr__button { justify-content: flex-end; }
-
 .mapmenu {
   position: absolute;
   z-index: var(--z-toast);
