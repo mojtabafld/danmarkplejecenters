@@ -349,6 +349,7 @@ const panel = `<!doctype html>
           </div>
           <button type="button" class="panel__close" aria-label="Luk detaljer om ${esc(detail.name)}">${I.x}</button>
           <p class="panel__tags">
+            <span class="panel__eyebrow panel__eyebrow--own">Kommunal</span>
             <span class="panel__eyebrow panel__eyebrow--muni" lang="da">${esc(detail.municipality)} Kommune</span>
           </p>
         </div>

@@ -534,14 +534,22 @@ export class DetailPanel {
 
   /**
    * Head is rendered separately so the title can stay above the scroll area:
-   * the name and the kommune are what tell you which card you are reading, and
-   * scrolling to the bottom of a long one should not take them away.
+   * the name, the operator and the kommune are what tell you which card you
+   * are reading, and scrolling to the bottom of a long one should not take
+   * them away.
    */
   renderHead(p: Plejecenter, head: HTMLElement): void {
+    // Who runs the place, in one word. The list below says it in a full
+    // sentence -- "Kommunalt drevet plejecenter" -- and that is the difference
+    // between the two: the row is where you look a fact up, the chip is what
+    // you read without looking. No data-own on it any more; it is tinted, not
+    // colour-coded, so there is no category for a stylesheet to key off.
+    const own = head.querySelector<HTMLElement>('.panel__eyebrow--own');
+    if (own) own.textContent = this.i18n.t(`ownership.${ownershipGroup(p)}` as TranslationKey);
+
     // The kommune, rather than the last line of the address. It is what a
     // reader is choosing between when they are choosing where to work, so it
-    // belongs where they read the name. The operator chip that used to sit
-    // beside it is gone; the operator is a row in the list below.
+    // belongs where they read the name.
     const muni = head.querySelector<HTMLElement>('.panel__eyebrow--muni');
     if (muni) {
       muni.textContent = p.municipality
