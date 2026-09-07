@@ -278,9 +278,18 @@ a { color: var(--text-link); }
      did and why it bought less room than it looked like it should. */
   .masthead__mark { inline-size: var(--control-sm); block-size: var(--control-sm); }
   .masthead__mark svg { inline-size: var(--icon-md); block-size: var(--icon-md); }
-  /* The language and account buttons keep their 24px target and lose only the
-     air around the label inside them. */
-  .masthead .langpick__button { padding-inline: var(--space-1) var(--space-2); }
+  /*
+   * The language and account buttons keep their 24px target and lose only the
+   * air around the label inside them.
+   *
+   * Symmetric, and that is the point: the trailing 8px was there for the
+   * language code, and the account button has no code to show while nobody is
+   * signed in -- so 4px against 8px sat its user glyph 2px left of the middle
+   * of its own circle. Off-centre by two pixels is the kind of thing that
+   * reads as broken without being nameable. Equal padding fixes it and hands
+   * the titles another 8px besides, which is what this whole block is for.
+   */
+  .masthead .langpick__button { padding-inline: var(--space-1); }
 
   /*
    * 13px at 320, 16px at 416, straight line between. The floor is --text-sm:
@@ -853,7 +862,19 @@ a.btn { text-decoration: none; }
   border-radius: var(--radius-2xl);
   overflow: hidden;
 }
-.map__tools > * + * { border-block-start: var(--border-hairline) solid var(--glass-border); }
+/*
+ * The hairlines between the three controls in the column.
+ *
+ * Both selectors name a class on one side or the other, and they have to: the
+ * `border: 0` in `.map__tool` below is a single class too, so a plain
+ * `> * + *` tied it on specificity and lost on source order. The line under
+ * the zoom pair was in the stylesheet the whole time and never painted, so the
+ * reset button ran into the zoom-out button with nothing between them.
+ */
+.map__tools > .map__tool + *,
+.map__tools > * + .map__tool {
+  border-block-start: var(--border-hairline) solid var(--glass-border);
+}
 
 /*
  * The glass panes: the dock, the standalone map buttons, and the zoom pair as
@@ -1787,7 +1808,17 @@ a.btn { text-decoration: none; }
 
 .panel__title {
   margin-block-start: var(--space-1);
-  font-size: var(--text-2xl);
+  /*
+   * 22px, down from 28.
+   *
+   * At 28 the name was the loudest thing on the screen by a distance, and it
+   * is not what the card is for: the reader already knows which centre they
+   * pressed, and what they came here to read is underneath it. It also cost
+   * the card two lines on half the names in the register at phone width. 22
+   * still clears the operator chip and the row labels by enough to be read as
+   * the heading of the card rather than as one more field of it.
+   */
+  font-size: var(--text-xl);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-snug);
@@ -1803,18 +1834,18 @@ a.btn { text-decoration: none; }
 }
 
 /* Long names step down rather than wrapping to four lines and pushing the
-   address, the mark and the job link off a phone screen. Set from the name's
+   address and the quick actions off a phone screen. Set from the name's
    length in detail.ts, where it can be counted; see titleStep there for why
    the steps are 24 and 40. */
-.panel__title[data-len='l'] { font-size: var(--text-xl); }
+.panel__title[data-len='l'] { font-size: var(--text-lg); }
 /*
- * The smallest step stays at 16px, where it was before the heading grew.
+ * The smallest step stays at 16px.
  *
  * The steps exist so a long name does not push the address off a phone, and
- * that guarantee was measured at these sizes: at 18px the longest name in the
+ * that guarantee was measured at this size: at 18px the longest name in the
  * register -- "Distrikt 12, 13 og 14 Hybyhus plejecenter" -- took five lines
- * in a 170px column instead of four. The first two steps carry the larger
- * heading; this one carries the promise.
+ * in a 170px column instead of four. The two steps above carry the heading;
+ * this one carries the promise, so it does not come down with them.
  */
 .panel__title[data-len='m'] {
   font-size: var(--text-md);
@@ -1947,11 +1978,9 @@ a.btn { text-decoration: none; }
 /*
  * A row that leads somewhere gives its whole width to the thing it leads to.
  *
- * The chevron is drawn at the far edge, and it is inside the row's own link or
- * button rather than beside it -- a mark at the end of a row that is not part
- * of the target it points at is an invitation to press nothing. Making the
- * link fill the column is what puts the space between the value and the mark
- * inside the same hit area.
+ * There is no chevron at the end of it any more, but the rule stays: a link
+ * that fills its column is a hit area the width of the row, which on a phone
+ * is the difference between pressing the address and pressing beside it.
  */
 .fact[data-leads='true'] .fact__value > a,
 .fact[data-leads='true'] .addr__button {
@@ -1977,10 +2006,6 @@ a.btn { text-decoration: none; }
   letter-spacing: var(--tracking-snug);
   color: var(--text-secondary);
 }
-
-/* Decorative, and inside the target: the link carries meaning and hit area. */
-.fact__chev { display: flex; flex: none; color: var(--text-tertiary); }
-.fact__chev svg { inline-size: var(--icon-md); block-size: var(--icon-md); display: block; }
 
 /*
  * Between rows, never above the first or below the last: the list already has
@@ -2072,22 +2097,6 @@ a.btn { text-decoration: none; }
 .fact__value a:hover,
 .fact__value a:focus-visible { text-decoration: underline; }
 
-/*
- * Pinned under the scroll area, never scrolled past. The route buttons are the
- * most likely reason someone opened this card at all, so they get a fixed seat
- * rather than a place at the bottom of a list of facts.
- */
-.panel__foot {
-  padding: var(--space-3) var(--space-4) var(--space-4);
-  box-shadow: inset 0 0.5px 0 var(--group-border);
-}
-.panel__foot:empty { display: none; }
-
-/*
- * The job link. One line, no box: it is a link to a search, and dressing it as
- * a card or a button would have claimed more of the eye than a search deserves
- * sitting above the address it belongs to.
- */
 /* A note the reader wrote, above the register's own fields. */
 .note {
   padding: var(--space-3);
@@ -2169,16 +2178,6 @@ a.btn { text-decoration: none; }
 .noteedit__text::placeholder { color: var(--text-tertiary); }
 .noteedit__text:hover { border-color: var(--field-border-hover); }
 
-
-.panel__actions { display: grid; gap: var(--space-2); align-content: start; }
-.panel__actions .btn { inline-size: 100%; min-block-size: var(--control-lg); block-size: auto; }
-
-.nav-links {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
-  gap: var(--space-2);
-  align-items: start;
-}
 
 /* ownership tinting, applied by data attribute so colour is systematic */
 [data-own='Kommunal'] { --own-fg: var(--cat-kommunal-fg); --own-bg: var(--cat-kommunal-bg); --own-mark: var(--cat-kommunal-mark); }
@@ -2325,7 +2324,6 @@ a.btn { text-decoration: none; }
     .fact { padding-block: var(--space-2); }
     .panel__body { padding-block: var(--space-2) var(--space-3); }
     .panel__head { padding-block: var(--space-3) var(--space-2); }
-    .panel__foot { padding: var(--space-2) var(--space-4) var(--space-3); }
   }
 
 
@@ -2358,10 +2356,6 @@ a.btn { text-decoration: none; }
    */
   .panel__body { padding-inline: var(--space-3); }
   .fact { padding-inline: var(--space-3); }
-  /* The chevron is decoration, and on the narrowest phone the 24px it and its
-     gap take are worth more to the address than to the hint that the row
-     leads somewhere -- which the link's own colour already says. */
-  .fact__chev { display: none; }
   .fact + .fact::before { inset-inline: calc(var(--space-3) + 1.875rem + var(--space-3)) 0; }
   .rv { padding: var(--space-3); }
   .result { padding-inline: var(--space-4); }

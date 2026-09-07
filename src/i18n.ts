@@ -128,10 +128,9 @@ const DA = {
   'panel.close': 'Luk detaljer om {name}',
   'panel.address': 'Adresse',
   'act.route': 'Rute',
-  'act.call': 'Ring',
+  'act.note': 'Note',
   'act.mail': 'E-mail',
   'act.jobs': 'Job',
-  'jobs.label': 'Ledige stillinger',
   /*
    * The last line of the postal address, which is not the same string as the
    * kommune filter above even though it reads the same in Danish.
@@ -152,8 +151,6 @@ const DA = {
   'panel.phone': 'Telefon',
   'panel.email': 'E-mail',
   'panel.website': 'Officiel hjemmeside',
-  'panel.visit': 'Besøg hjemmesiden',
-  'panel.visitFor': 'for {name}',
   'panel.google': 'Google Maps',
   'panel.apple': 'Apple Maps',
   'panel.routeTo': ', rute til {name}',
@@ -187,6 +184,7 @@ const DA = {
   'note.cancel': 'Annullér',
   'note.saved': 'Noten er gemt.',
   'note.failed': 'Noten kunne ikke gemmes. Prøv igen.',
+  'note.signInFirst': 'Log ind for at skrive noter',
   'rating.title': 'Bedømmelser',
   'rating.none': 'Ingen bedømmelser endnu.',
   'rating.count': { one: '{n} bedømmelse', other: '{n} bedømmelser' },
@@ -212,15 +210,6 @@ const DA = {
   'rating.unverified': 'Bekræft din e-mailadresse, før du bedømmer.',
   'rating.comments': 'Kommentarer',
   'rating.noComments': 'Ingen kommentarer endnu.',
-  /*
-   * The whole of the vacancies row: a link under the website, with a search
-   * icon and no label of its own.
-   *
-   * No label, because unlike the rows above it the text is a sentence rather
-   * than a value -- "Adresse: Ryesgade 20A" reads, "Ledige stillinger: Søg job
-   * på dette center" reads the same thing twice.
-   */
-  'jobs.search': 'Søg job på dette center',
   'account.passwordHint': 'Mindst {n} tegn.',
   'account.close': 'Luk kontopanelet',
   'account.adminPanel': 'Administration',
@@ -365,10 +354,9 @@ const EN: Record<Key, Entry> = {
   'panel.close': 'Close details for {name}',
   'panel.address': 'Address',
   'act.route': 'Route',
-  'act.call': 'Call',
+  'act.note': 'Note',
   'act.mail': 'E-mail',
   'act.jobs': 'Jobs',
-  'jobs.label': 'Vacancies',
   'panel.municipalityLine': '{name} Kommune',
   'panel.chooseMap': 'Open the address in a map',
   'panel.copy': 'Copy',
@@ -378,8 +366,6 @@ const EN: Record<Key, Entry> = {
   'panel.phone': 'Phone',
   'panel.email': 'Email',
   'panel.website': 'Official website',
-  'panel.visit': 'Visit the website',
-  'panel.visitFor': 'for {name}',
   'panel.google': 'Google Maps',
   'panel.apple': 'Apple Maps',
   'panel.routeTo': ', route to {name}',
@@ -413,6 +399,7 @@ const EN: Record<Key, Entry> = {
   'note.cancel': 'Cancel',
   'note.saved': 'Note saved.',
   'note.failed': 'The note could not be saved. Try again.',
+  'note.signInFirst': 'Sign in to write notes',
   'rating.title': 'Ratings',
   'rating.none': 'No ratings yet.',
   'rating.count': { one: '{n} rating', other: '{n} ratings' },
@@ -438,7 +425,6 @@ const EN: Record<Key, Entry> = {
   'rating.unverified': 'Confirm your e-mail address before rating.',
   'rating.comments': 'Comments',
   'rating.noComments': 'No comments yet.',
-  'jobs.search': 'Search jobs at this centre',
   'account.passwordHint': 'At least {n} characters.',
   'account.close': 'Close the account panel',
   'account.adminPanel': 'Administration',
@@ -581,10 +567,9 @@ const FA: Record<Key, Entry> = {
   'panel.close': 'بستن جزئیات {name}',
   'panel.address': 'نشانی',
   'act.route': 'مسیر',
-  'act.call': 'تماس',
+  'act.note': 'یادداشت',
   'act.mail': 'ایمیل',
   'act.jobs': 'شغل',
-  'jobs.label': 'موقعیت‌های شغلی',
   /* Danish, deliberately. See the note on this key in the Danish table. */
   'panel.municipalityLine': '{name} Kommune',
   'panel.chooseMap': 'باز کردن نشانی در نقشه',
@@ -595,8 +580,6 @@ const FA: Record<Key, Entry> = {
   'panel.phone': 'تلفن',
   'panel.email': 'ایمیل',
   'panel.website': 'وب‌سایت رسمی',
-  'panel.visit': 'مشاهدهٔ وب‌سایت',
-  'panel.visitFor': 'برای {name}',
   'panel.google': 'نقشهٔ گوگل',
   'panel.apple': 'نقشهٔ اپل',
   'panel.routeTo': '، مسیر تا {name}',
@@ -630,6 +613,7 @@ const FA: Record<Key, Entry> = {
   'note.cancel': 'انصراف',
   'note.saved': 'یادداشت ذخیره شد.',
   'note.failed': 'یادداشت ذخیره نشد. دوباره تلاش کنید.',
+  'note.signInFirst': 'برای نوشتن یادداشت وارد شوید',
   'rating.title': 'امتیازها',
   'rating.none': 'هنوز امتیازی ثبت نشده است.',
   'rating.count': { one: '{n} امتیاز', other: '{n} امتیاز' },
@@ -655,7 +639,6 @@ const FA: Record<Key, Entry> = {
   'rating.unverified': 'پیش از امتیاز دادن نشانی ایمیل خود را تأیید کنید.',
   'rating.comments': 'نظرها',
   'rating.noComments': 'هنوز نظری ثبت نشده است.',
-  'jobs.search': 'جستجوی مشاغل برای این مرکز',
   'account.passwordHint': 'دست‌کم {n} نویسه.',
   'account.close': 'بستن پنل حساب',
   'account.adminPanel': 'مدیریت',

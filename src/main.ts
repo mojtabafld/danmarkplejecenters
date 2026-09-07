@@ -68,7 +68,6 @@ const tallyLabel = $('#tallyLabel');
 const panelEl = $('#panel');
 const panelHead = $('#panelHead');
 const panelBody = $('#panelBody');
-const panelFoot = $('#panelFoot');
 const themeToggle = $<HTMLButtonElement>('#themeToggle');
 const resetViewBtn = $<HTMLButtonElement>('#resetView');
 const locateBtn = $<HTMLButtonElement>('#locate');
@@ -1115,7 +1114,15 @@ let noteReturnFocus: HTMLElement | null = null;
 
 function openNoteEditor(id: string): void {
   const p = store.byId(id);
-  if (!p || !account.user) return;
+  if (!p) return;
+  // A note has to be kept somewhere. The tile that writes one is on the card
+  // whether or not anybody is signed in, so pressing it signed out opens the
+  // account panel rather than doing nothing -- the same answer the bookmark
+  // beside the name gives.
+  if (!account.user) {
+    setAccountOpen(true);
+    return;
+  }
 
   noteFor = id;
   noteReturnFocus = document.activeElement as HTMLElement;
@@ -1277,7 +1284,7 @@ const map = new PlejecenterMap($('#map'), theme.current, {
 
 /* ----------------------------------------------------------------- panel */
 
-const detail = new DetailPanel(panelEl, panelBody, panelFoot, i18n, () => store.select(null), () => {
+const detail = new DetailPanel(panelEl, panelBody, i18n, () => store.select(null), () => {
   // The card is the frontmost sheet while it is open, so the dock's height
   // above the map and its right to be there both follow it.
   paintDockLift();

@@ -96,13 +96,13 @@ const I = {
   ),
   bed: icon('<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>'),
   navigation: icon('<polygon points="3 11 22 2 13 21 11 13 3 11"/>'),
-  external: icon(
-    '<path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
-      '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/>',
-  ),
   slash: icon('<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'),
   chevronDown: icon('<path d="m6 9 6 6 6-6"/>'),
-  pencil: icon('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>'),
+  notePen: icon(
+    '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>' +
+      '<path d="M18.4 2.6a1 1 0 0 1 3 3l-9 9a2 2 0 0 1-.9.5l-2.9.9a.5.5 0 0 1-.6-.6l.8-2.9' +
+      'a2 2 0 0 1 .5-.9z"/>',
+  ),
   user: icon('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
   bookmark: icon('<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>'),
   bookmarkCheck: icon('<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="m9 10 2 2 4-4"/>'),
@@ -138,21 +138,20 @@ const mapApp = (id, name) =>
   `<a class="mapmenu__app" data-app="${id}" href="https://example.invalid/">` +
   `<span class="mapmenu__mark"></span><span class="mapmenu__name">${name}</span></a>`;
 
-// The chevron is decorative and lives inside the row's own target; see the
-// comment on `fact()` in src/detail.ts.
-const CHEV = icon('<path d="m9 18 6-6-6-6"/>');
-const chev = `<span class="fact__chev" aria-hidden="true">${CHEV}</span>`;
 const fact = (ic, label, value, leads = false) =>
   `<div class="fact"${leads ? ' data-leads="true"' : ''}><span class="fact__icon">${ic}</span>` +
   `<span class="fact__body"><span class="fact__label">${label}</span>` +
   `<span class="fact__value">${value}</span></span></div>`;
 
-// The four shortcuts above the list. Route is a button: it opens the address's
-// own balloon rather than going anywhere itself.
-const qa = (ic, label, tag = 'a') =>
-  tag === 'a'
+// The four shortcuts above the list. Two of them are buttons: route opens the
+// address's own balloon rather than going anywhere, and the note opens the
+// editor.
+const qa = (ic, label, act = null, sr = '') =>
+  act === null
     ? `<a class="qa__tile" href="https://example.invalid/">${ic}<span>${label}</span></a>`
-    : `<button type="button" class="qa__tile" data-act="route">${ic}<span>${label}</span></button>`;
+    : `<button type="button" class="qa__tile" ${act}>${ic}<span>${label}</span>` +
+      (sr ? `<span class="sr-only"> ${sr}</span>` : '') +
+      `</button>`;
 
 const detail = pick('Plejecenter Sølund');
 
@@ -360,27 +359,17 @@ const panel = `<!doctype html>
             <p class="note__body">Ringede tirsdag, venteliste omkring fire måneder.</p>
           </div>
           <div class="qa">
-            ${qa(I.navigation, 'Rute', 'button')}
-            ${qa(I.phone, 'Ring')}
+            ${qa(I.navigation, 'Rute', 'data-act="route"')}
             ${qa(I.mail, 'E-mail')}
+            ${qa(I.notePen, 'Note', `data-note="${esc(detail.id)}"`, 'Rediger note')}
             ${qa(I.search, 'Job')}
           </div>
           <div class="facts">
-            ${fact(I.pin, 'Adresse', `<span class="addr"><button type="button" class="addr__button" aria-expanded="false" aria-haspopup="dialog" aria-label="Åbn adressen i et kort"><span dir="ltr" lang="da">${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}</span>${chev}</button><span class="mapmenu" hidden role="dialog" aria-label="Åbn adressen i et kort">${mapApp('apple', 'Apple Maps')}${mapApp('google', 'Google Maps')}<button type="button" class="mapmenu__app" data-copy="x"><span class="mapmenu__mark mapmenu__mark--action">${I.copy}</span><span class="mapmenu__name">Kopiér</span></button></span></span>`, true)}
+            ${fact(I.pin, 'Adresse', `<span class="addr"><button type="button" class="addr__button" aria-expanded="false" aria-haspopup="dialog" aria-label="Åbn adressen i et kort"><span dir="ltr" lang="da">${esc(detail.street)}<br>${esc(detail.postcode)} ${esc(detail.city)}</span></button><span class="mapmenu" hidden role="dialog" aria-label="Åbn adressen i et kort">${mapApp('apple', 'Apple Maps')}${mapApp('google', 'Google Maps')}<button type="button" class="mapmenu__app" data-copy="x"><span class="mapmenu__mark mapmenu__mark--action">${I.copy}</span><span class="mapmenu__name">Kopiér</span></button></span></span>`, true)}
             ${fact(I.building, 'Driftsform', 'Kommunalt drevet plejecenter')}
-            ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}"><span dir="ltr" class="fact__atom">82 32 50 50</span>${chev}</a>`, true)}
-            ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}"><span dir="ltr">${esc(detail.email ?? 'kontakt@kk.dk')}</span>${chev}</a>`, true)}
-            ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}"><span dir="ltr">boligertilaeldre.kk.dk</span><span class="sr-only"> (åbner i ny fane)</span>${chev}</a>`, true)}
-            ${fact(I.search, 'Ledige stillinger', `<a href="https://www.google.com/search?q=x">Søg job på dette center<span class="sr-only"> (åbner i ny fane)</span>${chev}</a>`, true)}
-          </div>
-        </div>
-        <div class="panel__foot">
-          <div class="panel__actions">
-            <a class="btn btn--primary" href="${esc(detail.web ?? '#')}">${I.external}Besøg hjemmesiden<span class="sr-only"> for ${esc(detail.name)} (åbner i ny fane)</span></a>
-            <div class="nav-links">
-              <a class="btn btn--secondary" href="https://www.google.com/maps/search/?api=1&amp;query=x">${I.navigation}Google Maps<span class="sr-only">, rute til ${esc(detail.name)}</span></a>
-              <a class="btn btn--secondary" href="https://maps.apple.com/?q=x">${I.navigation}Apple Maps<span class="sr-only">, rute til ${esc(detail.name)}</span></a>
-            </div>
+            ${fact(I.phone, 'Telefon', `<a href="tel:+45${esc(detail.phone ?? '')}"><span dir="ltr" class="fact__atom">82 32 50 50</span></a>`, true)}
+            ${fact(I.mail, 'E-mail', `<a href="mailto:${esc(detail.email ?? 'kontakt@kk.dk')}"><span dir="ltr">${esc(detail.email ?? 'kontakt@kk.dk')}</span></a>`, true)}
+            ${fact(I.globe, 'Officiel hjemmeside', `<a href="${esc(detail.web ?? '#')}"><span dir="ltr">boligertilaeldre.kk.dk</span><span class="sr-only"> (åbner i ny fane)</span></a>`, true)}
           </div>
         </div>
       </aside>
@@ -427,8 +416,8 @@ const states = `<!doctype html>
   <section class="stack">
     <h2>Knapper</h2>
     <div class="row">
-      <button type="button" class="btn btn--primary">Besøg hjemmesiden</button>
-      <button type="button" class="btn btn--secondary">Google Maps</button>
+      <button type="button" class="btn btn--primary">Gem note</button>
+      <button type="button" class="btn btn--secondary">Opret konto</button>
       <button type="button" class="btn btn--ghost">Nulstil</button>
       <button type="button" class="btn btn--primary" disabled>Ikke tilgængelig</button>
       <button type="button" class="btn btn--primary" aria-busy="true">Henter kort</button>
