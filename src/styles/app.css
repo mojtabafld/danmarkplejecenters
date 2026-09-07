@@ -689,9 +689,10 @@ a.btn { text-decoration: none; }
   border-color: var(--chip-selected-border);
 }
 
-/* The swatch keeps its category colour in every state: these chips are the
-   map's key as well as its filters, and a dimmed swatch would be a different
-   colour from the dots it names. */
+/* The swatch keeps its category colour in every state: it names the category
+   in the row it sits in, and a dimmed swatch would read as a fourth value.
+   It is no longer the map's key -- the map is painted in one colour now --
+   so what it names is the filter beside it, not a dot to go and find. */
 .chip__mark {
   inline-size: var(--space-2);
   block-size: var(--space-2);
@@ -1616,11 +1617,13 @@ a.btn { text-decoration: none; }
 }
 
 /*
- * The row the two chips sit on.
+ * The row the chip sits on.
  *
- * They wrap rather than shrink: a kommune name is as long as it is --
- * "Frederiksberg" beside "SELVEJENDE" does not fit a narrow phone -- and a
- * chip cut in half says less than a chip on the next line.
+ * It wraps rather than shrinks: a kommune name is as long as it is --
+ * "Ringkøbing-Skjern Kommune" is 25 characters -- and a chip cut in half says
+ * less than a chip on the next line. Kept as a wrapping row rather than
+ * collapsed to a bare span now that only one chip is left, because the
+ * wrapping is what stops the longest name from pushing the head wider.
  */
 .panel__tags {
   grid-area: tags;
@@ -1635,36 +1638,30 @@ a.btn { text-decoration: none; }
 }
 
 /*
- * The kommune chip. The same shape as the operator chip beside it, and
- * deliberately not the same colour: the operator chip is colour-coded to a
- * category the map also uses, and painting a second chip in one of those
- * colours would claim a meaning it does not have. This one takes the neutral
- * fallback that .panel__eyebrow already carries.
+ * The kommune chip, now the only one on the head.
+ *
+ * Neutral, and no longer only by elimination: there is no category chip beside
+ * it to be confused with, and the head has one pill on it saying one thing.
  *
  * Empty for a record with no kommune on it -- there are none in the extract,
  * but an empty chip is a grey pill saying nothing, so it is not drawn.
  */
+.panel__eyebrow {
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+}
 .panel__eyebrow--muni:empty { display: none; }
 
 /*
- * The operator chip in Persian takes 2px of its padding from the bottom and
- * gives it to the top. The kommune chip beside it does not.
+ * No Persian strut correction here, and that is not an oversight.
  *
- * The strut -- the invisible box that decides where a line's baseline goes --
- * is built from the FIRST font in the stack, which is the Latin one, while
- * Persian glyphs come from Vazirmatn with its own ascent and descent. The two
- * disagree by 2px at this size, measured from painted pixels: 11px of pill
- * above the ink and 7 below.
- *
- * So the correction belongs to the script, not to the page direction, and in
- * a Persian card the two chips are in different scripts: the operator is
- * translated and the kommune is a Danish proper noun in every language. A rule
- * on both put one right and the other 2.5px wrong. The pills stay the same
- * height either way, because the padding only moves between the two ends.
+ * The operator chip needed one: its text was translated, so in a Persian card
+ * its glyphs came from Vazirmatn while the line's baseline was set by the
+ * Latin font at the head of the stack, and the two disagreed by 2px. This
+ * chip is "{name} Kommune" in all three languages -- a Danish proper noun and
+ * a Danish common noun, Latin script whichever way the page runs -- so its
+ * strut and its glyphs come from the same face and the padding stays even.
  */
-:root[dir='rtl'] .panel__eyebrow:not(.panel__eyebrow--muni) {
-  padding-block: 0.40625rem 0.65625rem;
-}
 
 /* ====================================================== address balloon === */
 /*
@@ -2422,11 +2419,12 @@ a.btn { text-decoration: none; }
    down and not sideways -- sideways would be into the chip beside it. */
 .chip::after { inset-block: -0.5rem; inset-inline: 0; }
 
-/* ownership tinting, applied by data attribute so colour is systematic */
+/* ownership tinting, applied by data attribute so colour is systematic.
+   Read by the results list and the filter chips. The detail card's operator
+   chip used to read it too and no longer exists. */
 [data-own='Kommunal'] { --own-fg: var(--cat-kommunal-fg); --own-bg: var(--cat-kommunal-bg); --own-mark: var(--cat-kommunal-mark); }
 [data-own='Selvejende'] { --own-fg: var(--cat-selvejende-fg); --own-bg: var(--cat-selvejende-bg); --own-mark: var(--cat-selvejende-mark); }
 [data-own='Privat'] { --own-fg: var(--cat-privat-fg); --own-bg: var(--cat-privat-bg); --own-mark: var(--cat-privat-mark); }
-.panel__eyebrow { color: var(--own-fg, var(--text-secondary)); background: var(--own-bg, var(--surface-sunken)); }
 .result__mark { background: var(--own-mark, var(--border-strong)); }
 
 /* ========================================================================== *

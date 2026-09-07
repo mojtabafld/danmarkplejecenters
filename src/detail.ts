@@ -534,19 +534,14 @@ export class DetailPanel {
 
   /**
    * Head is rendered separately so the title can stay above the scroll area:
-   * the name, the operator and the kommune are what tell you which card you
-   * are reading, and scrolling to the bottom of a long one should not take
-   * them away.
+   * the name and the kommune are what tell you which card you are reading, and
+   * scrolling to the bottom of a long one should not take them away.
    */
   renderHead(p: Plejecenter, head: HTMLElement): void {
-    const group = ownershipGroup(p);
-    const eyebrow = head.querySelector('.panel__eyebrow')!;
-    eyebrow.setAttribute('data-own', group);
-    eyebrow.textContent = this.i18n.t(`ownership.${group}` as TranslationKey);
-
-    // The kommune, up here with the operator rather than as the last line of
-    // the address. It is what a reader is choosing between when they are
-    // choosing where to work, so it belongs where they read the name.
+    // The kommune, rather than the last line of the address. It is what a
+    // reader is choosing between when they are choosing where to work, so it
+    // belongs where they read the name. The operator chip that used to sit
+    // beside it is gone; the operator is a row in the list below.
     const muni = head.querySelector<HTMLElement>('.panel__eyebrow--muni');
     if (muni) {
       muni.textContent = p.municipality
