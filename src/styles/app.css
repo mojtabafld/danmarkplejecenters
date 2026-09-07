@@ -1617,13 +1617,11 @@ a.btn { text-decoration: none; }
 }
 
 /*
- * The row the chip sits on.
+ * The row the two chips sit on.
  *
- * It wraps rather than shrinks: a kommune name is as long as it is --
- * "Ringkøbing-Skjern Kommune" is 25 characters -- and a chip cut in half says
- * less than a chip on the next line. Kept as a wrapping row rather than
- * collapsed to a bare span now that only one chip is left, because the
- * wrapping is what stops the longest name from pushing the head wider.
+ * They wrap rather than shrink: a kommune name is as long as it is --
+ * "Selvejende" beside "Ringkøbing-Skjern Kommune" does not fit a narrow phone
+ * -- and a chip cut in half says less than a chip on the next line.
  */
 .panel__tags {
   grid-area: tags;
@@ -1638,10 +1636,19 @@ a.btn { text-decoration: none; }
 }
 
 /*
- * The kommune chip, now the only one on the head.
+ * The two chips: the operator is tinted, the kommune is neutral.
  *
- * Neutral, and no longer only by elimination: there is no category chip beside
- * it to be confused with, and the head has one pill on it saying one thing.
+ * The operator chip used to be painted in its category's own colour -- teal,
+ * ochre or plum, the same three the map used for its dots. The map is one
+ * colour now, so those three named a key that no longer exists. One tint for
+ * all three operators fixes that without taking the chip away: it is the app's
+ * accent, the same blue as a link, and an accent claims no meaning beyond
+ * "this is the thing".
+ *
+ * The kommune stays neutral beside it, and now for a reason of its own rather
+ * than by elimination: two tinted pills side by side would read as a pair of
+ * equal claims, and these are not equal. One is what the place *is*; the other
+ * is where it is.
  *
  * Empty for a record with no kommune on it -- there are none in the extract,
  * but an empty chip is a grey pill saying nothing, so it is not drawn.
@@ -1650,18 +1657,31 @@ a.btn { text-decoration: none; }
   color: var(--text-secondary);
   background: var(--surface-sunken);
 }
+.panel__eyebrow--own {
+  color: var(--text-link-hover);
+  background: var(--surface-brand-subtle);
+}
 .panel__eyebrow--muni:empty { display: none; }
 
 /*
- * No Persian strut correction here, and that is not an oversight.
+ * The operator chip in Persian takes 2px of its padding from the bottom and
+ * gives it to the top. The kommune chip beside it does not.
  *
- * The operator chip needed one: its text was translated, so in a Persian card
- * its glyphs came from Vazirmatn while the line's baseline was set by the
- * Latin font at the head of the stack, and the two disagreed by 2px. This
- * chip is "{name} Kommune" in all three languages -- a Danish proper noun and
- * a Danish common noun, Latin script whichever way the page runs -- so its
- * strut and its glyphs come from the same face and the padding stays even.
+ * The strut -- the invisible box that decides where a line's baseline goes --
+ * is built from the FIRST font in the stack, which is the Latin one, while
+ * Persian glyphs come from Vazirmatn with its own ascent and descent. The two
+ * disagree by 2px at this size, measured from painted pixels: 11px of pill
+ * above the ink and 7 below.
+ *
+ * So the correction belongs to the script, not to the page direction, and in
+ * a Persian card the two chips are in different scripts: the operator is
+ * translated and the kommune is "{name} Kommune" in every language. A rule on
+ * both put one right and the other 2.5px wrong. The pills stay the same height
+ * either way, because the padding only moves between the two ends.
  */
+:root[dir='rtl'] .panel__eyebrow--own {
+  padding-block: 0.40625rem 0.65625rem;
+}
 
 /* ====================================================== address balloon === */
 /*
@@ -2420,8 +2440,9 @@ a.btn { text-decoration: none; }
 .chip::after { inset-block: -0.5rem; inset-inline: 0; }
 
 /* ownership tinting, applied by data attribute so colour is systematic.
-   Read by the results list and the filter chips. The detail card's operator
-   chip used to read it too and no longer exists. */
+   Read by the results list and the filter chips only. The detail card's
+   operator chip used to read it too; it is still there but it is tinted with
+   the app's accent now, so it sets no data-own and takes none of this. */
 [data-own='Kommunal'] { --own-fg: var(--cat-kommunal-fg); --own-bg: var(--cat-kommunal-bg); --own-mark: var(--cat-kommunal-mark); }
 [data-own='Selvejende'] { --own-fg: var(--cat-selvejende-fg); --own-bg: var(--cat-selvejende-bg); --own-mark: var(--cat-selvejende-mark); }
 [data-own='Privat'] { --own-fg: var(--cat-privat-fg); --own-bg: var(--cat-privat-bg); --own-mark: var(--cat-privat-mark); }
