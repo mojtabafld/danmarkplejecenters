@@ -111,6 +111,19 @@ export function formatDay(iso: string, locale: string): string {
   );
 }
 
+/**
+ * Today, as the YYYY-MM-DD an <input type="date"> takes.
+ *
+ * Built from the local getters rather than `toISOString().slice(0, 10)`: that
+ * is the UTC day, and east of Greenwich after midnight -- or west of it before
+ * -- it is not the day the reader is having.
+ */
+export function todayISO(): string {
+  const d = new Date();
+  const p = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 /*
  * Persian script, Gregorian calendar.
  *
