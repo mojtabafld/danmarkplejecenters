@@ -81,6 +81,21 @@
    * brand; Apple's are neutral with a hair of blue, which is why an iOS screen
    * reads as paper with colour ON it rather than as a coloured screen.
    *
+   * Taken from the Human Interface Guidelines colour page itself, not from
+   * memory: developer.apple.com/design/human-interface-guidelines/color. The
+   * page renders each value as a swatch whose alt text carries the RGB, and
+   * all twelve below were checked against it. Its change log says the system
+   * colour values were updated on 9 June 2025, so the older set that is all
+   * over the web is out of date -- the greys survived that revision unchanged,
+   * but the accents did not, and Blue is now #0088FF rather than #007AFF.
+   *
+   * Apple asks that these not be hard-coded, because "the actual color values
+   * may fluctuate from release to release". That instruction is for an app
+   * that can call the system API and get whatever the OS is using today. A web
+   * page has no such API, so hard-coding is the only way to use them at all --
+   * which is why they are written down here once, with their provenance, and
+   * referred to everywhere else.
+   *
    * The two themes share one scale, so it runs light to dark and each end is
    * the theme that uses it: 0-400 are the light greys, 700-1000 the dark ones,
    * and systemGray at 500 is the single value both themes use as-is.
@@ -220,16 +235,16 @@
    * to. So it is the same ink at 85% instead: #595960.
    *
    * 75% would have been enough on the white card and the grey page, and was
-   * the first answer. It failed on glass: three of the labels that use this
-   * colour sit on a translucent pane over the map, and over a black basemap
-   * that pane composites darker than any opaque surface -- 4.11:1 for the
-   * count under the map. The number that has to clear 4.5 is the one measured
-   * through the glass, so the ink is sized to that and comes out at 7:1 on
-   * plain white, which is where this app's secondary text already sat.
-   *
-   * Apple can run theirs lighter because iOS carries an Increase Contrast
-   * switch that darkens it, and because little of iOS is text on glass over a
-   * photograph. A web page has neither, so it starts where iOS ends up.
+   * the first answer -- it landed on #6C6C71, which is a rounding error away
+   * from Apple's OWN Increase Contrast systemGray, #6C6C70. It still failed on
+   * glass: three of the labels that use this colour sit on a translucent pane
+   * over the map, and over a black basemap that pane composites darker than
+   * any opaque surface -- 4.11:1 for the count under the map. So the answer is
+   * not that this app skipped Apple's accessible value; it is that even the
+   * accessible value is not enough for text on glass over a dark photograph,
+   * which is a case iOS mostly does not have. Sized to the number measured
+   * through the glass, the ink comes out at 7:1 on plain white, which is where
+   * this app's secondary text already sat.
    *
    * Dark needs no such adjustment -- see the dark block, where Apple's 60%
    * clears 5.9:1 on its own.
