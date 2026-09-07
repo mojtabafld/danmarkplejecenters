@@ -71,19 +71,52 @@
   --p-clay-700: #9A382F;
   --p-clay-900: #59201B;
 
-  --p-neutral-0:   #FFFFFF;
-  --p-neutral-50:  #F5F7F7;
-  --p-neutral-100: #EAEEED;
-  --p-neutral-200: #D8DEDD;
-  --p-neutral-300: #C0C7C7;
-  --p-neutral-400: #A2ABAB;
-  --p-neutral-500: #869090;
-  --p-neutral-600: #5F6867;
-  --p-neutral-700: #575F5F;
-  --p-neutral-800: #434949;
-  --p-neutral-900: #323636;
-  --p-neutral-950: #1E2121;
-  --p-neutral-1000: #121616;
+  /*
+   * The neutrals are Apple's, not ours.
+   *
+   * These are the system greys iOS publishes -- systemGray through
+   * systemGray6, light and dark -- rather than the green-tinted scale this app
+   * used to carry. The old ramp leaned about 180 degrees of hue into every
+   * surface, which made the whole interface faintly the same colour as the
+   * brand; Apple's are neutral with a hair of blue, which is why an iOS screen
+   * reads as paper with colour ON it rather than as a coloured screen.
+   *
+   * Taken from the Human Interface Guidelines colour page itself, not from
+   * memory: developer.apple.com/design/human-interface-guidelines/color. The
+   * page renders each value as a swatch whose alt text carries the RGB, and
+   * all twelve below were checked against it. Its change log says the system
+   * colour values were updated on 9 June 2025, so the older set that is all
+   * over the web is out of date -- the greys survived that revision unchanged,
+   * but the accents did not, and Blue is now #0088FF rather than #007AFF.
+   *
+   * Apple asks that these not be hard-coded, because "the actual color values
+   * may fluctuate from release to release". That instruction is for an app
+   * that can call the system API and get whatever the OS is using today. A web
+   * page has no such API, so hard-coding is the only way to use them at all --
+   * which is why they are written down here once, with their provenance, and
+   * referred to everywhere else.
+   *
+   * The two themes share one scale, so it runs light to dark and each end is
+   * the theme that uses it: 0-400 are the light greys, 700-1000 the dark ones,
+   * and systemGray at 500 is the single value both themes use as-is.
+   *
+   * The category hues -- brand, ochre, plum, save -- are deliberately NOT
+   * touched: they are the map's legend, and a plejecenter's operator is read
+   * off them.
+   */
+  --p-neutral-0:   #FFFFFF;  /* systemBackground, light */
+  --p-neutral-50:  #F2F2F7;  /* systemGray6, light */
+  --p-neutral-100: #E5E5EA;  /* systemGray5, light */
+  --p-neutral-200: #D1D1D6;  /* systemGray4, light */
+  --p-neutral-300: #C7C7CC;  /* systemGray3, light */
+  --p-neutral-400: #AEAEB2;  /* systemGray2, light */
+  --p-neutral-500: #8E8E93;  /* systemGray -- the same in both themes */
+  --p-neutral-600: #595960;  /* see --text-secondary below */
+  --p-neutral-700: #48484A;  /* systemGray3, dark */
+  --p-neutral-800: #3A3A3C;  /* systemGray4, dark */
+  --p-neutral-900: #2C2C2E;  /* systemGray5, dark */
+  --p-neutral-950: #1C1C1E;  /* systemGray6, dark */
+  --p-neutral-1000: #000000; /* systemBackground, dark */
 
   /* Spacing — 4px base unit. */
   --space-0: 0;
@@ -189,13 +222,36 @@
   --surface-sunken: var(--p-neutral-100);
   --surface-inset: var(--p-neutral-0);
   --surface-overlay: var(--p-neutral-0);
-  --surface-scrim: rgb(18 22 22 / 0.45);
+  --surface-scrim: rgb(0 0 0 / 0.45);
   --surface-brand-subtle: var(--p-brand-50);
-  --surface-map-shade: rgb(245 247 247 / 0.86);
+  --surface-map-shade: rgb(242 242 247 / 0.86);
 
-  --text-primary: var(--p-neutral-950);
-  --text-secondary: var(--p-neutral-700);
-  --text-tertiary: var(--p-neutral-600);
+  /*
+   * label, and secondaryLabel at the opacity this app can afford.
+   *
+   * `label` is Apple's, unchanged: pure black on white. `secondaryLabel` is
+   * #3C3C43 at 60% over the background, and that composites to #8A8A8E on
+   * white -- 3.5:1, under the 4.5:1 this app holds every piece of body text
+   * to. So it is the same ink at 85% instead: #595960.
+   *
+   * 75% would have been enough on the white card and the grey page, and was
+   * the first answer -- it landed on #6C6C71, which is a rounding error away
+   * from Apple's OWN Increase Contrast systemGray, #6C6C70. It still failed on
+   * glass: three of the labels that use this colour sit on a translucent pane
+   * over the map, and over a black basemap that pane composites darker than
+   * any opaque surface -- 4.11:1 for the count under the map. So the answer is
+   * not that this app skipped Apple's accessible value; it is that even the
+   * accessible value is not enough for text on glass over a dark photograph,
+   * which is a case iOS mostly does not have. Sized to the number measured
+   * through the glass, the ink comes out at 7:1 on plain white, which is where
+   * this app's secondary text already sat.
+   *
+   * Dark needs no such adjustment -- see the dark block, where Apple's 60%
+   * clears 5.9:1 on its own.
+   */
+  --text-primary: #000000;
+  --text-secondary: var(--p-neutral-600);
+  --text-tertiary: var(--p-neutral-500);
   --text-on-brand: var(--p-neutral-0);
   --text-brand: var(--p-brand-700);
   --text-link: var(--p-brand-700);
@@ -330,8 +386,8 @@
   --glass-border: rgb(255 255 255 / 0.6);
   --glass-sheen: rgb(255 255 255 / 0.75);
   --glass-hover: rgb(255 255 255 / 0.5);
-  --glass-active: rgb(18 22 22 / 0.08);
-  --glass-shadow: 0 1px 2px rgb(18 22 22 / 0.08), 0 8px 24px rgb(18 22 22 / 0.14);
+  --glass-active: rgb(0 0 0 / 0.08);
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.14);
   /*
    * The thick pane, for panels rather than controls.
    *
@@ -369,9 +425,9 @@
    * flips with the theme, the way a grouped list does on a phone: white cells
    * on a grey ground in light, lifted grey cells on black in dark.
    */
-  --card-ground: rgb(18 22 22 / 0.03);
+  --card-ground: rgb(0 0 0 / 0.03);
   --group-bg: rgb(255 255 255 / 0.94);
-  --group-border: rgb(18 22 22 / 0.06);
+  --group-border: rgb(0 0 0 / 0.06);
   --group-sheen: rgb(255 255 255 / 0.9);
   /* The specular line along the top of a floating pane, and the hairline that
      draws its edge from the inside so it survives a border-radius. */
@@ -402,10 +458,10 @@
   --tile-fg: var(--p-brand-700);
   --brand-ramp-glow: 0 6px 16px -8px rgb(0 109 99 / 0.7);
 
-  --shadow-xs: 0 1px 2px rgb(18 22 22 / 0.06);
-  --shadow-sm: 0 1px 2px rgb(18 22 22 / 0.06), 0 2px 6px rgb(18 22 22 / 0.05);
-  --shadow-md: 0 2px 4px rgb(18 22 22 / 0.05), 0 8px 20px rgb(18 22 22 / 0.09);
-  --shadow-lg: 0 4px 8px rgb(18 22 22 / 0.06), 0 20px 44px rgb(18 22 22 / 0.14);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 2px 4px rgb(0 0 0 / 0.05), 0 8px 20px rgb(0 0 0 / 0.09);
+  --shadow-lg: 0 4px 8px rgb(0 0 0 / 0.06), 0 20px 44px rgb(0 0 0 / 0.14);
   --shadow-focus: 0 0 0 var(--border-focus) var(--focus-ring-offset),
                   0 0 0 calc(var(--border-focus) * 2) var(--focus-ring);
 
@@ -448,8 +504,8 @@
   --panel-bg: var(--surface-overlay);
   /*
    * One step up from `--border-subtle`, which is where this started and where
-   * it disappeared. The card floats over the map, and in dark mode a #2C3131
-   * edge on a #1E2121 card over a #121616 page was a boundary you had to know
+   * it disappeared. The card floats over the map, and in dark mode a #38383A
+   * edge on a #1C1C1E card over a #000000 page was a boundary you had to know
    * was there -- the information inside ran into the map behind it. `default`
    * is still a hairline and still a theme token, so the edge follows the
    * palette rather than being pinned to one mode.
@@ -499,23 +555,32 @@
 :root[data-theme='dark'] {
   --surface-page: var(--p-neutral-1000);
   --surface-raised: var(--p-neutral-950);
-  --surface-sunken: #171B1B;
-  --surface-inset: #171B1B;
+  --surface-sunken: var(--p-neutral-900);  /* tertiarySystemBackground */
+  --surface-inset: var(--p-neutral-900);
   --surface-overlay: var(--p-neutral-950);
   --surface-scrim: rgb(0 0 0 / 0.62);
   --surface-brand-subtle: #0B2926;
-  --surface-map-shade: rgb(18 22 22 / 0.86);
+  --surface-map-shade: rgb(0 0 0 / 0.86);
 
-  --text-primary: var(--p-neutral-100);
-  --text-secondary: var(--p-neutral-400);
-  --text-tertiary: var(--p-neutral-400);
+  /*
+   * label, and secondaryLabel at 70% for the same reason light needs 85%.
+   *
+   * Apple's 60% is 5.9:1 on an opaque #1C1C1E and would have been fine there.
+   * It is not fine on glass: the card's grouped pane is 94% opaque, and over a
+   * WHITE basemap the 6% that comes through lightens it enough to drop the
+   * quick-action labels to 4.27:1. 70% -- #ADADB4 -- clears it with room, and
+   * on the opaque surfaces it is simply a slightly brighter grey.
+   */
+  --text-primary: #FFFFFF;
+  --text-secondary: #ADADB4;
+  --text-tertiary: var(--p-neutral-500);
   --text-on-brand: var(--p-brand-950);
   --text-brand: var(--p-brand-300);
   --text-link: var(--p-brand-300);
   --text-link-hover: var(--p-brand-200);
 
-  --border-subtle: #2C3131;
-  --border-default: #3B4141;
+  --border-subtle: #38383A;  /* opaqueSeparator, dark */
+  --border-default: var(--p-neutral-700);
   --border-strong: var(--p-neutral-500);
   --border-brand: var(--p-brand-400);
 
@@ -524,11 +589,11 @@
   --action-primary-active: var(--p-brand-100);
   --action-secondary-fg: var(--p-neutral-100);
   --action-secondary-border: var(--p-neutral-500);
-  --action-secondary-hover-bg: #262B2B;
-  --action-secondary-active-bg: #303636;
+  --action-secondary-hover-bg: var(--p-neutral-900);
+  --action-secondary-active-bg: var(--p-neutral-800);
 
-  --interactive-hover-bg: #262B2B;
-  --interactive-active-bg: #303636;
+  --interactive-hover-bg: var(--p-neutral-900);
+  --interactive-active-bg: var(--p-neutral-800);
   --interactive-selected-bg: #0B2926;
   --interactive-selected-border: var(--p-brand-400);
 
@@ -558,7 +623,7 @@
 
   --map-cluster-bg: var(--p-brand-400);
   --map-cluster-fg: var(--p-brand-950);
-  --map-cluster-ring: rgb(18 22 22 / 0.85);
+  --map-cluster-ring: rgb(0 0 0 / 0.85);
   --map-pin-ring: var(--p-neutral-1000);
   --map-pin-selected-halo: var(--p-brand-300);
   --map-visited-dot: var(--p-save-300);
@@ -576,15 +641,15 @@
   /* Glass, dark. The pane tints toward the raised surface rather than toward
      white, and the sheen drops to a hint -- a bright rim that works on white
      glass reads as a scratch on dark. */
-  --glass-bg: rgb(30 33 33 / 0.7);
-  --glass-bg-strong: rgb(30 33 33 / 0.88);
+  --glass-bg: rgb(28 28 30 / 0.7);
+  --glass-bg-strong: rgb(28 28 30 / 0.88);
   --glass-border: rgb(255 255 255 / 0.14);
   --glass-sheen: rgb(255 255 255 / 0.16);
   --glass-hover: rgb(255 255 255 / 0.1);
   --glass-active: rgb(255 255 255 / 0.16);
   --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.6);
-  --glass-panel-bg: rgb(30 33 33 / 0.92);
-  --card-glass-bg: rgb(30 33 33 / 0.6);
+  --glass-panel-bg: rgb(28 28 30 / 0.92);
+  --card-glass-bg: rgb(28 28 30 / 0.6);
   --card-ground: rgb(0 0 0 / 0.22);
   /*
    * A surface of its own, not a 6% wash.
@@ -596,7 +661,7 @@
    * dark grouped list actually is -- so the pane between them is free to be
    * thin.
    */
-  --group-bg: rgb(44 49 49 / 0.94);
+  --group-bg: rgb(44 44 46 / 0.94);
   --group-border: rgb(255 255 255 / 0.09);
   --group-sheen: rgb(255 255 255 / 0.14);
   --pane-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.08);

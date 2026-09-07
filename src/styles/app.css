@@ -1322,8 +1322,8 @@ a.btn { text-decoration: none; }
  *
  * The tray is the sunken tone now, and in dark mode `--field-bg` resolves to
  * that same tone -- the field and the kommune list disappeared into the grey
- * around them. Raised is one step up from sunken either way: white on #EAEEED
- * in light, #1E2121 on #171B1B in dark. `background-color`, never the
+ * around them. Raised is one step up from sunken either way: white on #E5E5EA
+ * in light, #FFFFFF on #2C2C2E in dark. `background-color`, never the
  * shorthand, because the shorthand also resets the select's caret image.
  */
 .dock .field__input, .dock .select { background-color: var(--surface-raised); }
