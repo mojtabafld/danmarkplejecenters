@@ -73,6 +73,11 @@ a { color: var(--text-link); }
   inset-block-start: var(--space-2);
   inset-inline-start: var(--space-2);
   z-index: var(--z-toast);
+  /* Keyboard-only, and still 44: the one control a switch user meets first
+     should not be the one control that is 3px short. */
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
   padding: var(--space-2) var(--space-4);
   background: var(--surface-raised);
   color: var(--text-primary);
@@ -334,13 +339,17 @@ a { color: var(--text-link); }
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-block-size: var(--control-md);
+  /* 44, which is both the HIG's hit-region minimum and the height iOS gives a
+     button with a label in it. Every .btn is big enough to take it outright,
+     so none of them needs the invisible overlay further down. */
+  min-block-size: var(--control-lg);
   min-inline-size: var(--tap-min);
   padding-inline: var(--space-3);
   border-radius: var(--button-radius);
   border: var(--border-hairline) solid transparent;
   background: transparent;
-  font-size: var(--text-sm);
+  /* Body, like an iOS button label -- it was Footnote, two steps down. */
+  font-size: var(--text-base);
   font-weight: var(--weight-medium);
   cursor: pointer;
   /* Labels wrap instead of setting a min-content width the layout cannot meet.
@@ -390,6 +399,11 @@ a.btn { text-decoration: none; }
 .btn--icon {
   inline-size: var(--control-md);
   block-size: var(--control-md);
+  /* .btn now sets a 44 minimum, and min-block-size beats block-size -- which
+     made the theme toggle 36x44 while the two capsules beside it stayed 36x36.
+     An icon button gets its 44 from the hit region further down instead, so
+     the square it paints is free to match its neighbours. */
+  min-block-size: var(--control-md);
   padding: 0;
 }
 /* The header's controls read as one set of capsules on the bar's own layer. */
@@ -2045,6 +2059,26 @@ a.btn { text-decoration: none; }
 }
 
 /*
+ * ...and its whole height, which is the other half of the same idea.
+ *
+ * The rule above gives the link the width of the column; it was still only as
+ * tall as one line of text, so 22 of the row's 60 points were a target and the
+ * rest was decoration. An iOS list row is pressable anywhere, and the HIG's
+ * 44pt is about the region a finger lands in, not the ink.
+ *
+ * The overlay is deliberately positioned against `.fact` rather than the link:
+ * the link is not itself positioned, so `inset: 0` resolves against the
+ * nearest ancestor that is, and that is the row. It therefore covers the glyph
+ * tile and the label too, which is right -- pressing the little phone icon
+ * beside a number should dial it.
+ */
+.fact[data-leads='true'] .fact__value > a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/*
  * The field's name, over its value.
  *
  * Small, and in the secondary colour rather than the tertiary one: it sits on
@@ -2233,7 +2267,7 @@ a.btn { text-decoration: none; }
   grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
   gap: var(--space-2);
 }
-.notedlg__actions .btn { inline-size: 100%; min-block-size: var(--control-md); }
+.notedlg__actions .btn { inline-size: 100%; }
 
 .noteedit__text {
   inline-size: 100%;
@@ -2290,7 +2324,7 @@ a.btn { text-decoration: none; }
      separators and the calendar button -- and no wider. */
   inline-size: min(11rem, 100%);
   min-inline-size: 0;
-  min-block-size: var(--control-md);
+  min-block-size: var(--control-lg);
   padding: var(--space-2) var(--space-3);
   font: inherit;
   font-size: var(--text-base);
@@ -2310,6 +2344,71 @@ a.btn { text-decoration: none; }
   color: var(--text-secondary);
 }
 
+
+/* ============================================ 44pt hit regions === */
+/*
+ * "A button needs a hit region of at least 44x44 pt."
+ *   -- HIG, Buttons
+ *
+ * A hit REGION, not a painted box, and the distinction is the whole design of
+ * this rule. Growing every icon control to 44px would add 8px to the height of
+ * the header, the card's title row and the note dialog's chrome, and would
+ * make a 12px filter chip into a lozenge. What Apple asks for is that a finger
+ * landing anywhere in 44x44 hits the control -- so the control keeps its size
+ * and gets an invisible overlay centred on it.
+ *
+ * The overlay is a child of the button, so it captures for the button rather
+ * than stealing from anything: the only way it could take a neighbour's press
+ * is by overlapping one, and every pair here is separated by at least the 8px
+ * that the widest of these overlays adds on a side. Measured, in targets.mjs.
+ *
+ * What is deliberately NOT in this list: the two attribution links under the
+ * map. Those are words inside a sentence, and WCAG 2.5.8 exempts a target
+ * whose position is determined by the flow of text for the same reason Apple's
+ * 44pt is written about buttons -- a 44px box around "OpenStreetMap" would
+ * swallow the line above it.
+ */
+.panel__close,
+.panel__visit,
+.account__close,
+.langpick__button,
+.field__clear,
+.chip,
+.themetoggle,
+#themeToggle { position: relative; }
+
+.panel__close::after,
+.panel__visit::after,
+.account__close::after,
+.langpick__button::after,
+.field__clear::after,
+.chip::after,
+#themeToggle::after { content: ''; position: absolute; }
+
+/*
+ * Negative insets, not a centred box with a transform.
+ *
+ * The first attempt was `inset-inline-start: 50%` with `translate: -50%`,
+ * which is the usual way to centre an overlay and is wrong here: an absolutely
+ * positioned box laid out at the halfway mark and then pulled back by a
+ * transform still counts toward the parent's scrollable overflow, and the
+ * three filter chips started reporting as clipped text. Reaching outward by a
+ * fixed amount describes the same rectangle with no layout box out of place.
+ *
+ * Each number is 44 minus the control it sits on, halved: 4px around a 36px
+ * button, 8px around a 28px one.
+ */
+.panel__close::after,
+.panel__visit::after,
+.account__close::after,
+.langpick__button::after,
+#themeToggle::after { inset: -0.25rem; }
+
+.field__clear::after { inset: -0.5rem; }
+
+/* The chip is already 104 wide and wants only the height, so it reaches up and
+   down and not sideways -- sideways would be into the chip beside it. */
+.chip::after { inset-block: -0.5rem; inset-inline: 0; }
 
 /* ownership tinting, applied by data attribute so colour is systematic */
 [data-own='Kommunal'] { --own-fg: var(--cat-kommunal-fg); --own-bg: var(--cat-kommunal-bg); --own-mark: var(--cat-kommunal-mark); }
@@ -2965,7 +3064,7 @@ a.btn { text-decoration: none; }
   grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
   gap: var(--space-2);
 }
-.account__actions .btn { inline-size: 100%; min-block-size: var(--control-md); }
+.account__actions .btn { inline-size: 100%; }
 
 /* Destructive, so it takes the destructive token everywhere it appears. */
 .btn--danger {
