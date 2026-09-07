@@ -545,15 +545,16 @@
   /*
    * Two ramps, because the two things they fill need different contrast.
    *
-   * The glyph tile carries an icon, which is a graphic and needs 3:1; the
-   * capsule at the foot of the card carries a word, which needs 4.5. A single
-   * ramp light enough to look like a tile puts white text at 3.2:1 on its top
-   * edge, so the button gets a darker one rather than the label getting
-   * smaller. Both are measured against the LIGHT end, which is the worst case
-   * for the white sitting on them.
+   * One ramp left, and it is not on a control.
+   *
+   * There was a second, darker one for buttons: a button carries a word and
+   * needs 4.5:1, and a ramp light enough to look like a tile puts white at
+   * 3.2:1 along its top edge. That whole problem belonged to the gradient.
+   * Buttons are flat now and take --button-primary-bg, so the ramp is down to
+   * the masthead mark -- an app icon, where a gradient is what iOS itself
+   * does. Measured against its LIGHT end, the worst case for white on it.
    */
   --brand-ramp: linear-gradient(180deg, var(--p-blue-500), var(--p-blue-700));
-  --brand-ramp-cta: linear-gradient(180deg, var(--p-blue-700), var(--p-blue-900));
   /*
    * The grouped list's glyph tiles: flat, tinted, and one accent.
    *
@@ -782,11 +783,9 @@
   --group-border: rgb(255 255 255 / 0.09);
   --group-sheen: rgb(255 255 255 / 0.14);
   --pane-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.08);
-  /* Both ramps lighten in dark, so the tiles read as lit rather than as holes;
-     the glyph and the label on them are dark, so here the DARK end is the worst
-     case and the ramps stay well above it. */
+  /* The ramp lightens in dark, so the mark reads as lit rather than as a hole;
+     the glyph on it is dark, so here the DARK end is the worst case. */
   --brand-ramp: linear-gradient(180deg, var(--p-blue-300), var(--p-blue-500));
-  --brand-ramp-cta: linear-gradient(180deg, var(--p-blue-200), var(--p-blue-400));
   /* The tint is the accent held back rather than a lighter grey, so the tile
      still reads as coloured against a near-black row. */
   --tile-bg: rgb(92 184 255 / 0.16);
