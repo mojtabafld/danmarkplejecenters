@@ -10,7 +10,7 @@ import { I18n, LOCALES, LOCALE_META, type Locale, type TranslationKey } from './
 import { icon, iconDataUri } from './icons';
 import { ResultList } from './list';
 import { PlejecenterMap } from './map';
-import { setCollatorLocale } from './format';
+import { formatDay, setCollatorLocale } from './format';
 import { Store, resortForLocale } from './store';
 import {
   DENMARK_BOX,
@@ -100,6 +100,7 @@ const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
 const noteText = $<HTMLTextAreaElement>('#noteText');
+const noteDate = $<HTMLInputElement>('#noteDate');
 const noteError = $('#noteError');
 
 const t = (key: TranslationKey, params?: Record<string, string | number>): string =>
@@ -1132,7 +1133,11 @@ function openNoteEditor(id: string): void {
   $('#noteSave').innerHTML = icon('check') + esc(t('note.save'));
   $('#noteCancel').textContent = t('note.cancel');
   noteText.placeholder = t('note.placeholder');
-  noteText.value = account.noteFor(id);
+  $('#noteDateLabel').textContent = t('note.date');
+  const existing = account.noteFor(id);
+  noteText.value = existing?.body ?? '';
+  noteDate.value = existing?.visitedOn ?? '';
+  paintNoteDate();
   noteError.hidden = true;
 
   noteDialog.hidden = false;
@@ -1140,6 +1145,23 @@ function openNoteEditor(id: string): void {
   noteText.focus();
   noteText.setSelectionRange(noteText.value.length, noteText.value.length);
 }
+
+/*
+ * What the browser understood, spelled out under the field.
+ *
+ * A date input renders in the BROWSER's locale rather than the page's, so a
+ * Danish reader on an English phone is shown 03/01/2026 for the first of
+ * March and has no way to tell which number is the month. The hint line
+ * answers "what is this field for" while the field is empty and "which day
+ * have I just picked" once it is not, which is the more useful question at
+ * each moment -- and it is the same string the card will show.
+ */
+function paintNoteDate(): void {
+  $('#noteDateHint').textContent = noteDate.value
+    ? formatDay(noteDate.value, i18n.locale)
+    : t('note.dateHint');
+}
+for (const ev of ['input', 'change']) noteDate.addEventListener(ev, paintNoteDate);
 
 function closeNoteEditor(): void {
   noteFor = null;
@@ -1179,7 +1201,16 @@ function refreshCard(): void {
 $('#noteSave').addEventListener('click', () => {
   if (!noteFor) return;
   const id = noteFor;
-  void account.saveNote(id, noteText.value).then((ok) => {
+  // The picker cannot produce a bad date, but a keyboard can: desktop Chrome
+  // takes a typed year of 0002, and min/max are what reject it. Caught here so
+  // the reader is told which field is wrong rather than that saving failed.
+  if (noteDate.value && !noteDate.checkValidity()) {
+    noteError.textContent = t('note.badDate');
+    noteError.hidden = false;
+    noteDate.focus();
+    return;
+  }
+  void account.saveNote(id, noteText.value, noteDate.value).then((ok) => {
     if (!ok) {
       noteError.textContent = t('note.failed');
       noteError.hidden = false;

@@ -6,7 +6,7 @@
  */
 import { createServer } from 'node:http';
 import assert from 'node:assert/strict';
-import { newDb } from 'pg-mem';
+import { memPool } from './pgmem.mjs';
 
 import * as db from '../server/db.mjs';
 import * as api from '../server/api.mjs';
@@ -17,9 +17,7 @@ const outbox = [];
 mail.setTransport({ sendMail: async (m) => { outbox.push(m); return { messageId: 'test' }; } });
 const lastLink = () => (outbox.at(-1)?.text.match(/https?:\/\/\S+/) ?? [])[0];
 
-const mem = newDb();
-mem.public.registerFunction({ name: 'now', returns: 'timestamptz', implementation: () => new Date() });
-const { Pool } = mem.adapters.createPg();
+const { mem, Pool } = memPool();
 await db.init({ injectedPool: new Pool() });
 
 const server = createServer(async (req, res) => {
@@ -123,27 +121,63 @@ check('the list is empty again', r.body.visits.length === 0);
 r = await call('GET', '/api/notes');
 check('a new account has no notes', r.status === 200 && Object.keys(r.body.notes).length === 0);
 
-r = await call('PUT', '/api/notes/86bd866d-7fec-46e4-99b2-38ca86cbb59d', { body: '  Ringede tirsdag, venteliste 4 mdr.  ' });
-check('a note is saved, trimmed', r.status === 200 && r.body.note === 'Ringede tirsdag, venteliste 4 mdr.');
+const NOTE_ID = '86bd866d-7fec-46e4-99b2-38ca86cbb59d';
+
+r = await call('PUT', `/api/notes/${NOTE_ID}`, { body: '  Ringede tirsdag, venteliste 4 mdr.  ' });
+check('a note is saved, trimmed',
+  r.status === 200 && r.body.note.body === 'Ringede tirsdag, venteliste 4 mdr.');
+check('and with no date until one is chosen', r.body.note.visitedOn === null);
 
 r = await call('GET', '/api/notes');
 check('and comes back keyed by plejecenter',
-  r.body.notes['86bd866d-7fec-46e4-99b2-38ca86cbb59d'] === 'Ringede tirsdag, venteliste 4 mdr.');
+  r.body.notes[NOTE_ID].body === 'Ringede tirsdag, venteliste 4 mdr.');
 
-r = await call('PUT', '/api/notes/86bd866d-7fec-46e4-99b2-38ca86cbb59d', { body: 'Rettet' });
-check('writing again replaces rather than duplicating', r.status === 200 && r.body.note === 'Rettet');
+r = await call('PUT', `/api/notes/${NOTE_ID}`, { body: 'Rettet' });
+check('writing again replaces rather than duplicating', r.status === 200 && r.body.note.body === 'Rettet');
 const noteRows = await db.query('SELECT count(*)::int AS n FROM notes');
 check('one row, not two', noteRows.rows[0].n === 1);
 
+/* ---------------------------------------------------- the day it is about -- */
+
+r = await call('PUT', `/api/notes/${NOTE_ID}`, { body: 'Rettet', visitedOn: '2026-03-01' });
+check('a date is stored beside the text',
+  r.status === 200 && r.body.note.visitedOn === '2026-03-01' && r.body.note.body === 'Rettet');
+r = await call('GET', '/api/notes');
+check('and comes back as the day that was chosen, not the day before it',
+  r.body.notes[NOTE_ID].visitedOn === '2026-03-01');
+
+// updated_at is when the row was written; visited_on is what the reader said.
+// The point of the column is that they are allowed to differ.
+const days = await db.query(`SELECT to_char(visited_on, 'YYYY-MM-DD') AS d, updated_at FROM notes`);
+const savedOn = new Date(days.rows[0].updated_at).toISOString().slice(0, 10);
+check('the chosen day is not the day the row was saved',
+  days.rows[0].d === '2026-03-01' && savedOn !== '2026-03-01');
+
+r = await call('PUT', `/api/notes/${NOTE_ID}`, { body: '', visitedOn: '2026-03-01' });
+check('a day with no words is still a note',
+  r.status === 200 && r.body.note !== null && r.body.note.body === '' &&
+  r.body.note.visitedOn === '2026-03-01');
+
+r = await call('PUT', `/api/notes/${NOTE_ID}`, { body: 'Rettet', visitedOn: null });
+check('and the date can be cleared without losing the words',
+  r.status === 200 && r.body.note.visitedOn === null && r.body.note.body === 'Rettet');
+
+for (const bad of ['2026-02-31', '01-03-2026', '2026-3-1', 'i går', '1899-12-31', '2101-01-01', 5]) {
+  r = await call('PUT', `/api/notes/${NOTE_ID}`, { body: 'Rettet', visitedOn: bad });
+  check(`${JSON.stringify(bad)} is refused as a date`, r.status === 400 && r.body.error === 'bad_date');
+}
+r = await call('GET', '/api/notes');
+check('and a refused date leaves the note as it was',
+  r.body.notes[NOTE_ID].body === 'Rettet' && r.body.notes[NOTE_ID].visitedOn === null);
+
 // A note must survive unmarking: losing written text to an unrelated click
 // would be the worst kind of surprise.
-await call('PUT', '/api/visits/86bd866d-7fec-46e4-99b2-38ca86cbb59d');
-await call('DELETE', '/api/visits/86bd866d-7fec-46e4-99b2-38ca86cbb59d');
+await call('PUT', `/api/visits/${NOTE_ID}`);
+await call('DELETE', `/api/visits/${NOTE_ID}`);
 r = await call('GET', '/api/notes');
-check('removing it from visited keeps the note',
-  r.body.notes['86bd866d-7fec-46e4-99b2-38ca86cbb59d'] === 'Rettet');
+check('removing it from visited keeps the note', r.body.notes[NOTE_ID].body === 'Rettet');
 
-r = await call('PUT', '/api/notes/86bd866d-7fec-46e4-99b2-38ca86cbb59d', { body: '   ' });
+r = await call('PUT', `/api/notes/${NOTE_ID}`, { body: '   ' });
 check('an empty note deletes rather than storing a blank', r.status === 200 && r.body.note === null);
 r = await call('GET', '/api/notes');
 check('and it is gone', Object.keys(r.body.notes).length === 0);

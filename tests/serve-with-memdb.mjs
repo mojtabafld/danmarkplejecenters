@@ -7,7 +7,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { newDb } from 'pg-mem';
+import { memPool } from './pgmem.mjs';
 
 import * as db from '../server/db.mjs';
 import * as api from '../server/api.mjs';
@@ -23,9 +23,7 @@ mail.setTransport({ sendMail: async (m) => { outbox.push(m); return { messageId:
 const ROOT = resolve(fileURLToPath(new URL('../dist', import.meta.url)));
 const PORT = Number(process.env.PORT) || 8150;
 
-const mem = newDb();
-mem.public.registerFunction({ name: 'now', returns: 'timestamptz', implementation: () => new Date() });
-const { Pool } = mem.adapters.createPg();
+const { mem, Pool } = memPool();
 await db.init({ injectedPool: new Pool() });
 
 // Mirrors the map in server.mjs for the types this app actually ships, so a

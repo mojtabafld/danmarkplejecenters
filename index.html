@@ -144,6 +144,21 @@
             <button type="button" class="account__close" id="noteClose"></button>
           </div>
           <textarea class="noteedit__text" id="noteText" rows="5" maxlength="2000"></textarea>
+          <!-- The day the note is about. A native date input on purpose: every
+               phone already has a good picker for this, and it is the one the
+               reader's thumb knows. -->
+          <div class="noteedit__field">
+            <label class="noteedit__label" id="noteDateLabel" for="noteDate"></label>
+            <input
+              class="noteedit__date"
+              type="date"
+              id="noteDate"
+              min="1900-01-01"
+              max="2100-12-31"
+              aria-describedby="noteDateHint"
+            />
+            <p class="noteedit__hint" id="noteDateHint"></p>
+          </div>
           <p class="account__error" id="noteError" role="alert" hidden></p>
           <div class="notedlg__actions">
             <button type="button" class="btn btn--primary" id="noteSave"></button>
