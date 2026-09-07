@@ -2368,13 +2368,25 @@ a.btn { text-decoration: none; }
  * 44pt is written about buttons -- a 44px box around "OpenStreetMap" would
  * swallow the line above it.
  */
+/*
+ * `.field__clear` is NOT in this list, and that is the whole point of the
+ * comment.
+ *
+ * It was, and `position: relative` overrode the `position: absolute` it uses
+ * to sit inside the search field. The button fell into normal flow below the
+ * field, took the dock's wrapper from 44 to 72 tall, and dragged the magnifier
+ * 14px off centre with it, because that glyph centres on the wrapper. The
+ * dock has looked broken since that shipped.
+ *
+ * Nothing needed the declaration in the first place: an absolutely positioned
+ * element is already a containing block for its own ::after. The list below is
+ * only for the controls that are statically positioned.
+ */
 .panel__close,
 .panel__visit,
 .account__close,
 .langpick__button,
-.field__clear,
 .chip,
-.themetoggle,
 #themeToggle { position: relative; }
 
 .panel__close::after,
