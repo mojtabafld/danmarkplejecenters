@@ -448,7 +448,17 @@ export class DetailPanel {
           'mail',
           'panel.email',
           `<a href="mailto:${esc(p.email)}">` +
-            `<span dir="ltr">${esc(p.email)}</span></a>`,
+            /*
+             * A break opportunity after the @, and nowhere else.
+             *
+             * At Body 17 the longer addresses no longer fit one line of the
+             * card, and `overflow-wrap: anywhere` broke the last one mid-word:
+             * "plejeboligomraadet@albertslun / d.dk". An address has exactly
+             * one natural fold and this is it, so <wbr> offers that point and
+             * the wrapping rule keeps its job as the last resort for an
+             * address with no @ short enough to help.
+             */
+            `<span dir="ltr">${esc(p.email).replace('@', '@<wbr>')}</span></a>`,
           { leads: true },
         ),
       );
