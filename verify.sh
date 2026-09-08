@@ -14,7 +14,7 @@
 # anti-slop/taste signals.
 #
 # What this does NOT prove: that the thing looks good. No script scores taste.
-# Look at it, and read the "Verification" section of the README.
+# Look at it, and read the "Verification" section of docs/DEVELOPMENT.md.
 set -uo pipefail
 
 # The gates themselves live in the design-system kit, not in this repo. Point
