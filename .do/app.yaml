@@ -28,12 +28,20 @@ services:
     instance_size_slug: apps-s-1vcpu-0.5gb
 
     envs:
-      # The binding that makes accounts work. The name in ${...} must match the
-      # database component's name. Never paste the connection string itself: it
-      # carries the password, and this file is in git.
-      - key: DATABASE_URL
-        scope: RUN_TIME
-        value: ${dev-db-718494.DATABASE_URL}
+      # DATABASE_URL is deliberately NOT here.
+      #
+      # Attaching a dev database in the App Platform UI injects it into this
+      # component by itself, and an explicit entry then has to name the database
+      # component exactly. This file used to carry
+      # `${dev-db-718494.DATABASE_URL}`, pointing at a component that had been
+      # deleted -- a reference that resolves to nothing and takes accounts down
+      # silently, because the app treats a missing database as "accounts off"
+      # rather than as a crash.
+      #
+      # If you create the app from this spec with `doctl apps create --spec`
+      # instead of the UI, add it back with the name from the `databases:`
+      # block below, and never the connection string itself -- it carries a
+      # password and this repository is public.
 
       # Where the verification link points. Without it the link is built from
       # the request's own host, which is right in almost every case but wrong
@@ -68,6 +76,10 @@ services:
       - key: SMTP_USER
         scope: RUN_TIME
         value: no-reply@plejefinder.online
+      # Set in the App Platform UI with "Encrypt" ticked, not here. DO stores
+      # it encrypted, hands it to the process at run time, and keeps it across
+      # every deploy -- so it is entered once and never lives in git. A plain
+      # value committed to this file would be public the moment it is pushed.
       - key: SMTP_PASS
         scope: RUN_TIME
         type: SECRET
@@ -84,7 +96,10 @@ services:
         scope: RUN_TIME
         value: "Plejecentre <no-reply@plejefinder.online>"
 
+# Only read when the app is created from this file with
+# `doctl apps create --spec`. An app made in the UI has its own copy of the
+# spec, and pushes to the repository do not re-read this one.
 databases:
-  - name: dev-db-718494
+  - name: plejekort-db
     engine: PG
     production: false
