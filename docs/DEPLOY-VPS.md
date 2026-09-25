@@ -82,13 +82,18 @@ There is no migration step.
 
 Oracle's images ship iptables rules that DROP inbound traffic apart from SSH.
 This is **separate** from the VCN security list in the console, and both have
-to allow the port. Skip either and the site is unreachable while every piece
+to allow the port. The console half cannot be done from inside the machine. Skip either and the site is unreachable while every piece
 of configuration looks correct.
 
 ```bash
 # In the console: VCN → Subnet → Security List → Ingress, 0.0.0.0/0 TCP 80,443
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+# Insert BEFORE the REJECT that ends the chain, wherever it happens to be.
+# `-I INPUT 6` is the number every Oracle guide quotes, and it is only right
+# for the stock chain. A real box had an extra rule in it, which would have
+# put these two after the REJECT -- accepted by iptables, and useless.
+REJECT_LINE=$(sudo iptables -L INPUT --line-numbers -n | awk '/REJECT/{print $1; exit}')
+sudo iptables -I INPUT "${REJECT_LINE:-6}" -m state --state NEW -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT "${REJECT_LINE:-6}" -m state --state NEW -p tcp --dport 443 -j ACCEPT
 sudo netfilter-persistent save
 ```
 

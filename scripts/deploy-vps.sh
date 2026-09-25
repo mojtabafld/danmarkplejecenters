@@ -283,9 +283,14 @@ $(printf '\033[1m')Installed. Three things are left, and they are deliberately n
    that is separate from the VCN security list in the console. Both have to
    allow 80 and 443:
 
-       sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-       sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+       R=\$(sudo iptables -L INPUT --line-numbers -n | awk '/REJECT/{print \$1; exit}')
+       sudo iptables -I INPUT \${R:-6} -m state --state NEW -p tcp --dport 80 -j ACCEPT
+       sudo iptables -I INPUT \${R:-6} -m state --state NEW -p tcp --dport 443 -j ACCEPT
        sudo netfilter-persistent save
+
+   \$R finds the REJECT that ends the chain. The 6 every Oracle guide quotes is
+   only right for the stock chain; one extra rule and the new ones land after
+   the REJECT, which iptables accepts and which does nothing.
 
 2. DNS. Point ${DOMAIN} at ${IP} with an A record. Leave the MX, SPF, DKIM
    and DMARC records alone — deleting the zone to "start clean" takes the mail
