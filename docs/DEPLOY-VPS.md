@@ -23,8 +23,15 @@ Measured, not estimated:
 So the running app fits anywhere. The only thing that does not fit on a 1 GB
 box is the *build*, and only for a few seconds. Two ways round it:
 
-1. **Swap.** 2 GB of swapfile, and the build succeeds. `deploy-vps.sh` adds it
-   automatically when RAM is under 2 GB and no swap exists.
+1. **Swap, and a heap cap.** 2 GB of swapfile, which `deploy-vps.sh` adds when
+   RAM is under 2 GB and none exists — plus `--max-old-space-size=512`, which
+   it now passes. Swap alone was not enough on a 954 MB box: V8 sizes its heap
+   from total RAM, so it grew into the OOM killer mid-`vite build` with the
+   swap barely touched. Capping the heap makes it collect instead.
+
+   **Nothing else large should be running.** That build died with two Claude
+   Code sessions resident on the same 954 MB. Run the deploy from a plain SSH
+   session.
 2. **Build elsewhere.** `dist/` is 2.1 MB, so building on a laptop and
    `rsync`-ing the result is fast and keeps the server at 5 MB the whole time.
    Use `--no-build` for this.

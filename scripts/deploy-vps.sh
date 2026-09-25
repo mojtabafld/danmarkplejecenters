@@ -60,7 +60,12 @@ die()  { printf '\n\033[1;31m!! %s\033[0m\n' "$*" >&2; exit 1; }
 say "preflight"
 
 [ "$(id -u)" -ne 0 ] || die "run as an ordinary user with sudo, not as root — the service should not run as root"
-sudo -v || die "this needs sudo"
+# `sudo -n true` first, because `sudo -v` validates against every sudoers rule
+# and prompts if ANY of them wants a password -- even when the user also has a
+# NOPASSWD: ALL rule that would let every command through. A real box had both
+# (ubuntu NOPASSWD, %sudo with a password) and preflight stopped on a machine
+# where nothing needed a password.
+{ sudo -n true 2>/dev/null || sudo -v; } || die "this needs sudo"
 
 if sudo ss -tln 2>/dev/null | grep -qE "[:.]${APP_PORT}[[:space:]]"; then
   sudo ss -tlnp 2>/dev/null | grep -E "[:.]${APP_PORT}[[:space:]]" | head -1
@@ -168,7 +173,11 @@ if [ "$DO_BUILD" -eq 1 ]; then
   # Full install, not --omit=dev: vite and typescript are devDependencies and
   # the build needs them. dist/ is gitignored, so it has to be built here.
   npm ci
-  npm run build
+  # Cap the heap so V8 collects rather than grows. It sizes itself from total
+  # RAM, so on a 1 GB box it happily climbs until the kernel kills it -- which
+  # is what happened here, mid-`vite build`, with swap barely touched. 512 MB
+  # is above the 536 MB peak this build actually needs once it is made to try.
+  NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=512}" npm run build
   ok "built dist/ ($(du -sh dist | cut -f1))"
 else
   [ -d dist ] || die "--no-build was given but dist/ is not here. rsync it up first."
@@ -205,6 +214,11 @@ ADMIN_EMAILS=
 EOF
   chmod 600 "$APP_DIR/.env"
   ok "wrote .env (mode 600) — SMTP_PASS is still blank"
+  if [ -z "${DB_PASS}" ]; then
+    warn "DATABASE_URL says CHANGE_ME: the role already existed, so this run"
+    warn "never saw its password. Put the real one in .env before starting,"
+    warn "or reset it:  sudo -u postgres psql -c \"ALTER USER ${DB_USER} PASSWORD 'new';\""
+  fi
 fi
 
 # --------------------------------------------------------------- systemd ----
