@@ -112,6 +112,12 @@ NEED=()
 command -v git >/dev/null || NEED+=(git)
 command -v nginx >/dev/null || NEED+=(nginx)
 command -v psql >/dev/null || NEED+=(postgresql)
+# certbot is installed but never run: the certificate needs DNS pointing here
+# first, which is a human's job. Installing it anyway means the command this
+# script prints at the end actually exists when someone runs it -- it did not,
+# and the deploy stopped at `certbot: command not found` with the site up and
+# no https.
+command -v certbot >/dev/null || NEED+=(certbot python3-certbot-nginx)
 if [ ${#NEED[@]} -gt 0 ]; then
   sudo apt-get update -qq
   sudo apt-get install -y "${NEED[@]}"
