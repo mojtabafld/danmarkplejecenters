@@ -68,6 +68,43 @@ jobs:
           appendFileSync(process.env.GITHUB_OUTPUT, 'account_id=' + body.result[0].id + '\n');
           NODE
 
+      - name: Inspect Pages production and preview configuration (values redacted)
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.account.outputs.account_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/pages/projects/${process.env.CF_PAGES_PROJECT}`;
+          const response = await fetch(url, {
+            headers: { Authorization: 'Bearer ' + process.env.CLOUDFLARE_API_TOKEN }
+          });
+          const body = await response.json();
+          if (!response.ok || body.success === false || !body.result) {
+            throw new Error('Pages project inspection failed: ' + JSON.stringify(body.errors || { status: response.status }));
+          }
+          const project = body.result;
+          const required = ['PUBLIC_URL', 'ADMIN_EMAILS', 'MAIL_FROM', 'RESEND_API_KEY', 'TRAFFIC_HASH_SECRET'];
+          const lines = [
+            '## Pages environment audit',
+            '',
+            '- Production branch: ' + (project.production_branch || '(not returned)'),
+            '- Domains: ' + ((project.domains || []).join(', ') || '(none attached)'),
+          ];
+          for (const environment of ['production', 'preview']) {
+            const config = project.deployment_configs?.[environment] || {};
+            const vars = config.env_vars || {};
+            const names = Object.keys(vars).sort();
+            lines.push('', '### ' + environment + ' variable names', names.length ? names.map(x => '- ' + x).join('\n') : '- (none returned)');
+            const missing = required.filter(name => !Object.hasOwn(vars, name));
+            lines.push('- Required names missing: ' + (missing.join(', ') || 'none'));
+          }
+          lines.push('', '- Values and secret contents: never printed.');
+          const summary = lines.join('\n');
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
+          console.log(summary);
+          NODE
+
       - name: Download current Pages settings without deploying
         shell: bash
         env:
