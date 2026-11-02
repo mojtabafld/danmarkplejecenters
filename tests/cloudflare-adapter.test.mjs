@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { toNodeRequest, createNodeResponse } from '../functions/_lib/request-adapter.js';
+import { configureRuntime } from '../functions/_lib/runtime.js';
+import * as mail from '../server/mail.mjs';
 
 const request = new Request('https://preview.example/api/auth/signin', {
   method: 'POST',
@@ -42,3 +44,33 @@ assert.equal(response.headers.get('location'), '/?verified=1');
 assert.equal(response.headers.get('cache-control'), 'no-store');
 
 console.log('Cloudflare request/response adapter tests passed');
+
+const originalFetch = globalThis.fetch;
+const sent = [];
+globalThis.fetch = async (url, init) => {
+  sent.push({ url, init, body: JSON.parse(init.body) });
+  return new Response(JSON.stringify({ id: 'mail_test_id' }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+};
+
+configureRuntime({
+  RESEND_API_KEY: 'test-key-not-a-real-secret',
+  MAIL_FROM: 'Plejecentre <noreply@example.test>',
+  TRAFFIC_HASH_SECRET: 'test-traffic-secret',
+});
+await mail.sendVerification('reader@example.test', 'https://preview.example/verify?token=abc');
+await mail.sendReset('reader@example.test', 'https://preview.example/?reset=def');
+
+assert.equal(sent.length, 2);
+assert.equal(sent[0].url, 'https://api.resend.com/emails');
+assert.equal(sent[0].init.headers.authorization, 'Bearer test-key-not-a-real-secret');
+assert.deepEqual(sent[0].body.to, ['reader@example.test']);
+assert.equal(sent[0].body.from, 'Plejecentre <noreply@example.test>');
+assert.match(sent[0].body.text, /https:\/\/preview\.example\/verify\?token=abc/);
+assert.match(sent[1].body.text, /https:\/\/preview\.example\/?reset=def/);
+
+globalThis.fetch = originalFetch;
+mail.setTransport(null);
+console.log('Cloudflare HTTPS mail adapter tests passed');
