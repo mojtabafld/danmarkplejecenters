@@ -3,4 +3,4 @@
 name = "danmarkplejecenters-migration"
 pages_build_output_dir = "./dist"
 compatibility_date = "2026-11-02"
-compatibility_flags = ["nodejs_compat"]
+compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
