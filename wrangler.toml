@@ -1,0 +1,6 @@
+# Cloudflare Pages configuration for the isolated migration branch.
+# No Hyperdrive binding or production secrets are configured here.
+name = "danmarkplejecenters-migration"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-11-02"
+compatibility_flags = ["nodejs_compat"]
