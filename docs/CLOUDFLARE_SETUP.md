@@ -52,7 +52,11 @@ Connect the repository to Cloudflare Pages with:
 
 Keep all bindings and secrets scoped to Preview until the full acceptance checklist passes.
 
-## 6. Smoke checks
+## Important: Workers CPU plan and scrypt
+
+The existing custom login uses Node `scrypt` with N=32768 and r=8. Cloudflare documents a 10 ms CPU limit per request on Workers Free, while the existing code comments describe a password hash taking roughly 100 ms on small hardware. Therefore, do not assume authentication will run within the Free CPU budget. Benchmark signup/signin/reset in the actual Cloudflare preview before using it with real accounts. The Workers Paid plan currently starts at US$5/month and has a much larger CPU allowance; do not weaken or rewrite existing password hashes merely to fit the Free limit.
+
+## 7. Smoke checks
 
 - Open `/api/health`: it should report a ready database and configured mail, without returning secret values.
 - Confirm `/admin/` and the main map load from the Pages preview.
