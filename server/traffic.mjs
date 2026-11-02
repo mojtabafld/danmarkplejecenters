@@ -21,7 +21,7 @@
  * an exact figure. Being approximately right without a surveillance table is
  * the better trade for a public map of care homes.
  */
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 
 import * as db from './db.mjs';
 
@@ -43,9 +43,8 @@ const PLACE_ID = /^[A-Za-z0-9_.:-]{1,64}$/;
  */
 const PLACE_CAP = 600;
 
-let salt = randomBytes(32);
-let saltDay = today();
-let placesToday = new Set();
+let salt = null;
+let saltDay = '';
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -61,9 +60,17 @@ function today() {
 function currentSalt() {
   const day = today();
   if (day !== saltDay) {
-    salt = randomBytes(32);
+    const secret = process.env.TRAFFIC_HASH_SECRET;
+    if (process.env.CLOUDFLARE_RUNTIME === '1' && !secret) {
+      // Do not write isolate-specific visitor hashes in Workers: every isolate
+      // would mint a different identity for the same person.
+      salt = null;
+    } else {
+      salt = secret
+        ? createHmac('sha256', secret).update(day).digest()
+        : randomBytes(32);
+    }
     saltDay = day;
-    placesToday = new Set();
   }
   return salt;
 }
@@ -76,8 +83,10 @@ function currentSalt() {
  * internet as one. Neither is stored; only this digest is.
  */
 function visitorHash(ip, agent) {
+  const dailySalt = currentSalt();
+  if (!dailySalt) return null;
   return createHash('sha256')
-    .update(currentSalt())
+    .update(dailySalt)
     .update(String(ip ?? ''))
     .update('|')
     .update(String(agent ?? '').slice(0, 200))
@@ -104,21 +113,27 @@ export async function view({ ip, agent, locale }) {
   if (LOCALES.has(locale)) await bump(day, `locale:${locale}`);
   // ON CONFLICT DO NOTHING is what makes this a set rather than a log: the
   // second view from the same visitor on the same day writes nothing.
-  await db.query('INSERT INTO visitor_days (day, visitor) VALUES ($1, $2) ON CONFLICT DO NOTHING', [
-    day,
-    hash,
-  ]);
+  if (hash) {
+    await db.query('INSERT INTO visitor_days (day, visitor) VALUES ($1, $2) ON CONFLICT DO NOTHING', [
+      day,
+      hash,
+    ]);
+  }
 }
 
 /** Record that somebody opened one plejecentre's card. */
 export async function place(id) {
   if (!PLACE_ID.test(id)) return;
-  currentSalt();
-  if (!placesToday.has(id)) {
-    if (placesToday.size >= PLACE_CAP) return;
-    placesToday.add(id);
-  }
-  await bump(today(), `place:${id}`);
+  const day = today();
+  const inserted = await db.query(
+    `INSERT INTO place_days (day, place_id)
+     SELECT $1, $2
+      WHERE (SELECT count(*) FROM place_days WHERE day = $1) < $3
+     ON CONFLICT DO NOTHING
+     RETURNING place_id`,
+    [day, id, PLACE_CAP],
+  );
+  if (inserted.rows.length) await bump(day, `place:${id}`);
 }
 
 /**
@@ -151,6 +166,7 @@ export async function prune() {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(cut)) return;
   await db.query(`DELETE FROM visitor_days WHERE day < DATE '${cut}'`);
   await db.query(`DELETE FROM counters WHERE day < DATE '${cut}'`);
+  await db.query(`DELETE FROM place_days WHERE day < DATE '${cut}'`);
 }
 
 /* --------------------------------------------------------------- reading -- */
