@@ -50,3 +50,10 @@ jobs:
       # transport: accounts, the confirmation link, sessions, notes, ratings
       # and moderation, who may reach the admin API, and the counting beacon.
       - run: npm test
+
+      # Compile Pages Functions against the Workers runtime. This catches
+      # unsupported imports and bundling errors before a preview deployment.
+      - run: npx --yes wrangler@4 pages functions build functions --outdir .wrangler/pages-worker --compatibility-date=2026-11-02 --compatibility-flag=nodejs_compat --compatibility-flag=nodejs_compat_populate_process_env
+
+      # Validate the separate Durable Object Worker without deploying it.
+      - run: npx --yes wrangler@4 deploy --dry-run --config workers/auth-rate-limiter/wrangler.toml
