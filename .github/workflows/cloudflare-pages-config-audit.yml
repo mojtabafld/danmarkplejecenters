@@ -31,6 +31,23 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Build frontend and admin application
+        run: npm run build
+
+      - name: Compile Pages Functions and validate Wrangler configuration
+        shell: bash
+        run: |
+          npx --yes wrangler@4 pages functions build functions \
+            --config wrangler.toml \
+            --build-output-directory dist \
+            --outdir "$RUNNER_TEMP/pages-functions"
+
       - name: Discover Cloudflare account
         id: account
         shell: bash
