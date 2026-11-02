@@ -24,7 +24,7 @@ The migration branch now contains a Fetch-to-legacy adapter. It adapts Web `Requ
 
 Use Cloudflare Hyperdrive to connect Pages Functions to PostgreSQL through `pg`. Keep the current PostgreSQL provider initially; Hyperdrive can connect to an existing externally reachable PostgreSQL database. The first Cloudflare deployment must use a dedicated staging database, not the live DigitalOcean database. The Pages Function sets `skipSchema: true` and verifies the connection with `SELECT 1`; it never runs the embedded DDL. An explicit starter schema is in `migrations/0001_initial.sql` for a new staging database only.
 
-Cloudflare Pages bindings are configured in the Cloudflare dashboard (Settings â†’ Functions â†’ Bindings): add a Hyperdrive binding named `HYPERDRIVE`. Add `RESEND_API_KEY` as a secret, and `MAIL_FROM`, `PUBLIC_URL`, and `ADMIN_EMAILS` as variables/secrets as appropriate. Do not add the live DigitalOcean database credentials. Use a separate staging database and staging credentials. The Pages runtime sends mail through Resend's HTTPS API; raw SMTP variables are deliberately cleared in this runtime.
+Cloudflare Pages uses a Hyperdrive binding named `HYPERDRIVE` and a Durable Object binding named `AUTH_RATE_LIMITER` (the latter is deployed separately from `workers/auth-rate-limiter`). Add `RESEND_API_KEY` and `TRAFFIC_HASH_SECRET` as secrets, and `MAIL_FROM`, `PUBLIC_URL`, and `ADMIN_EMAILS` as variables/secrets as appropriate. Do not add the live DigitalOcean database credentials. Use a separate staging database and staging credentials. The Pages runtime sends mail through Resend's HTTPS API; raw SMTP variables are deliberately cleared in this runtime.
 
 ## Non-negotiable safety boundaries
 
@@ -52,7 +52,7 @@ Cloudflare Pages bindings are configured in the Cloudflare dashboard (Settings â
 - Preserve the existing `scrypt` password format and verify existing hashes in the Worker runtime; do not silently downgrade password hashing or replace custom auth with a hosted auth product.
 - Preserve token hashing, expiry, one-time token consumption, verified-email requirement, session invalidation on password reset, and cookie flags.
 - Verify that the Workers runtime supports the exact Node.js `scrypt` API used here, then benchmark the existing N=32768 parameters under the selected plan and configured CPU budget. If the operation is unsupported or exceeds the budget, do not deploy until an approved compatible approach is tested. Avoid changing existing password hashes in-place.
-- Replace per-isolate in-memory authentication throttles with a shared rate-limiting mechanism before public launch; per-isolate Maps are not a reliable distributed limit.
+- [x] Add a shared Durable Object rate limiter for credential endpoints; the Pages Function fails closed if the configured limiter is unavailable. The old in-memory throttle remains a secondary layer.
 
 ### 4. Email
 - [x] Add a Resend HTTPS transport adapter while retaining Nodemailer for the unchanged Node/DigitalOcean deployment.
@@ -61,6 +61,8 @@ Cloudflare Pages bindings are configured in the Cloudflare dashboard (Settings â
 
 ### 5. Scheduled cleanup and observability
 - [x] Remove the API rate-limit map's periodic timer; expired entries are pruned opportunistically and the map is bounded.
+- [x] Use a daily HMAC salt from `TRAFFIC_HASH_SECRET` so the same visitor hashes consistently across isolates; unique visitor hashes are skipped in Workers if this secret is absent.
+- [x] Deduplicate daily place opens in PostgreSQL so multiple isolates cannot double-count the same place.
 - [ ] Move the daily traffic retention cleanup to a Cloudflare Cron Trigger before launch.
 - Keep health output free of secret values and avoid logging tokens, passwords, full database connection strings, or private user data.
 
@@ -75,4 +77,4 @@ Cloudflare Pages bindings are configured in the Cloudflare dashboard (Settings â
 
 ## Current blocker / next implementation slice
 
-The first runtime port is committed, but it is not production-ready. Required next steps: run the CI build/tests on this branch; configure Pages preview + staging Hyperdrive + Resend; validate the existing API end-to-end in Workers; implement shared rate limiting; move traffic pruning to Cron; and benchmark the existing scrypt cost under the chosen Workers plan. The preview must not be used for real accounts until these gates pass.
+The first runtime port is committed, but it is not production-ready. Required next steps: deploy the separate rate-limiter Worker; configure Pages preview + staging Hyperdrive + Resend + the traffic hash secret; validate the existing API end-to-end in Workers; move traffic pruning to Cron; and benchmark the existing scrypt cost under the chosen Workers plan. The preview must not be used for real accounts until these gates pass.
