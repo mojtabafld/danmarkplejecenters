@@ -8,6 +8,12 @@ import { Buffer } from 'node:buffer';
 export async function toNodeRequest(request, maxBody = 4 * 1024) {
   const headers = Object.fromEntries(request.headers.entries());
   const ip = request.headers.get('cf-connecting-ip') || '';
+  const requestUrl = new URL(request.url);
+  // Never trust a caller-supplied X-Forwarded-For value at the edge.
+  if (ip) headers['x-forwarded-for'] = ip;
+  headers['x-forwarded-proto'] = requestUrl.protocol.slice(0, -1);
+  headers['x-forwarded-host'] = requestUrl.host;
+  headers.host = requestUrl.host;
   const bodyChunks = [];
 
   if (request.body) {
