@@ -180,6 +180,14 @@ CREATE TABLE IF NOT EXISTS visitor_days (
   PRIMARY KEY (day, visitor)
 );
 
+-- One row per day and care-centre, so serverless isolates cannot double-count
+-- the same place merely because different isolates handled the requests.
+CREATE TABLE IF NOT EXISTS place_days (
+  day       DATE NOT NULL,
+  place_id  TEXT NOT NULL,
+  PRIMARY KEY (day, place_id)
+);
+
 -- Added after the first release, so it has to be an ALTER rather than part of
 -- the CREATE: an existing database already has the table and would skip it.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
