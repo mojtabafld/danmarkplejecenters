@@ -62,13 +62,13 @@ jobs:
             return body;
           }
 
-          const accounts = (await api('/accounts?per_page=50')).result || [];
+          const accounts = (await api('/accounts')).result || [];
           if (accounts.length !== 1) {
             throw new Error(`Expected exactly one accessible Cloudflare account, found ${accounts.length}. Add CLOUDFLARE_ACCOUNT_ID as a repository secret and adjust account selection before retrying.`);
           }
           const accountId = accounts[0].id;
           const projectName = process.env.CF_PAGES_PROJECT;
-          const projects = (await api(`/accounts/${accountId}/pages/projects?per_page=100`)).result || [];
+          const projects = (await api(`/accounts/${accountId}/pages/projects`)).result || [];
           const existing = projects.find(project => project.name === projectName);
           if (!existing) {
             await api(`/accounts/${accountId}/pages/projects`, {
