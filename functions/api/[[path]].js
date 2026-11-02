@@ -1,38 +1,43 @@
-/**
- * Cloudflare Pages Functions migration boundary.
- *
- * This deliberately exposes only a health endpoint. All stateful API routes
- * fail closed until the Fetch-native handlers, custom-auth runtime, shared
- * rate limiter, mail provider, and a staging-only Hyperdrive binding have
- * passed their tests. Do not attach production credentials to this branch.
- */
-export async function onRequest({ request }) {
-  const url = new URL(request.url);
+import * as api from '../../server/api.mjs';
+import { configureRuntime, ensureDatabase } from '../_lib/runtime.js';
+import { createNodeResponse, toNodeRequest } from '../_lib/request-adapter.js';
 
-  if (url.pathname === '/api/health' && request.method === 'GET') {
+export async function onRequest({ request, env }) {
+  configureRuntime(env);
+
+  // Health remains available without a database. Stateful routes fail closed
+  // through the existing API when Hyperdrive is not configured.
+  if (env.HYPERDRIVE?.connectionString) {
+    try {
+      await ensureDatabase(env);
+    } catch (error) {
+      console.error('Cloudflare database initialization failed:', error?.message);
+    }
+  }
+
+  let nodeRequest;
+  try {
+    nodeRequest = await toNodeRequest(request);
+  } catch (error) {
     return Response.json(
+      { error: error?.message === 'body_too_large' ? 'too_large' : 'bad_request' },
       {
-        runtime: 'cloudflare-pages-functions',
-        migration: 'scaffold',
-        database: 'not_connected',
-        mail: 'not_connected',
-        api: 'disabled_until_port_complete',
-      },
-      {
-        status: 200,
+        status: error?.status ?? 400,
         headers: { 'cache-control': 'no-store' },
       },
     );
   }
 
-  return Response.json(
-    {
-      error: 'migration_incomplete',
-      message: 'This preview does not serve account or user-data API routes yet.',
-    },
-    {
-      status: 503,
-      headers: { 'cache-control': 'no-store' },
-    },
-  );
+  const nodeResponse = createNodeResponse();
+  const handled = await api.handle(nodeRequest, nodeResponse, {
+    secure: new URL(request.url).protocol === 'https:',
+  });
+
+  if (!handled) {
+    return Response.json(
+      { error: 'not_found' },
+      { status: 404, headers: { 'cache-control': 'no-store' } },
+    );
+  }
+  return nodeResponse.toResponse();
 }
