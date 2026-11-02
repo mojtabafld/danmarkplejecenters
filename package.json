@@ -13,12 +13,13 @@
     "start": "node server.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/regions.test.mjs && node tests/api.test.mjs",
+    "test": "node tests/regions.test.mjs && node tests/api.test.mjs && npm run test:migration",
     "serve:memdb": "node tests/serve-with-memdb.mjs",
     "build:data": "node scripts/build-data.mjs",
     "build:harness": "node verification/build-harness.mjs",
     "verify": "./verify.sh",
-    "build:admin": "vite build --config vite.admin.config.ts"
+    "build:admin": "vite build --config vite.admin.config.ts",
+    "test:migration": "node tests/db-skip-schema.test.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^5.6.0",
