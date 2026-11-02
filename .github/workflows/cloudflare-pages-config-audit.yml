@@ -2,6 +2,12 @@ name: Cloudflare Pages configuration audit (read-only)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - migration/cloudflare-workers
+    paths:
+      - .github/workflows/cloudflare-pages-config-audit.yml
+      - wrangler.toml
 
 permissions:
   contents: read
