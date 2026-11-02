@@ -56,8 +56,8 @@ jobs:
           const path = ['wrangler.jsonc', 'wrangler.json', 'wrangler.toml'].find(existsSync);
           if (!path) throw new Error('Wrangler did not create a config file.');
           const source = readFileSync(path, 'utf8');
-          const allowed = /(^\\s*\\$schema|^\\s*name\\s*[:=]|pages_build_output_dir|compatibility_date|compatibility_flags|binding|hyperdrive|durable_objects|script_name|class_name|production|preview|^\\s*id\\s*[:=])/i;
-          const lines = source.split('\\n').filter(line => allowed.test(line));
+          const allowed = /(^\s*\$schema|^\s*name\s*[:=]|pages_build_output_dir|compatibility_date|compatibility_flags|binding|hyperdrive|durable_objects|script_name|class_name|production|preview|^\s*id\s*[:=])/i;
+          const lines = source.split('\n').filter(line => allowed.test(line));
           const summary = [
             '## Cloudflare Pages configuration audit',
             '',
@@ -73,6 +73,6 @@ jobs:
             '',
             'Review the production environment bindings before adopting a repository Wrangler file.'
           ];
-          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\\n') + '\\n');
-          console.log(summary.join('\\n'));
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n');
+          console.log(summary.join('\n'));
           NODE
