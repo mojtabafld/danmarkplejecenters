@@ -85,7 +85,7 @@ jobs:
           coreOutput('account_id', accountId);
 
           function coreOutput(name, value) {
-            appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\\n`);
+            appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
           }
           NODE
 
