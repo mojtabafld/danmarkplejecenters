@@ -8,7 +8,17 @@ Create a new database or a disposable clone of the current schema. Do not use th
 
 Apply `migrations/0001_initial.sql` manually to that staging database. The application deliberately skips all schema DDL at runtime.
 
-## 2. Create a Hyperdrive configuration
+## 2. Deploy the shared authentication rate limiter
+
+From the repository root, deploy the Durable Object Worker:
+
+```bash
+npx wrangler deploy --config workers/auth-rate-limiter/wrangler.toml
+```
+
+This creates the `AuthRateLimiter` Durable Object namespace. The Pages project's `wrangler.toml` binds it as `AUTH_RATE_LIMITER`. The Pages preview fails closed with HTTP 503 on credential endpoints if the binding is configured but the limiter is unavailable.
+
+## 3. Create a Hyperdrive configuration
 
 Create a Hyperdrive configuration targeting the staging PostgreSQL database. Attach it to the Pages project as a binding named exactly:
 
@@ -16,7 +26,7 @@ Create a Hyperdrive configuration targeting the staging PostgreSQL database. Att
 
 The binding's connection string is consumed by the existing `pg` pool. Do not add a direct `DATABASE_URL` secret for production.
 
-## 3. Configure Pages variables and secrets
+## 4. Configure Pages variables and secrets
 
 Set these variables for the Preview environment first:
 
@@ -31,7 +41,7 @@ Add these as encrypted secrets:
 
 The Pages runtime disables SMTP/Nodemailer. Do not configure `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, or `SMTP_URL` for this project.
 
-## 4. Deploy only a Preview build
+## 5. Deploy only a Preview build
 
 Connect the repository to Cloudflare Pages with:
 
@@ -42,7 +52,7 @@ Connect the repository to Cloudflare Pages with:
 
 Keep all bindings and secrets scoped to Preview until the full acceptance checklist passes.
 
-## 5. Smoke checks
+## 6. Smoke checks
 
 - Open `/api/health`: it should report a ready database and configured mail, without returning secret values.
 - Confirm `/admin/` and the main map load from the Pages preview.
