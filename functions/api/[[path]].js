@@ -1,9 +1,13 @@
 import * as api from '../../server/api.mjs';
 import { configureRuntime, ensureDatabase } from '../_lib/runtime.js';
+import { enforceAuthRateLimit } from '../_lib/rate-limit.js';
 import { createNodeResponse, toNodeRequest } from '../_lib/request-adapter.js';
 
 export async function onRequest({ request, env }) {
   configureRuntime(env);
+
+  const limited = await enforceAuthRateLimit(request, env);
+  if (limited) return limited;
 
   // Health remains available without a database. Stateful routes fail closed
   // through the existing API when Hyperdrive is not configured.
