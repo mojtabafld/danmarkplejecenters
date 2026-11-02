@@ -1,13 +1,27 @@
 # Cloudflare Pages configuration for the isolated migration branch.
-# No Hyperdrive binding or production secrets are configured here.
+# The default (preview) environment intentionally has NO database binding.
 name = "danmarkplejecenters-migration"
 pages_build_output_dir = "./dist"
 compatibility_date = "2026-11-02"
 compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
 
-# The Durable Object is deployed as a separate Worker first; see
-# workers/auth-rate-limiter/wrangler.toml and docs/CLOUDFLARE_SETUP.md.
+# Preview deployments use only the separate rate-limiter Worker.
 [[durable_objects.bindings]]
 name = "AUTH_RATE_LIMITER"
 class_name = "AuthRateLimiter"
 script_name = "danmarkplejecenters-auth-rate-limiter"
+
+# Production-only bindings. Wrangler environments do not inherit bindings
+# from the top level, so the Durable Object binding is repeated explicitly.
+# Hyperdrive's ID is an identifier, not a credential; DB credentials remain
+# stored inside the Cloudflare Hyperdrive configuration.
+[env.production]
+
+[[env.production.durable_objects.bindings]]
+name = "AUTH_RATE_LIMITER"
+class_name = "AuthRateLimiter"
+script_name = "danmarkplejecenters-auth-rate-limiter"
+
+[[env.production.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "6fe7a645ae83497c8c95a103797d309b"
