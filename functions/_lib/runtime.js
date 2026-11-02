@@ -17,6 +17,13 @@ export function configureRuntime(env) {
     if (typeof env[key] === 'string' && env[key]) process.env[key] = env[key];
   }
 
+  // SMTP is intentionally disabled in Pages Functions. The Node/DigitalOcean
+  // deployment keeps its SMTP configuration; this branch sends through Resend
+  // over HTTPS only.
+  for (const key of ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_URL']) {
+    process.env[key] = '';
+  }
+
   if (env.RESEND_API_KEY) {
     const apiKey = env.RESEND_API_KEY;
     const from = env.MAIL_FROM || 'Plejecentre <onboarding@resend.dev>';
