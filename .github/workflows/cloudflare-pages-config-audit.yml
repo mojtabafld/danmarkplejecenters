@@ -111,7 +111,7 @@ jobs:
             '- Origin port: ' + (origin.port ?? '(not returned)'),
             '- Database: ' + (origin.database || '(not returned)'),
             '- Credentials: redacted; not read into the summary.'
-          ].join('\\n');
-          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\\n');
+          ].join('\n');
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
           console.log(summary);
           NODE
