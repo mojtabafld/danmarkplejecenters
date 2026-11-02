@@ -110,6 +110,20 @@ function overLimit(endpoint, key, max) {
 function countAttempt(endpoint, key) {
   const id = `${endpoint}:${key}`;
   const now = Date.now();
+
+  // Opportunistic expiry avoids a process-wide interval (which is unreliable
+  // in isolate runtimes) and keeps the map bounded under address rotation.
+  if (buckets.size >= 4000) {
+    for (const [k, v] of buckets) {
+      if (now > v.reset) buckets.delete(k);
+    }
+    while (buckets.size >= 4000) {
+      const oldest = buckets.keys().next().value;
+      if (oldest === undefined) break;
+      buckets.delete(oldest);
+    }
+  }
+
   const rec = buckets.get(id);
   if (!rec || now > rec.reset) buckets.set(id, { n: 1, reset: now + WINDOW_MS });
   else rec.n += 1;
@@ -119,11 +133,7 @@ function clearAttempts(endpoint, key) {
   buckets.delete(`${endpoint}:${key}`);
 }
 
-// Bounded, so a flood of distinct addresses cannot grow the map without limit.
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of buckets) if (now > v.reset) buckets.delete(k);
-}, WINDOW_MS).unref?.();
+// Expired entries are pruned opportunistically in countAttempt().
 
 const clientKey = (req) =>
   (req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() ||
