@@ -14,6 +14,7 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_PAGES_PROJECT: danmarkplejecenters-migration
+      CF_HYPERDRIVE_ID: 6fe7a645ae83497c8c95a103797d309b
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,4 +82,36 @@ jobs:
           ];
           appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n');
           console.log(summary.join('\n'));
+          NODE
+
+      - name: Inspect Hyperdrive target metadata (credentials redacted)
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.account.outputs.account_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const base = 'https://api.cloudflare.com/client/v4';
+          const response = await fetch(`${base}/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs/${process.env.CF_HYPERDRIVE_ID}`, {
+            headers: { Authorization: 'Bearer ' + process.env.CLOUDFLARE_API_TOKEN }
+          });
+          const body = await response.json();
+          if (!response.ok || body.success === false || !body.result) {
+            throw new Error('Hyperdrive config lookup failed: ' + JSON.stringify(body.errors || { status: response.status }));
+          }
+          const config = body.result;
+          const origin = config.origin || {};
+          const summary = [
+            '## Hyperdrive target audit',
+            '',
+            '- Name: ' + (config.name || '(not returned)'),
+            '- ID: ' + (config.id || process.env.CF_HYPERDRIVE_ID),
+            '- Origin scheme: ' + (origin.scheme || '(not returned)'),
+            '- Origin host: ' + (origin.host || '(not returned)'),
+            '- Origin port: ' + (origin.port ?? '(not returned)'),
+            '- Database: ' + (origin.database || '(not returned)'),
+            '- Credentials: redacted; not read into the summary.'
+          ].join('\\n');
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\\n');
+          console.log(summary);
           NODE
