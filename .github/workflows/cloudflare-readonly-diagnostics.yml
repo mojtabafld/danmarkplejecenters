@@ -1,0 +1,93 @@
+name: Read-only production domain and database diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/migration/cloudflare-workers'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Inspect Cloudflare DNS, Pages and Hyperdrive; probe public health endpoints
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+
+          const out = process.env.GITHUB_STEP_SUMMARY;
+          const lines = ['## Read-only production diagnostics', ''];
+          const token = process.env.CLOUDFLARE_API_TOKEN;
+          const base = 'https://api.cloudflare.com/client/v4';
+
+          async function cf(path) {
+            const r = await fetch(base + path, {
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok || j.success === false) throw new Error(`Cloudflare API ${r.status}: ${JSON.stringify(j.errors || j)}`);
+            return j.result;
+          }
+          function add(label, value) { lines.push(`- **${label}:** ${value}`); }
+
+          if (!token) throw new Error('CLOUDFLARE_API_TOKEN secret is missing.');
+
+          let accountId;
+          try {
+            const accounts = await cf('/accounts');
+            if (accounts.length !== 1) throw new Error(`Expected one account, found ${accounts.length}`);
+            accountId = accounts[0].id;
+            add('Cloudflare account API', 'accessible');
+          } catch (e) {
+            add('Cloudflare account API', `FAILED — ${e.message}`);
+          }
+
+          if (accountId) {
+            try {
+              const zones = await cf('/zones?name=plejefinder.online');
+              if (!zones.length) add('Zone plejefinder.online', 'not found in this Cloudflare account');
+              for (const z of zones) {
+                add('Zone', `${z.name}; status=${z.status}; nameservers=${(z.name_servers || []).join(', ')}`);
+                const records = await cf(`/zones/${z.id}/dns_records?per_page=100`);
+                const selected = records.filter(x => ['plejefinder.online','www.plejefinder.online'].includes(x.name));
+                if (!selected.length) add('Apex/www DNS records', 'no matching records found');
+                for (const d of selected) add(`DNS ${d.name}`, `${d.type} ${d.content}; proxied=${d.proxied}`);
+              }
+            } catch (e) { add('Cloudflare DNS inspection', `FAILED — ${e.message}`); }
+
+            try {
+              const p = await cf('/accounts/' + accountId + '/pages/projects/danmarkplejecenters-migration');
+              add('Migration Pages project', `found; production_branch=${p.production_branch}; domains=${(p.domains || []).join(', ') || 'none'}`);
+            } catch (e) { add('Migration Pages project', `FAILED — ${e.message}`); }
+
+            try {
+              const h = await cf('/accounts/' + accountId + '/hyperdrive/configs');
+              add('Hyperdrive configurations', h.length ? h.map(x => x.name).join(', ') : 'none found');
+            } catch (e) { add('Hyperdrive configurations', `FAILED — ${e.message}`); }
+          }
+
+          async function probe(url) {
+            try {
+              const r = await fetch(url, { signal: AbortSignal.timeout(12000), redirect: 'follow' });
+              const body = await r.text();
+              let data;
+              try { data = JSON.parse(body); } catch {}
+              const safe = data && typeof data === 'object'
+                ? JSON.stringify({ database: data.database, reason: data.reason, mail: data.mail, publicUrl: data.publicUrl })
+                : body.slice(0, 160).replace(/\s+/g, ' ');
+              add(url, `HTTP ${r.status}; ${safe || 'response received'}`);
+            } catch (e) { add(url, `FAILED — ${e.cause?.code || e.name || e.message}`); }
+          }
+          await probe('https://plejefinder.online/api/health');
+          await probe('https://www.plejefinder.online/api/health');
+          await probe('https://migration-cloudflare-workers.danmarkplejecenters-migration.pages.dev/api/health');
+
+          lines.push('', '> Read-only checks only. No DNS, database, secrets, or production settings were changed.');
+          appendFileSync(out, lines.join('\n') + '\n');
+          console.log(lines.join('\n'));
+          NODE
