@@ -12,7 +12,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, migration/cloudflare-workers]
   pull_request:
 
 # Read-only. This workflow builds and tests; it has no business writing to the
