@@ -85,16 +85,7 @@ jobs:
           coreOutput('account_id', accountId);
 
           function coreOutput(name, value) {
-            process.stdout.write(`::add-mask::${value}\n`);
-            requireOutput(name, value);
-          }
-          function requireOutput(name, value) {
-            // GITHUB_OUTPUT is provided by the Actions runner.
-            const fs = awaitImportFs();
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
-          }
-          function awaitImportFs() {
-            return process.getBuiltinModule('node:fs');
+            appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\\n`);
           }
           NODE
 
