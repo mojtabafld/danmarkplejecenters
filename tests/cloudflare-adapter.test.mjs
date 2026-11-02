@@ -69,7 +69,7 @@ assert.equal(sent[0].init.headers.authorization, 'Bearer test-key-not-a-real-sec
 assert.deepEqual(sent[0].body.to, ['reader@example.test']);
 assert.equal(sent[0].body.from, 'Plejecentre <noreply@example.test>');
 assert.match(sent[0].body.text, /https:\/\/preview\.example\/verify\?token=abc/);
-assert.match(sent[1].body.text, /https:\/\/preview\.example\/?reset=def/);
+assert.match(sent[1].body.text, /https:\/\/preview\.example\/\\?reset=def/);
 
 globalThis.fetch = originalFetch;
 mail.setTransport(null);
