@@ -45,6 +45,9 @@ jobs:
         run: |
           npx --yes wrangler@4 pages functions build functions \
             --config wrangler.toml \
+            --compatibility-date 2026-11-02 \
+            --compatibility-flag nodejs_compat \
+            --compatibility-flag nodejs_compat_populate_process_env \
             --build-output-directory dist \
             --outdir "$RUNNER_TEMP/pages-functions"
 
