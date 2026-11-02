@@ -13,9 +13,11 @@ export function configureRuntime(env) {
   if (env.HYPERDRIVE?.connectionString) {
     process.env.DATABASE_URL ??= env.HYPERDRIVE.connectionString;
   }
-  for (const key of ['PUBLIC_URL', 'ADMIN_EMAILS', 'MAIL_FROM', 'RESEND_API_KEY']) {
+  for (const key of ['PUBLIC_URL', 'ADMIN_EMAILS', 'MAIL_FROM', 'RESEND_API_KEY', 'TRAFFIC_HASH_SECRET']) {
     if (typeof env[key] === 'string' && env[key]) process.env[key] = env[key];
   }
+
+  process.env.CLOUDFLARE_RUNTIME = '1';
 
   // SMTP is intentionally disabled in Pages Functions. The Node/DigitalOcean
   // deployment keeps its SMTP configuration; this branch sends through Resend
