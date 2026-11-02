@@ -47,7 +47,7 @@ Use Cloudflare Hyperdrive to connect Pages Functions to PostgreSQL through `pg`.
 ### 3. Custom authentication
 - Preserve the existing `scrypt` password format and verify existing hashes in the Worker runtime; do not silently downgrade password hashing or replace custom auth with a hosted auth product.
 - Preserve token hashing, expiry, one-time token consumption, verified-email requirement, session invalidation on password reset, and cookie flags.
-- Re-test scrypt CPU time under the actual Workers plan. Cloudflare's Free plan currently documents a 10 ms CPU limit per HTTP request; if the current scrypt parameters exceed the configured limit, do not deploy until an approved compatible approach is tested. Avoid changing existing password hashes in-place.
+- Verify that the Workers runtime supports the exact Node.js `scrypt` API used here, then benchmark the existing N=32768 parameters under the selected plan and configured CPU budget. If the operation is unsupported or exceeds the budget, do not deploy until an approved compatible approach is tested. Avoid changing existing password hashes in-place.
 - Replace per-isolate in-memory authentication throttles with a shared rate-limiting mechanism before public launch; per-isolate Maps are not a reliable distributed limit.
 
 ### 4. Email
