@@ -46,7 +46,7 @@ Cloudflare Pages uses a Hyperdrive binding named `HYPERDRIVE` and a Durable Obje
 - [x] Add a Worker-safe database initialization option that skips all schema DDL.
 - [x] Add an explicit starter SQL schema for a fresh staging database.
 - [x] Add a `HYPERDRIVE` binding only under `env.production` in `wrangler.toml`; preview has no database binding. The production environment repeats the Durable Object binding because Wrangler environments do not inherit bindings.
-- [ ] Verify the Hyperdrive origin points to the intended disposable/staging Supabase database, confirm Cloudflare can reach that endpoint (Direct Supabase endpoints may require IPv4 support or the Supabase pooler), and validate all queries and ownership checks against staging.
+- [ ] Verify the Hyperdrive origin points to the intended disposable/staging Supabase database and validate database connectivity and all queries against staging. The configured host is Supabase's direct endpoint; Cloudflare's Supabase Hyperdrive guide recommends the direct connection because Hyperdrive performs connection pooling. Do not switch to a Supavisor pooler unless a real connectivity test demonstrates it is necessary.
 - Keep SQL parameter binding and production schema changes out of scope until separately approved.
 
 ### 3. Custom authentication
