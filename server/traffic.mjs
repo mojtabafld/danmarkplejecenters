@@ -125,13 +125,15 @@ export async function view({ ip, agent, locale }) {
 export async function place(id) {
   if (!PLACE_ID.test(id)) return;
   const day = today();
+  const count = await db.query('SELECT count(*)::int AS n FROM place_days WHERE day = $1', [day]);
+  if (Number(count.rows[0]?.n ?? 0) >= PLACE_CAP) return;
+
   const inserted = await db.query(
     `INSERT INTO place_days (day, place_id)
-     SELECT $1, $2
-      WHERE (SELECT count(*) FROM place_days WHERE day = $1) < $3
+     VALUES ($1, $2)
      ON CONFLICT DO NOTHING
      RETURNING place_id`,
-    [day, id, PLACE_CAP],
+    [day, id],
   );
   if (inserted.rows.length) await bump(day, `place:${id}`);
 }
