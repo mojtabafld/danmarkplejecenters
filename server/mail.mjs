@@ -20,7 +20,6 @@
  * Without either form the module reports itself unconfigured and sign-up
  * refuses rather than creating accounts that can never be confirmed.
  */
-import nodemailer from 'nodemailer';
 
 let transport = null;
 let overridden = false;
@@ -36,7 +35,7 @@ export function setTransport(t) {
 }
 
 export function isConfigured() {
-  return overridden || Boolean(process.env.SMTP_URL || (process.env.SMTP_HOST && process.env.SMTP_USER));
+  return overridden || Boolean(process.env.RESEND_API_KEY || process.env.SMTP_URL || (process.env.SMTP_HOST && process.env.SMTP_USER));
 }
 
 /**
@@ -72,11 +71,13 @@ function options() {
   return [url, { ...common, requireTLS: !url.startsWith('smtps:') }];
 }
 
-function mailer() {
+async function mailer() {
   if (!transport) {
+    // Loaded only by the traditional Node deployment. Cloudflare injects an
+    // HTTPS transport before any API handler can send mail, so Nodemailer and
+    // its raw SMTP sockets are never initialized in the Workers runtime.
+    const { default: nodemailer } = await import('nodemailer');
     const opts = options();
-    // A slow or dead mail host must not hold a web request open, which is what
-    // the timeouts in options() are for.
     transport = Array.isArray(opts)
       ? nodemailer.createTransport(opts[0], opts[1])
       : nodemailer.createTransport(opts);
@@ -127,7 +128,7 @@ function body(url) {
 
 export async function sendVerification(to, url) {
   const { text, html } = body(url);
-  await mailer().sendMail({
+  await (await mailer()).sendMail({
     from: FROM(),
     to,
     subject: 'Bekræft din e-mail / Confirm your email / تأیید ایمیل',
@@ -193,7 +194,9 @@ export async function sendReset(to, url) {
  */
 export function configuredVars() {
   const names = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_URL', 'MAIL_FROM'];
-  return names.filter((n) => (process.env[n] ?? '').trim() !== '');
+  const present = names.filter((n) => (process.env[n] ?? '').trim() !== '');
+  if ((process.env.RESEND_API_KEY ?? '').trim()) present.push('RESEND_API_KEY');
+  return present;
 }
 
 /** For the start-up log, so a misconfiguration is visible before anyone tries. */
@@ -201,7 +204,7 @@ export async function check() {
   if (overridden) return 'mail transport injected';
   if (!isConfigured()) return 'mail not configured (set SMTP_HOST/SMTP_USER/SMTP_PASS), sign-up disabled';
   try {
-    await mailer().verify();
+    await (await mailer()).verify();
     return `mail ready via ${process.env.SMTP_HOST ?? 'SMTP_URL'} as ${FROM()}`;
   } catch (err) {
     // The message names the host and the failure, never the password.
