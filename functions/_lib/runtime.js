@@ -26,9 +26,9 @@ export function configureRuntime(env) {
     process.env[key] = '';
   }
 
-  if (env.RESEND_API_KEY) {
+  if (env.RESEND_API_KEY && env.MAIL_FROM) {
     const apiKey = env.RESEND_API_KEY;
-    const from = env.MAIL_FROM || 'Plejecentre <onboarding@resend.dev>';
+    const from = env.MAIL_FROM;
     mail.setTransport({
       async sendMail(message) {
         const response = await fetch('https://api.resend.com/emails', {
@@ -46,8 +46,7 @@ export function configureRuntime(env) {
           }),
         });
         if (!response.ok) {
-          const detail = (await response.text()).slice(0, 500);
-          throw new Error(`mail_provider_http_${response.status}: ${detail}`);
+          throw new Error(`mail_provider_http_${response.status}`);
         }
         return response.json();
       },
