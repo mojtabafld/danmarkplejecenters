@@ -35,7 +35,7 @@ export function setTransport(t) {
 }
 
 export function isConfigured() {
-  return overridden || Boolean(process.env.RESEND_API_KEY || process.env.SMTP_URL || (process.env.SMTP_HOST && process.env.SMTP_USER));
+  return overridden || Boolean((process.env.RESEND_API_KEY && process.env.MAIL_FROM) || process.env.SMTP_URL || (process.env.SMTP_HOST && process.env.SMTP_USER));
 }
 
 /**
