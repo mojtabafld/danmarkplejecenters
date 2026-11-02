@@ -175,7 +175,7 @@ function resetBody(url) {
 
 export async function sendReset(to, url) {
   const { text, html } = resetBody(url);
-  await mailer().sendMail({
+  await (await mailer()).sendMail({
     from: FROM(),
     to,
     subject: 'Ny adgangskode / New password / گذرواژهٔ تازه',
