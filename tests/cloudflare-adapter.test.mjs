@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { toNodeRequest, createNodeResponse } from '../functions/_lib/request-adapter.js';
 import { configureRuntime } from '../functions/_lib/runtime.js';
+import { enforceAuthRateLimit } from '../functions/_lib/rate-limit.js';
 import * as mail from '../server/mail.mjs';
 
 const request = new Request('https://preview.example/api/auth/signin', {
@@ -74,3 +75,46 @@ assert.match(sent[1].body.text, /https:\/\/preview\.example\/\?reset=def/);
 globalThis.fetch = originalFetch;
 mail.setTransport(null);
 console.log('Cloudflare HTTPS mail adapter tests passed');
+
+let limiterName = '';
+const blocked = await enforceAuthRateLimit(
+  new Request('https://preview.example/api/auth/signin', {
+    method: 'POST',
+    headers: { 'cf-connecting-ip': '203.0.113.44' },
+  }),
+  {
+    AUTH_RATE_LIMITER: {
+      idFromName(name) { limiterName = name; return name; },
+      get(id) {
+        assert.equal(id, limiterName);
+        return {
+          async fetch() {
+            return Response.json({ allowed: false, retryAfter: 37 });
+          },
+        };
+      },
+    },
+  },
+);
+assert.equal(blocked.status, 429);
+assert.equal(blocked.headers.get('retry-after'), '37');
+assert.equal(limiterName.length, 64, 'DO identity is a SHA-256 digest, not a raw IP');
+
+const allowed = await enforceAuthRateLimit(
+  new Request('https://preview.example/api/auth/signin', { method: 'POST' }),
+  {
+    AUTH_RATE_LIMITER: {
+      idFromName(name) { return name; },
+      get() {
+        return { async fetch() { return Response.json({ allowed: true, remaining: 19 }); } };
+      },
+    },
+  },
+);
+assert.equal(allowed, null);
+assert.equal(
+  await enforceAuthRateLimit(new Request('https://preview.example/api/auth/me'), {}),
+  null,
+);
+
+console.log('Cloudflare Durable Object rate-limit adapter tests passed');
