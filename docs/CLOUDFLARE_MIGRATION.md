@@ -45,7 +45,8 @@ Cloudflare Pages uses a Hyperdrive binding named `HYPERDRIVE` and a Durable Obje
 ### 2. PostgreSQL
 - [x] Add a Worker-safe database initialization option that skips all schema DDL.
 - [x] Add an explicit starter SQL schema for a fresh staging database.
-- [ ] Configure a staging-only Hyperdrive binding and validate all queries and ownership checks against staging.
+- [x] Add a `HYPERDRIVE` binding only under `env.production` in `wrangler.toml`; preview has no database binding. The production environment repeats the Durable Object binding because Wrangler environments do not inherit bindings.
+- [ ] Verify the Hyperdrive origin points to the intended disposable/staging Supabase database, confirm Cloudflare can reach that endpoint (Direct Supabase endpoints may require IPv4 support or the Supabase pooler), and validate all queries and ownership checks against staging.
 - Keep SQL parameter binding and production schema changes out of scope until separately approved.
 
 ### 3. Custom authentication
@@ -77,4 +78,4 @@ Cloudflare Pages uses a Hyperdrive binding named `HYPERDRIVE` and a Durable Obje
 
 ## Current blocker / next implementation slice
 
-The first runtime port is committed, but it is not production-ready. Required next steps: deploy the separate rate-limiter Worker; configure Pages preview + staging Hyperdrive + Resend + the traffic hash secret; validate the existing API end-to-end in Workers; move traffic pruning to Cron; and benchmark the existing scrypt cost under the chosen Workers plan. The preview must not be used for real accounts until these gates pass.
+The first runtime port and production-only Hyperdrive binding are committed on the isolated migration branch. The preview environment intentionally has no `HYPERDRIVE` binding. The binding references the existing Hyperdrive config `plejefinder-db` (`6fe7a645ae83497c8c95a103797d309b`); this does not prove that its origin is reachable or that it targets a disposable staging database. Before any production deployment, inspect the Hyperdrive origin metadata (without exposing credentials), verify database connectivity, and validate the existing API end-to-end against staging. Other required steps: deploy the separate rate-limiter Worker; configure Resend + the traffic hash secret; move traffic pruning to Cron; and benchmark the existing scrypt cost under the chosen Workers plan. The preview must not be used for real accounts until these gates pass.
