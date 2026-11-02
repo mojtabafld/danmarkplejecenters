@@ -45,12 +45,18 @@ jobs:
         shell: bash
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.account.outputs.account_id }}
+          AUDIT_DIR: ${{ runner.temp }}/pages-config-audit
         run: |
+          mkdir -p "$AUDIT_DIR"
+          cd "$AUDIT_DIR"
           npx --yes wrangler@4 pages download config "$CF_PAGES_PROJECT"
 
       - name: Summarize current bindings and runtime settings (values redacted)
         shell: bash
+        env:
+          AUDIT_DIR: ${{ runner.temp }}/pages-config-audit
         run: |
+          cd "$AUDIT_DIR"
           node --input-type=module <<'NODE'
           import { readFileSync, appendFileSync, existsSync } from 'node:fs';
           const path = ['wrangler.jsonc', 'wrangler.json', 'wrangler.toml'].find(existsSync);
