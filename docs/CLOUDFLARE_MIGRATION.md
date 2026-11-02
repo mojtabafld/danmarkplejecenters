@@ -20,7 +20,11 @@ Production branch: `main` (must remain unchanged until acceptance)
 
 Use Cloudflare Pages for the Vite static assets and Pages Functions for same-origin API routes. Pages Functions keep browser requests on the current site origin, so the existing HttpOnly cookie model can remain host-only and does not need a cross-origin cookie redesign.
 
-Use Cloudflare Hyperdrive to connect Pages Functions to PostgreSQL through `pg`. Keep the current PostgreSQL provider initially; Hyperdrive can connect to an existing externally reachable PostgreSQL database. The first Cloudflare deployment must use a dedicated staging database, not the live DigitalOcean database.
+The migration branch now contains a Fetch-to-legacy adapter. It adapts Web `Request` bodies and headers to the small IncomingMessage-like interface expected by `server/api.mjs`, and converts the existing response writer back to a Web `Response`. The API route and `/verify` route now call the real existing API handlers rather than returning a placeholder 503. Request bodies remain capped at 4 KiB, and the client IP / origin headers are rebuilt from Cloudflare edge metadata rather than trusting an incoming X-Forwarded-For value.
+
+Use Cloudflare Hyperdrive to connect Pages Functions to PostgreSQL through `pg`. Keep the current PostgreSQL provider initially; Hyperdrive can connect to an existing externally reachable PostgreSQL database. The first Cloudflare deployment must use a dedicated staging database, not the live DigitalOcean database. The Pages Function sets `skipSchema: true` and verifies the connection with `SELECT 1`; it never runs the embedded DDL. An explicit starter schema is in `migrations/0001_initial.sql` for a new staging database only.
+
+Cloudflare Pages bindings are configured in the Cloudflare dashboard (Settings → Functions → Bindings): add a Hyperdrive binding named `HYPERDRIVE`. Add `RESEND_API_KEY` as a secret, and `MAIL_FROM`, `PUBLIC_URL`, and `ADMIN_EMAILS` as variables/secrets as appropriate. Do not add the live DigitalOcean database credentials. Use a separate staging database and staging credentials. The Pages runtime sends mail through Resend's HTTPS API; raw SMTP variables are deliberately cleared in this runtime.
 
 ## Non-negotiable safety boundaries
 
@@ -33,16 +37,16 @@ Use Cloudflare Hyperdrive to connect Pages Functions to PostgreSQL through `pg`.
 ## Porting work
 
 ### 1. Runtime and request handling
-- Add a Pages Functions entrypoint for `/api/*` and `/verify`.
-- Adapt the current Node request/response contract to the Fetch API, or refactor handlers to accept standard `Request` and return `Response`. Do not try to call `server.listen()` inside Workers.
-- Preserve request-size limits, JSON validation, no-store API responses, secure cookie attributes, and the existing API response shapes.
-- Keep static asset URLs and both Vite build outputs working on Pages; verify admin routes and deep links.
+- [x] Add Pages Functions entrypoints for `/api/*` and `/verify`.
+- [x] Add a Fetch adapter for the current Node request/response interface. Do not call `server.listen()` inside Workers.
+- [x] Preserve the 4 KiB request-size limit, JSON validation, no-store API responses, secure cookie attributes, and existing API response shapes in the adapter.
+- [ ] Verify static asset URLs, both Vite build outputs, admin routes, and deep links with a Cloudflare Pages preview.
 
 ### 2. PostgreSQL
-- Add a Worker-safe database initialization path that accepts the Hyperdrive binding and does not apply schema changes at startup.
-- Pin `pg` to a version supported by Hyperdrive (Cloudflare currently documents `pg@8.16.3` or later).
-- Keep SQL parameter binding and existing ownership checks. Validate all queries and transaction behavior against staging.
-- Add a separate, explicit schema migration workflow; production schema changes are out of scope until separately approved.
+- [x] Add a Worker-safe database initialization option that skips all schema DDL.
+- [x] Add an explicit starter SQL schema for a fresh staging database.
+- [ ] Configure a staging-only Hyperdrive binding and validate all queries and ownership checks against staging.
+- Keep SQL parameter binding and production schema changes out of scope until separately approved.
 
 ### 3. Custom authentication
 - Preserve the existing `scrypt` password format and verify existing hashes in the Worker runtime; do not silently downgrade password hashing or replace custom auth with a hosted auth product.
@@ -51,11 +55,13 @@ Use Cloudflare Hyperdrive to connect Pages Functions to PostgreSQL through `pg`.
 - Replace per-isolate in-memory authentication throttles with a shared rate-limiting mechanism before public launch; per-isolate Maps are not a reliable distributed limit.
 
 ### 4. Email
-- Replace direct SMTP/Nodemailer with an HTTPS email provider API (or a Cloudflare-supported mail workflow). Keep the same verification and reset token lifecycle and message links.
-- Keep provider credentials in Cloudflare secrets. Test delivery, bounce/error handling, and resend/reset rate limits.
+- [x] Add a Resend HTTPS transport adapter while retaining Nodemailer for the unchanged Node/DigitalOcean deployment.
+- [x] Keep verification/reset token creation and message content in the existing application modules.
+- [ ] Configure a verified sender domain and `RESEND_API_KEY` only in Cloudflare secrets. Test delivery, bounce/error handling, and resend/reset rate limits.
 
 ### 5. Scheduled cleanup and observability
-- Replace the Node startup `setInterval` cleanup with a Cloudflare Cron Trigger or an explicit scheduled cleanup workflow.
+- [x] Remove the API rate-limit map's periodic timer; expired entries are pruned opportunistically and the map is bounded.
+- [ ] Move the daily traffic retention cleanup to a Cloudflare Cron Trigger before launch.
 - Keep health output free of secret values and avoid logging tokens, passwords, full database connection strings, or private user data.
 
 ## Acceptance gates before cutover
@@ -69,4 +75,4 @@ Use Cloudflare Hyperdrive to connect Pages Functions to PostgreSQL through `pg`.
 
 ## Current blocker / next implementation slice
 
-The current backend modules are tightly coupled to Node's `IncomingMessage`/`ServerResponse`, `process.env`, module-level DB pool, SMTP transport, and startup timers. The next code change should introduce a Fetch-native API boundary and a DB adapter with schema initialization disabled by default for Workers. This should be done and tested on this branch before binding any real database or deploying.
+The first runtime port is committed, but it is not production-ready. Required next steps: run the CI build/tests on this branch; configure Pages preview + staging Hyperdrive + Resend; validate the existing API end-to-end in Workers; implement shared rate limiting; move traffic pruning to Cron; and benchmark the existing scrypt cost under the chosen Workers plan. The preview must not be used for real accounts until these gates pass.
