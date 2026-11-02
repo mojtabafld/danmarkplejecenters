@@ -4,3 +4,10 @@ name = "danmarkplejecenters-migration"
 pages_build_output_dir = "./dist"
 compatibility_date = "2026-11-02"
 compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
+
+# The Durable Object is deployed as a separate Worker first; see
+# workers/auth-rate-limiter/wrangler.toml and docs/CLOUDFLARE_SETUP.md.
+[[durable_objects.bindings]]
+name = "AUTH_RATE_LIMITER"
+class_name = "AuthRateLimiter"
+script_name = "danmarkplejecenters-auth-rate-limiter"
