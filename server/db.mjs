@@ -201,7 +201,7 @@ ALTER TABLE notes ADD COLUMN IF NOT EXISTS visited_on DATE;
  * from inside the platform: the certificate is signed by their own CA, which is
  * not in the container's trust store. The connection is still encrypted.
  */
-export async function init({ injectedPool } = {}) {
+export async function init({ injectedPool, skipSchema = false } = {}) {
   if (injectedPool) {
     pool = injectedPool;
   } else {
@@ -227,7 +227,18 @@ export async function init({ injectedPool } = {}) {
       console.error('database pool error:', err.message);
     });
   }
-  await ensureSchema();
+
+  // Cloudflare/other managed runtimes may bind to an already-provisioned
+  // database. In that mode the caller explicitly accepts responsibility for
+  // schema readiness; never execute DDL as a side effect of a request or boot.
+  // The default remains unchanged for the existing DigitalOcean deployment
+  // and the local test harness.
+  if (skipSchema) {
+    schemaReady = true;
+    lastError = null;
+  } else {
+    await ensureSchema();
+  }
   return pool;
 }
 
