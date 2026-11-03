@@ -176,7 +176,6 @@ jobs:
       - name: Publish Pages Production deployment
         run: >-
           npx --yes wrangler@4 pages deploy dist
-          --config wrangler.toml
           --project-name "$CF_PAGES_PROJECT"
           --branch "$CF_PRODUCTION_BRANCH"
           --commit-hash "$GITHUB_SHA"
