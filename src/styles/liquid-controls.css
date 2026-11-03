@@ -14,17 +14,26 @@ html[data-theme='dark'] { color-scheme: dark; }
   backdrop-filter: none;
 }
 
-/* Give WebKit dedicated edge-sized, unfiltered fixed sampling surfaces.
- * The full-screen app is not an edge bar; its children can cover its paint.
- * These real elements deliberately remain visible and track the live token. */
+/* WebKit's direct edge-colour path requires both dimensions > 10px.
+ * Keep a real opaque computed colour, but clip painting to empty text so
+ * these sampling elements never cover the map or its controls. */
 .browser-tint-edge {
   position: fixed;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 0;
   z-index: 2147483647;
   pointer-events: none;
   background-color: var(--header-bg);
+  -webkit-background-clip: text;
+  background-clip: text;
+  border: 0;
+  box-shadow: none;
+  transition: none;
 }
 .browser-tint-edge--top { top: 0; }
 .browser-tint-edge--bottom { bottom: 0; }
+@supports (-webkit-touch-callout: none) {
+  .browser-tint-edge { height: 12px; }
+  html[data-browser-tint-refresh] .browser-tint-edge { height: 13px; }
+}

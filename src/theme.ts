@@ -28,11 +28,13 @@ function stored(): Theme | null {
 
 export class ThemeController {
   current: Theme;
+  private tintFrame: number | null = null;
   private listeners = new Set<(t: Theme) => void>();
 
   constructor() {
     this.current = stored() ?? deviceTheme();
     this.apply(this.current);
+    window.addEventListener('pageshow', () => this.apply(this.current));
 
     /*
      * Follow the device while it is still the one deciding.
@@ -71,6 +73,21 @@ export class ThemeController {
     // Keep the parsed meta node and remove OS-specific media constraints.
     meta.removeAttribute('media');
     meta.content = header;
+    this.refreshBrowserTint();
+  }
+
+  private refreshBrowserTint(): void {
+    // Colour alone can leave WebKit's fixed-edge sample cached. Present one
+    // changed geometry frame, then restore it; no navigation or scroll needed.
+    if (this.tintFrame !== null) window.cancelAnimationFrame(this.tintFrame);
+    const root = document.documentElement;
+    root.setAttribute('data-browser-tint-refresh', '');
+    this.tintFrame = window.requestAnimationFrame(() => {
+      this.tintFrame = window.requestAnimationFrame(() => {
+        root.removeAttribute('data-browser-tint-refresh');
+        this.tintFrame = null;
+      });
+    });
   }
 
   private notify(): void {
