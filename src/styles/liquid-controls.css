@@ -43,3 +43,31 @@ html[data-theme='dark'] { color-scheme: dark; }
 :root[data-theme='dark'] :is(.masthead, .dock, .rail, .map__tools, .panel) {
   background: #000000;
 }
+
+/* Flat header controls and bottom-panel filter tags. */
+.masthead :is(.btn--icon, .langpick__button),
+.rail .chip {
+  background-image: none;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+  text-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.masthead :is(.btn--icon, .langpick__button) { background-color: transparent; }
+.rail .chip { background-color: var(--surface-sunken); }
+.rail .chip[aria-pressed='true'] {
+  background-color: var(--surface-brand-subtle);
+  color: var(--text-link);
+}
+.masthead :is(.btn--icon, .langpick__button):hover,
+.rail .chip:hover { background-color: var(--interactive-hover-bg); }
+.masthead :is(.btn--icon, .langpick__button):active,
+.rail .chip:active { background-color: var(--interactive-active-bg); }
+.masthead :is(.btn--icon, .langpick__button):focus-visible,
+.rail .chip:focus-visible {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 3px;
+  box-shadow: none;
+}
