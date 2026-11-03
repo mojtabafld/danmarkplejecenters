@@ -1,0 +1,23 @@
+/* Scoped to the React component entry point; no Tailwind reset on the existing map. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@source "../../components";
+@custom-variant dark (&:where(.dark, .dark *));
+@theme {
+  --color-primary: #006d63;
+  --color-primary-foreground: #ffffff;
+  --color-background: #f5f8f7;
+  --color-foreground: #142c29;
+  --color-secondary: #dcebe7;
+  --color-secondary-foreground: #142c29;
+  --color-muted: #aec5be;
+  --color-accent: #cce7df;
+  --color-accent-foreground: #142c29;
+  --color-destructive: #b42335;
+  --color-input: #a0b7af;
+  --color-ring: #008779;
+}
+.liquid-glass-shadow { box-shadow:0 0 6px #00000008,0 2px 6px #00000014,inset 3px 3px .5px -3px #000e,inset -3px -3px .5px -3px #000d,inset 1px 1px 1px -.5px #0009,inset -1px -1px 1px -.5px #0009,inset 0 0 6px 6px #0000001f,inset 0 0 2px 2px #0000000f,0 0 12px #ffffff26; }
+.dark .liquid-glass-shadow { box-shadow:0 0 8px #00000008,0 2px 6px #00000014,inset 3px 3px .5px -3.5px #ffffff17,inset -3px -3px .5px -3.5px #ffffffd9,inset 1px 1px 1px -.5px #fff9,inset -1px -1px 1px -.5px #fff9,inset 0 0 6px 6px #ffffff1f,inset 0 0 2px 2px #ffffff0f; }
+@media(prefers-reduced-motion:reduce){.metal-button,.metal-button *{transition:none!important;transform:none!important;}}
