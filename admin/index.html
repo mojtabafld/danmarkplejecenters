@@ -25,9 +25,9 @@
         }
         if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', t);
-        document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'dark' ? '#1C1C1E' : '#FFFFFF');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'dark' ? '#000000' : '#FFFFFF');
         document.documentElement.style.colorScheme = t;
-        document.documentElement.style.backgroundColor = t === 'dark' ? '#1C1C1E' : '#FFFFFF';
+        document.documentElement.style.backgroundColor = t === 'dark' ? '#000000' : '#FFFFFF';
         document
           .querySelector('meta[name="color-scheme"]')
           .setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');

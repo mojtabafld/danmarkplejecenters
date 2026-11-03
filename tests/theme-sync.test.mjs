@@ -10,11 +10,11 @@ let frameId=0; const frames=new Map(); const events=new Map();
 function nextFrame(){ const work=[...frames.values()]; frames.clear(); for(const fn of work) fn(); }
 const document={documentElement:root,body:{style:{}},head:{appendChild(){}},querySelector(selector){return selector.includes('theme-color')?themeMeta:schemeMeta}};
 let saved='light',deviceChange;
-const context={exports:{},document,window:{requestAnimationFrame(fn){frames.set(++frameId,fn);return frameId},cancelAnimationFrame(id){frames.delete(id)},addEventListener(type,fn){events.set(type,fn)},matchMedia(){return{matches:false,addEventListener(_,fn){deviceChange=fn}}}},localStorage:{getItem(){return saved},setItem(_,v){saved=v}},getComputedStyle(){return{getPropertyValue(){return root['data-theme']==='dark'?'#1C1C1E':'#FFFFFF'}}}};
+const context={exports:{},document,window:{requestAnimationFrame(fn){frames.set(++frameId,fn);return frameId},cancelAnimationFrame(id){frames.delete(id)},addEventListener(type,fn){events.set(type,fn)},matchMedia(){return{matches:false,addEventListener(_,fn){deviceChange=fn}}}},localStorage:{getItem(){return saved},setItem(_,v){saved=v}},getComputedStyle(){return{getPropertyValue(){return root['data-theme']==='dark'?'#000000':'#FFFFFF'}}}};
 vm.runInNewContext(source,context);
 const controller=new context.exports.ThemeController();
 assert.equal(themeMeta.content,'#FFFFFF');
-for(const expected of ['#1C1C1E','#FFFFFF','#1C1C1E']){
+for(const expected of ['#000000','#FFFFFF','#000000']){
  controller.toggle();
  assert.equal(themeMeta.content,expected);
  assert.equal(root.style.backgroundColor,expected);

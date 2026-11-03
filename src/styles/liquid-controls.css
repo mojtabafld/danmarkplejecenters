@@ -37,3 +37,9 @@ html[data-theme='dark'] { color-scheme: dark; }
   .browser-tint-edge { height: 12px; }
   html[data-browser-tint-refresh] .browser-tint-edge { height: 13px; }
 }
+
+/* Opaque black chrome in dark mode, including browser tint sampling. */
+:root[data-theme='dark'] { --header-bg: #000000; }
+:root[data-theme='dark'] :is(.masthead, .dock, .rail, .map__tools, .panel) {
+  background: #000000;
+}
