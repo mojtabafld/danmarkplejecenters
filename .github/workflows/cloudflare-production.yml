@@ -1,0 +1,207 @@
+name: Cloudflare Production deployment
+
+on:
+  push:
+    branches:
+      - migration/cloudflare-workers
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    if: github.ref == 'refs/heads/migration/cloudflare-workers'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT_ID: 4f022b9e5bca1c40f58a59f0cb1f1e5e
+      CF_PAGES_PROJECT: danmarkplejecenters-migration
+      CF_PRODUCTION_BRANCH: migration/cloudflare-workers
+      PUBLIC_ORIGIN: https://plejefinder.online
+
+    steps:
+      - name: Check Cloudflare credential is available
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::GitHub repository secret CLOUDFLARE_API_TOKEN is missing."
+            exit 1
+          fi
+
+      - name: Checkout production branch
+        uses: actions/checkout@v4
+        with:
+          ref: migration/cloudflare-workers
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Build frontend and admin application
+        run: npm run build
+
+      - name: Compile Pages Functions
+        run: >-
+          npx --yes wrangler@4 pages functions build functions
+          --outdir .wrangler/pages-worker
+          --compatibility-date=2026-11-02
+          --compatibility-flag=nodejs_compat
+          --compatibility-flag=nodejs_compat_populate_process_env
+
+      - name: Verify Cloudflare production target and required configuration
+        id: preflight
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const token = process.env.CLOUDFLARE_API_TOKEN;
+          const accountId = process.env.CF_ACCOUNT_ID;
+          const base = 'https://api.cloudflare.com/client/v4';
+
+          async function api(path) {
+            const response = await fetch(base + path, {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            const body = await response.json();
+            if (!response.ok || body.success === false || !body.result) {
+              throw new Error('Cloudflare preflight API request failed: ' + response.status);
+            }
+            return body.result;
+          }
+
+          const project = await api(`/accounts/${accountId}/pages/projects/${process.env.CF_PAGES_PROJECT}`);
+          if (project.production_branch !== process.env.CF_PRODUCTION_BRANCH) {
+            throw new Error('Production branch mismatch. Refusing to deploy.');
+          }
+          if (!(project.domains || []).includes('plejefinder.online')) {
+            throw new Error('Custom domain plejefinder.online is not attached to this Pages project. Refusing to deploy.');
+          }
+
+          const vars = project.deployment_configs?.production?.env_vars || {};
+          const required = ['PUBLIC_URL', 'ADMIN_EMAILS', 'TRAFFIC_HASH_SECRET'];
+          const missing = required.filter(name => !Object.hasOwn(vars, name));
+          if (missing.length) {
+            throw new Error('Missing required Production variable/secret names: ' + missing.join(', ') + '. No deployment was made.');
+          }
+
+          const publicUrl = vars.PUBLIC_URL;
+          const publicUrlValue = typeof publicUrl === 'string'
+            ? publicUrl
+            : (publicUrl?.value ?? publicUrl?.text ?? null);
+          if (publicUrlValue && publicUrlValue.replace(new RegExp('/+$'), '') !== process.env.PUBLIC_ORIGIN) {
+            throw new Error('PUBLIC_URL does not match the production custom domain. Refusing to deploy.');
+          }
+
+          const hyperdrive = await api(`/accounts/${accountId}/hyperdrive/configs/6fe7a645ae83497c8c95a103797d309b`);
+          const origin = hyperdrive.origin || {};
+          if (hyperdrive.name !== 'plejefinder-db' ||
+              origin.host !== 'db.bguarjpivuxifkhhrhda.supabase.co' ||
+              Number(origin.port) !== 5432 ||
+              origin.database !== 'postgres') {
+            throw new Error('Hyperdrive target does not match the approved Supabase Production database. Refusing to deploy.');
+          }
+
+          const wrangler = readFileSync('wrangler.toml', 'utf8');
+          for (const fragment of [
+            'pages_build_output_dir = "./dist"',
+            'binding = "HYPERDRIVE"',
+            'id = "6fe7a645ae83497c8c95a103797d309b"',
+            'name = "AUTH_RATE_LIMITER"',
+            'script_name = "danmarkplejecenters-auth-rate-limiter"',
+          ]) {
+            if (!wrangler.includes(fragment)) {
+              throw new Error('wrangler.toml is missing expected production binding configuration. Refusing to deploy.');
+            }
+          }
+
+          const nl = String.fromCharCode(10);
+          appendFileSync(process.env.GITHUB_OUTPUT, 'account_id=' + accountId + nl);
+          const summary = [
+            '## Production preflight passed',
+            '',
+            '- Pages project and production branch match the approved target.',
+            '- Custom domain is attached.',
+            '- Required Production variable/secret names are present (values not displayed).',
+            '- Hyperdrive points to the approved Supabase Production database (credentials not displayed).',
+            '- Wrangler config includes the production Hyperdrive and Durable Object bindings.',
+            '- Email remains optional; MAIL_FROM and RESEND_API_KEY are not required for this release.',
+          ].join(nl);
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + nl);
+          console.log(summary);
+          NODE
+
+      - name: Deploy authentication rate-limiter Durable Object
+        run: npx --yes wrangler@4 deploy --config workers/auth-rate-limiter/wrangler.toml
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.preflight.outputs.account_id }}
+
+      - name: Publish Pages Production deployment
+        run: >-
+          npx --yes wrangler@4 pages deploy dist
+          --config wrangler.toml
+          --project-name "$CF_PAGES_PROJECT"
+          --branch "$CF_PRODUCTION_BRANCH"
+          --commit-hash "$GITHUB_SHA"
+          --commit-message "$DEPLOY_COMMIT_MESSAGE"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.preflight.outputs.account_id }}
+          DEPLOY_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+
+      - name: Verify live Production endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          for endpoint in "$PUBLIC_ORIGIN/" "$PUBLIC_ORIGIN/api/health"; do
+            curl --fail --silent --show-error --retry 8 --retry-delay 3 --retry-connrefused "$endpoint" -o /dev/null
+          done
+
+          curl --fail --silent --show-error --retry 8 --retry-delay 3 --retry-connrefused \
+            "$PUBLIC_ORIGIN/api/health" -o "$RUNNER_TEMP/health.json"
+
+          node --input-type=module <<'NODE'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const health = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/health.json', 'utf8'));
+          if (health.database !== 'ready') {
+            throw new Error('Production database health check is not ready: ' + String(health.database));
+          }
+          if (health.publicUrl !== true || !Number.isInteger(health.admins) || health.admins < 1) {
+            throw new Error('Production runtime configuration health check failed.');
+          }
+
+          for (const path of ['/api/auth/me', '/api/ratings']) {
+            const response = await fetch(process.env.PUBLIC_ORIGIN + path, {
+              headers: { 'cache-control': 'no-cache' }
+            });
+            if (!response.ok) throw new Error(path + ' smoke test failed with HTTP ' + response.status);
+          }
+
+          const nl = String.fromCharCode(10);
+          const summary = [
+            '## Production smoke tests passed',
+            '',
+            '- Site and API health endpoint respond over the custom domain.',
+            '- Hyperdrive-backed database reports ready.',
+            '- Authentication session endpoint and public ratings endpoint respond successfully.',
+            '- Mail status: ' + String(health.mail || 'not reported') + ' (email features remain disabled when mail is not configured).',
+            '- Production URL: ' + process.env.PUBLIC_ORIGIN,
+          ].join(nl);
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + nl);
+          console.log(summary);
+          NODE
+        env:
+          PUBLIC_ORIGIN: https://plejefinder.online
