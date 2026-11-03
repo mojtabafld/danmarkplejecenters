@@ -95,3 +95,4 @@
 <sub>برای برنامه‌نویسان: راهنمای ساخت، اجرا و استقرار پروژه در [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) است.</sub>
 
 </div>
+Production deployment trigger – 2026-11-03
