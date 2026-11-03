@@ -318,6 +318,8 @@ jobs:
             headers: { 'x-schema-audit-token': process.env.SCHEMA_AUDIT_TOKEN, 'cache-control': 'no-cache' }
           });
           if (!schemaResponse.ok) {
+            const responseBody = (await schemaResponse.text()).slice(0, 1200);
+            console.log('Schema audit HTTP error body:', responseBody);
             throw new Error('Read-only Production database schema audit endpoint failed with HTTP ' + schemaResponse.status);
           }
           const schema = await schemaResponse.json();
