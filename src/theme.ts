@@ -51,45 +51,26 @@ export class ThemeController {
   }
 
   private apply(t: Theme): void {
-    document.documentElement.setAttribute('data-theme', t);
-    document
-      .querySelector('meta[name="color-scheme"]')
-      ?.setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');
+    const root = document.documentElement;
+    root.setAttribute('data-theme', t);
+    root.style.colorScheme = t;
+    document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', t);
 
-    // The browser paints its own surfaces -- Safari's address bar, Android's
-    // status bar -- from theme-color, and it does not follow data-theme. Left
-    // alone it stays white while the app goes dark, and the seam is obvious on
-    // a phone. Read from the live theme rather than restated here, so it can
-    // never drift from the header it is continuous with.
-    const header = getComputedStyle(document.documentElement)
-      .getPropertyValue('--header-bg')
-      .trim();
-    if (header) {
-      // Edited in place, never replaced.
-      //
-      // This used to swap the element for a fresh one, on the theory that
-      // Safari would not re-sample a content attribute changed in place. It
-      // does -- WebKit watches the meta it parsed and reacts to that element's
-      // content changing -- and the swap was throwing that element away on the
-      // very first apply(), at boot, before anybody had touched the toggle.
-      // From then on the browser was watching a node no longer in the
-      // document, so the address bar and the notch strip kept the colour they
-      // were given at load and only caught up on a reload. Which is exactly
-      // the symptom this was meant to prevent.
-      //
-      // So: find the parsed meta and set its content. The element in the
-      // markup keeps its identity for the life of the page.
-      let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-      if (!meta) {
-        // Only if the markup lost it. Created once and then kept, for the same
-        // reason -- a node the browser has registered is worth more than a
-        // fresh one.
-        meta = document.createElement('meta');
-        meta.setAttribute('name', 'theme-color');
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute('content', header);
+    // Resolve the new theme synchronously. The page background also matters:
+    // newer Safari versions can sample it for their browser chrome.
+    const header = getComputedStyle(root).getPropertyValue('--header-bg').trim()
+      || (t === 'dark' ? '#1C1C1E' : '#FFFFFF');
+    root.style.backgroundColor = header;
+    if (document.body) document.body.style.backgroundColor = header;
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
     }
+    // Keep the parsed meta node and remove OS-specific media constraints.
+    meta.removeAttribute('media');
+    meta.content = header;
   }
 
   private notify(): void {

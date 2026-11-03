@@ -13,6 +13,7 @@
  */
 import '../styles/tokens.css';
 import './admin.css';
+import '../styles/liquid-controls.css';
 
 import { PLEJECENTRE } from '../data/plejecentre';
 import { columnChart, lineChart, rankedBars, stackedShare, type Point } from './charts';

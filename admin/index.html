@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#FFFFFF" />
     <!-- Never indexed. This page is a back office, and a search engine that
          finds it will keep asking for it long after it has answered 403. -->
     <meta name="robots" content="noindex, nofollow" />
@@ -24,6 +25,9 @@
         }
         if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', t);
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'dark' ? '#1C1C1E' : '#FFFFFF');
+        document.documentElement.style.colorScheme = t;
+        document.documentElement.style.backgroundColor = t === 'dark' ? '#1C1C1E' : '#FFFFFF';
         document
           .querySelector('meta[name="color-scheme"]')
           .setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');

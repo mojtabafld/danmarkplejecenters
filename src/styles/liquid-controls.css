@@ -1,0 +1,63 @@
+/* Shared liquid-glass material for the existing native controls on map/admin.
+ * No React remounts: existing events, text, dimensions and semantic colours stay.
+ * Avoid pseudo-elements because controls already use them for hints/tooltips.
+ */
+:root {
+  --control-glass-highlight: rgb(255 255 255 / .38);
+  --control-glass-lowlight: rgb(0 0 0 / .14);
+  --control-glass-edge: rgb(255 255 255 / .48);
+  --control-glass-shadow: 0 2px 6px rgb(0 0 0 / .08), 0 0 8px rgb(0 0 0 / .03),
+    inset 1px 1px 1px -.5px var(--control-glass-edge),
+    inset -1px -1px 1px -.5px var(--control-glass-lowlight),
+    inset 0 0 3px rgb(255 255 255 / .14);
+}
+:root[data-theme='dark'] {
+  --control-glass-highlight: rgb(255 255 255 / .12);
+  --control-glass-lowlight: rgb(0 0 0 / .28);
+  --control-glass-edge: rgb(255 255 255 / .3);
+}
+/* This includes generated dialog buttons, map controls, review stars, account
+ * controls, admin buttons and links deliberately styled as buttons. */
+:root :is(button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], a.btn, a.qa__tile, a.mapmenu__app, a.tab) {
+  background-image: linear-gradient(145deg, var(--control-glass-highlight), transparent 48%, var(--control-glass-lowlight));
+  box-shadow: var(--control-glass-shadow);
+  -webkit-backdrop-filter: blur(6px) saturate(135%);
+  backdrop-filter: blur(6px) saturate(135%);
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+:root :is(button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], a.btn, a.qa__tile, a.mapmenu__app, a.tab):hover:not(:disabled):not([aria-disabled='true']) {
+  background-image: linear-gradient(145deg, var(--control-glass-highlight), transparent 58%, var(--control-glass-lowlight));
+  box-shadow: var(--control-glass-shadow), 0 3px 9px rgb(0 0 0 / .08);
+}
+:root :is(button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], a.btn, a.qa__tile, a.mapmenu__app, a.tab):active:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: inset 0 1px 4px rgb(0 0 0 / .18), inset 0 0 2px var(--control-glass-edge);
+}
+:root :is(button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], a.btn, a.qa__tile, a.mapmenu__app, a.tab):focus-visible {
+  outline: 2px solid var(--action-primary, #006d63);
+  outline-offset: 3px;
+  box-shadow: var(--shadow-focus), var(--control-glass-shadow);
+}
+:root :is(button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], a.btn, a.qa__tile, a.mapmenu__app, a.tab):is(:disabled,[aria-disabled='true']) {
+  cursor: not-allowed;
+  opacity: .5;
+}
+/* Fall back to the same highlights when backdrop filtering is unavailable. */
+@media (prefers-reduced-motion: reduce) {
+  :root :is(button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], a.btn, a.qa__tile, a.mapmenu__app, a.tab) { transition: none; }
+}
+@media (forced-colors: active) {
+  :root :is(button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], a.btn, a.qa__tile, a.mapmenu__app, a.tab) {
+    background-image: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    outline-color: ButtonText;
+  }
+}
+
+/* Safari may derive browser tint from page backgrounds rather than theme-color. */
+html, body { background-color: var(--header-bg); }
+html { color-scheme: light; }
+html[data-theme='dark'] { color-scheme: dark; }
+.masthead { background-color: var(--header-bg); color: var(--text-primary); }
