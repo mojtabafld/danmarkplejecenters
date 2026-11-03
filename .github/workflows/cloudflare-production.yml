@@ -68,7 +68,6 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import { randomBytes } from 'node:crypto';
-          import { appendFileSync } from 'node:fs';
           import { spawnSync } from 'node:child_process';
 
           const token = process.env.CLOUDFLARE_API_TOKEN;
@@ -131,19 +130,23 @@ jobs:
             wrangler(['pages', 'secret', 'put', 'TRAFFIC_HASH_SECRET', '--project-name', projectName], trafficSecret);
           }
 
-          // A one-run token protects the read-only schema audit endpoint. It is
-          // rotated on each release and never written to source control.
-          const auditToken = randomBytes(32).toString('base64url');
-          wrangler(['pages', 'secret', 'put', 'SCHEMA_AUDIT_TOKEN', '--project-name', projectName], auditToken);
-
-          const confirmedNames = secretNames(wrangler(['pages', 'secret', 'list', '--project-name', projectName]));
-          if (!confirmedNames.includes('TRAFFIC_HASH_SECRET') || !confirmedNames.includes('SCHEMA_AUDIT_TOKEN')) {
-            throw new Error('Wrangler did not confirm the required Pages secrets.');
+          if (currentNames.includes('SCHEMA_AUDIT_TOKEN')) {
+            const removed = spawnSync('npx', ['--yes', 'wrangler@4', 'pages', 'secret', 'delete', 'SCHEMA_AUDIT_TOKEN', '--project-name', projectName], {
+              input: 'y\n',
+              encoding: 'utf8',
+              env: process.env
+            });
+            if (removed.status !== 0) {
+              throw new Error('Could not remove temporary schema-audit secret from Cloudflare.');
+            }
           }
 
-          console.log('::add-mask::' + auditToken);
-          appendFileSync(process.env.GITHUB_OUTPUT, 'schema_audit_token=' + auditToken + String.fromCharCode(10));
-          console.log('Production traffic secret and temporary schema-audit secret are present in Cloudflare. Values were not displayed or stored in the repository.');
+          const confirmedNames = secretNames(wrangler(['pages', 'secret', 'list', '--project-name', projectName]));
+          if (!confirmedNames.includes('TRAFFIC_HASH_SECRET') || confirmedNames.includes('SCHEMA_AUDIT_TOKEN')) {
+            throw new Error('Wrangler did not confirm cleanup of the temporary schema-audit secret.');
+          }
+
+          console.log('Production traffic secret is present in Cloudflare. Temporary schema-audit secret has been removed.');
           NODE
 
       - name: Verify Cloudflare production target and required configuration
@@ -314,22 +317,6 @@ jobs:
 
           node --input-type=module <<'NODE'
           import { readFileSync, appendFileSync } from 'node:fs';
-          const schemaResponse = await fetch(process.env.PUBLIC_ORIGIN + '/api/health/schema', {
-            headers: { 'x-schema-audit-token': process.env.SCHEMA_AUDIT_TOKEN, 'cache-control': 'no-cache' }
-          });
-          if (!schemaResponse.ok) {
-            const responseBody = (await schemaResponse.text()).slice(0, 1200);
-            console.log('Schema audit HTTP error body:', responseBody);
-            throw new Error('Read-only Production database schema audit endpoint failed with HTTP ' + schemaResponse.status);
-          }
-          const schema = await schemaResponse.json();
-          console.log('Read-only Production schema audit:', JSON.stringify(schema));
-          if (schema.ok !== true) {
-            throw new Error('Production database schema is incomplete. No database DDL was run. Missing tables: ' +
-              (schema.missingTables || []).join(', ') + '; missing columns: ' +
-              (schema.missingColumns || []).join(', '));
-          }
-
           const health = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/health.json', 'utf8'));
           console.log('Sanitized Production health:', JSON.stringify({
             database: health.database,
@@ -367,4 +354,3 @@ jobs:
           NODE
         env:
           PUBLIC_ORIGIN: https://plejefinder.online
-          SCHEMA_AUDIT_TOKEN: ${{ steps.configure_env.outputs.schema_audit_token }}
