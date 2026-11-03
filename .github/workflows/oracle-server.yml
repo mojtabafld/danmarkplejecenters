@@ -1,0 +1,40 @@
+name: Oracle Ubuntu server
+on:
+  push:
+    branches: [migration/oracle-ubuntu]
+    paths: [.github/workflows/oracle-server.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: oracle-ubuntu-server
+  cancel-in-progress: false
+jobs:
+  survey:
+    if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 10
+    steps:
+      - name: Read-only server preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = ubuntu
+          test "$(hostname -s)" = eu-core
+          sudo -n true
+          cat /etc/os-release
+          uname -m
+          free -m
+          df -h /
+          swapon --show
+          sudo -n ss -tlnp
+          systemctl list-units --type=service --state=running --no-pager --no-legend | awk '{print $1}'
+          if command -v node; then node --version; fi
+          if command -v psql; then
+            psql --version
+            sudo -n -u postgres psql -tAc "SELECT datname FROM pg_database WHERE datistemplate = false"
+          fi
+          for path in /srv/plejefinder /srv/plejekort /etc/nginx/sites-enabled; do
+            if test -e "$path"; then ls -ld "$path"; fi
+          done
+          echo "Read-only preflight complete. No settings changed."
