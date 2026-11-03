@@ -22,6 +22,10 @@ name = "AUTH_RATE_LIMITER"
 class_name = "AuthRateLimiter"
 script_name = "danmarkplejecenters-auth-rate-limiter"
 
+[env.production.vars]
+PUBLIC_URL = "https://plejefinder.online"
+ADMIN_EMAILS = "mojtaba.devops@gmail.com"
+
 [[env.production.hyperdrive]]
 binding = "HYPERDRIVE"
 id = "6fe7a645ae83497c8c95a103797d309b"
