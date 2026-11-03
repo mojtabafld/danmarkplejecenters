@@ -198,6 +198,13 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFileSync, appendFileSync } from 'node:fs';
           const health = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/health.json', 'utf8'));
+          console.log('Sanitized Production health:', JSON.stringify({
+            database: health.database,
+            publicUrl: health.publicUrl,
+            admins: health.admins,
+            mail: health.mail,
+            mailVars: health.mailVars
+          }));
           if (health.database !== 'ready') {
             throw new Error('Production database health check is not ready: ' + String(health.database));
           }
