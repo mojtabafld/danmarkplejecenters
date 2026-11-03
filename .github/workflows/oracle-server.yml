@@ -2,7 +2,6 @@ name: Oracle Ubuntu server
 on:
   push:
     branches: [migration/oracle-ubuntu]
-    paths: [.github/workflows/oracle-server.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,31 +9,75 @@ concurrency:
   group: oracle-ubuntu-server
   cancel-in-progress: false
 jobs:
-  survey:
+  build:
+    if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Package runtime and deployment scripts
+        run: |
+          node -p process.version > node.version
+          tar -czf release.tar.gz dist server server.mjs package.json package-lock.json scripts/oracle node.version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oracle-release
+          path: release.tar.gz
+          retention-days: 3
+          if-no-files-found: error
+  deploy:
+    needs: build
     if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'
     runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 10
+    timeout-minutes: 30
+    env:
+      RELEASE_SHA: ${{ github.sha }}
+      OCI_SMTP_HOST: ${{ secrets.OCI_SMTP_HOST }}
+      OCI_SMTP_USER: ${{ secrets.OCI_SMTP_USER }}
+      OCI_SMTP_PASS: ${{ secrets.OCI_SMTP_PASS }}
+      OCI_MAIL_FROM: ${{ secrets.OCI_MAIL_FROM }}
     steps:
-      - name: Read-only server preflight
-        shell: bash
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          clean: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: oracle-release
+      - name: Deploy on the dedicated Ubuntu server
+        run: bash scripts/oracle/deploy.sh
+      - name: Verify application data writes in a rolled-back transaction
         run: |
-          set -euo pipefail
-          test "$(id -un)" = ubuntu
-          test "$(hostname -s)" = eu-core
-          sudo -n true
-          cat /etc/os-release
-          uname -m
-          free -m
-          df -h /
-          swapon --show
-          sudo -n ss -tlnp
-          systemctl list-units --type=service --state=running --no-pager --no-legend | awk '{print $1}'
-          if command -v node; then node --version; fi
-          if command -v psql; then
-            psql --version
-            sudo -n -u postgres psql -tAc "SELECT datname FROM pg_database WHERE datistemplate = false"
-          fi
-          for path in /srv/plejefinder /srv/plejekort /etc/nginx/sites-enabled; do
-            if test -e "$path"; then ls -ld "$path"; fi
-          done
-          echo "Read-only preflight complete. No settings changed."
+          sudo -n -u postgres psql -X -v ON_ERROR_STOP=1 -d plejefinder <<'SQL'
+          BEGIN;
+          INSERT INTO users(email,email_key,password_hash) VALUES ('runner-smoke@example.invalid','runner-smoke@example.invalid','not-a-real-password');
+          INSERT INTO visits(user_id,plejecenter_id) SELECT id,'runner-smoke' FROM users WHERE email_key='runner-smoke@example.invalid';
+          INSERT INTO notes(user_id,plejecenter_id,body,visited_on) SELECT id,'runner-smoke','deployment smoke test',CURRENT_DATE FROM users WHERE email_key='runner-smoke@example.invalid';
+          INSERT INTO reviews(user_id,plejecenter_id,stars) SELECT id,'runner-smoke',5 FROM users WHERE email_key='runner-smoke@example.invalid';
+          DO $$ BEGIN
+            IF (SELECT count(*) FROM notes WHERE plejecenter_id='runner-smoke') <> 1 THEN RAISE EXCEPTION 'note round trip failed'; END IF;
+          END $$;
+          ROLLBACK;
+          SQL
+      - name: Summary
+        run: |
+          {
+            echo '## Oracle deployment verified'
+            echo '- Dedicated server: eu-core'
+            echo '- App address: 127.0.0.1:8080 (ready for a Cloudflare HTTP tunnel route)'
+            echo '- PostgreSQL: local application database; no Supabase/Hyperdrive runtime dependency'
+            echo '- Systemd: plejefinder.service'
+            echo '- Backups: daily local pg_dump archives; off-server destination still required'
+            echo '- Build and API tests passed; rolled-back data write smoke test passed'
+            echo '- Production domain routing is unchanged'
+            echo '- OCI SMTP activates when all four OCI mail repository secrets are supplied'
+          } >> "$GITHUB_STEP_SUMMARY"
