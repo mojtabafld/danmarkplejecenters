@@ -69,6 +69,7 @@ jobs:
           node --input-type=module <<'NODE'
           import { randomBytes } from 'node:crypto';
           import { appendFileSync } from 'node:fs';
+          import { spawnSync } from 'node:child_process';
 
           const token = process.env.CLOUDFLARE_API_TOKEN;
           const accountId = process.env.CF_ACCOUNT_ID;
@@ -98,40 +99,43 @@ jobs:
             throw new Error('Expected custom domain is not attached. Refusing to change environment.');
           }
 
-          const existing = project.deployment_configs?.production?.env_vars || {};
-
-          // Pages secrets are stored only in Cloudflare. Preserve the existing
-          // value; generate a fresh random salt only if it is genuinely absent.
-          if (!Object.hasOwn(existing, 'TRAFFIC_HASH_SECRET')) {
-            await request('PATCH', {
-              deployment_configs: {
-                production: {
-                  env_vars: {
-                    TRAFFIC_HASH_SECRET: {
-                      type: 'secret_text',
-                      value: randomBytes(48).toString('base64url')
-                    }
-                  }
-                }
-              }
+          function wrangler(args, input) {
+            const result = spawnSync('npx', ['--yes', 'wrangler@4', ...args], {
+              input,
+              encoding: 'utf8',
+              env: process.env
             });
+            if (result.status !== 0) {
+              throw new Error('Wrangler Pages secret command failed: ' + (result.stderr || result.stdout || 'unknown error').slice(0, 500));
+            }
+            return result.stdout || '';
           }
 
-          const auditToken = randomBytes(32).toString('base64url');
-          await request('PATCH', {
-            deployment_configs: {
-              production: {
-                env_vars: {
-                  SCHEMA_AUDIT_TOKEN: { type: 'secret_text', value: auditToken }
-                }
-              }
+          function secretNames(output) {
+            const first = output.indexOf('[');
+            const last = output.lastIndexOf(']');
+            if (first < 0 || last < first) {
+              if (/no secrets/i.test(output)) return [];
+              throw new Error('Could not parse Wrangler Pages secret list.');
             }
-          });
+            const rows = JSON.parse(output.slice(first, last + 1));
+            return rows.map(row => row.name);
+          }
 
-          const confirmedProject = await request('GET');
-          const confirmed = confirmedProject.deployment_configs?.production?.env_vars || {};
-          if (!Object.hasOwn(confirmed, 'TRAFFIC_HASH_SECRET') || !Object.hasOwn(confirmed, 'SCHEMA_AUDIT_TOKEN')) {
-            throw new Error('Cloudflare did not confirm the required Production secrets.');
+          const currentNames = secretNames(wrangler(['pages', 'secret', 'list', '--project-name', projectName]));
+          if (!currentNames.includes('TRAFFIC_HASH_SECRET')) {
+            const trafficSecret = randomBytes(48).toString('base64url');
+            wrangler(['pages', 'secret', 'put', 'TRAFFIC_HASH_SECRET', '--project-name', projectName], trafficSecret);
+          }
+
+          // A one-run token protects the read-only schema audit endpoint. It is
+          // rotated on each release and never written to source control.
+          const auditToken = randomBytes(32).toString('base64url');
+          wrangler(['pages', 'secret', 'put', 'SCHEMA_AUDIT_TOKEN', '--project-name', projectName], auditToken);
+
+          const confirmedNames = secretNames(wrangler(['pages', 'secret', 'list', '--project-name', projectName]));
+          if (!confirmedNames.includes('TRAFFIC_HASH_SECRET') || !confirmedNames.includes('SCHEMA_AUDIT_TOKEN')) {
+            throw new Error('Wrangler did not confirm the required Pages secrets.');
           }
 
           console.log('::add-mask::' + auditToken);
@@ -163,21 +167,14 @@ jobs:
 
           let project = await api(`/accounts/${accountId}/pages/projects/${process.env.CF_PAGES_PROJECT}`);
           const domains = project.domains || [];
-          const vars = project.deployment_configs?.production?.env_vars || {};
-          const missing = Object.hasOwn(vars, 'TRAFFIC_HASH_SECRET') ? [] : ['TRAFFIC_HASH_SECRET'];
-
           const reportedBranch = [...String(project.production_branch || '')].filter(ch => ![0x200e, 0x200f, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e].includes(ch.codePointAt(0))).join('').trim();
           console.log('Cloudflare Production branch reported by API:', JSON.stringify(project.production_branch || '(unset)'));
           console.log('Cloudflare Pages domains reported by API:', domains.join(', ') || '(none)');
-          console.log('Production secret names reported by API:', Object.keys(vars).sort().join(', ') || '(none)');
+          console.log('Production branch and domain metadata verified; Pages secrets were verified separately with Wrangler.');
 
           if (!domains.includes('plejefinder.online')) {
             throw new Error('Custom domain plejefinder.online is not attached to this Pages project according to Cloudflare API. Refusing to deploy.');
           }
-          if (missing.length) {
-            throw new Error('Missing required Production variable/secret names: ' + missing.join(', ') + '. No deployment was made.');
-          }
-
           if (String(project.production_branch || '') !== process.env.CF_PRODUCTION_BRANCH) {
             if (reportedBranch !== process.env.CF_PRODUCTION_BRANCH && reportedBranch !== 'main' && reportedBranch !== '') {
               throw new Error('Unexpected Production branch value. Refusing to change it automatically.');
