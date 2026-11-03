@@ -53,7 +53,7 @@ jobs:
     timeout-minutes: 30
     env:
       RELEASE_SHA: ${{ github.sha }}
-      ORACLE_PUBLIC_URL: ${{ vars.ORACLE_PUBLIC_URL || 'https://oracle.plejefinder.online' }}
+      ORACLE_PUBLIC_URL: ${{ vars.ORACLE_PUBLIC_URL || 'https://plejefinder.online' }}
       OCI_SMTP_HOST: ${{ secrets.OCI_SMTP_HOST }}
       OCI_SMTP_USER: ${{ secrets.OCI_SMTP_USER }}
       OCI_SMTP_PASS: ${{ secrets.OCI_SMTP_PASS }}

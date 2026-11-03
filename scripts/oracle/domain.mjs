@@ -47,7 +47,9 @@ for (let i = 0; i < checks.length; i++) {
     if (!matched) console.log('No visible tunnel configuration matches the tested Oracle hostname.');
   } else if (i === 1) {
     if (data.length !== 1) throw new Error('Expected exactly one zone');
-    const records = await api(`/zones/${data[0].id}/dns_records?name=${domain}`);
+    let records;
+    try { records = await api(`/zones/${data[0].id}/dns_records?name=${domain}`); }
+    catch (error) { blocked = true; console.log('DNS records permission: ' + error.message); continue; }
     console.log('Apex DNS:', JSON.stringify({ zone: data[0].id, records: records.map(r => ({id:r.id,type:r.type,name:r.name,content:r.content,proxied:r.proxied})) }));
   } else {
     console.log('Pages domain binding:', JSON.stringify({ name:data.name, domains:data.domains, productionBranch:data.production_branch }));

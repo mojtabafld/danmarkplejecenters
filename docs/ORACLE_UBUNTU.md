@@ -35,9 +35,9 @@ signup remain disabled until configured. No test mail is sent by deployment.
 
 Create a Published application route on the existing server Cloudflare Tunnel:
 HTTP -> `127.0.0.1:8080`. Test with a separate staging hostname before moving
-`plejefinder.online` away from Pages. PUBLIC_URL defaults to `https://oracle.plejefinder.online` for staging.
+`plejefinder.online` away from Pages. PUBLIC_URL defaults to `https://plejefinder.online` for production cutover.
 Set the repository Actions variable `ORACLE_PUBLIC_URL` to
-`https://plejefinder.online` at production cutover and redeploy.
+`https://oracle.plejefinder.online` only when intentionally testing staging email links.
 
 The website route is public. SSH Access policies remain scoped to the SSH host.
 The app trusts forwarded headers from the local tunnel; it must not listen on a
