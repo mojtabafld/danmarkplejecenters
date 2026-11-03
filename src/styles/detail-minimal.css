@@ -72,3 +72,9 @@
 .panel .facts {
   border: 0;
 }
+
+/* Use the rating card's corner token throughout centre details. */
+.panel,
+.panel :is(button, .btn, .qa__tile, .facts, .rv, .note, .mapmenu, .mapmenu__app, .mapmenu__mark, .fact__icon, .panel__eyebrow, input, textarea, select, .rv__pick, .rv__item) {
+  border-radius: var(--radius-group);
+}
