@@ -66,3 +66,9 @@
 :root:not([data-theme='dark']) .panel {
   --detail-action-bg: var(--group-bg);
 }
+
+/* Borderless quick actions and the information group beneath them. */
+.panel .qa__tile,
+.panel .facts {
+  border: 0;
+}
