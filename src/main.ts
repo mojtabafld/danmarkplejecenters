@@ -312,7 +312,6 @@ function paintRegionSegment(): void {
 
 function setRegionMenuOpen(open: boolean): void {
   // Whoever opens the menu has found the control the motion was pointing at.
-  if (open) stopRegionAttention();
   regionMenu.hidden = !open;
   regionButton.setAttribute('aria-expanded', String(open));
   if (open) {
@@ -347,55 +346,6 @@ function chooseRegion(r: Region | null): void {
   renderRegionMenu();
   flyToRegion(r);
 }
-
-/* ---------------------------------------------------------- the attention */
-
-/**
- * A short piece of motion on the landsdel icon, once, shortly after the map
- * settles.
- *
- * It replaces a balloon that said the same thing in a sentence. The balloon
- * worked, but it covered the map at exactly the moment somebody is first
- * reading it, and a paragraph is a heavy way to point at a button. Motion at
- * the control itself puts the eye where the control is and costs nothing on
- * screen.
- *
- * Three things keep it from being an irritation rather than a hint:
- *
- *   it stops.        Three pulses and it is over. Motion that never ends stops
- *                    being a signal and becomes a fault the reader cannot fix.
- *   it yields.       The moment anybody opens the picker it is cancelled --
- *                    they have found the thing it was pointing at.
- *   it stays put.    A ring drawn by a pseudo-element and a transform on the
- *                    glyph; nothing in the layout moves, so the dock does not
- *                    shift under a thumb already on its way to the button.
- *
- * Whoever asked for less movement gets none of it. The control still carries
- * its name in the tooltip and its accessible name, which is what the hint was
- * ultimately for.
- */
-const ATTENTION_AFTER = 1200;
-/** Three runs of the keyframes below, plus a little slack. */
-const ATTENTION_LIFE = 3 * 1600 + 200;
-
-let attentionTimers: number[] = [];
-
-function stopRegionAttention(): void {
-  for (const t of attentionTimers) window.clearTimeout(t);
-  attentionTimers = [];
-  delete regionButton.dataset.attention;
-}
-
-function startRegionAttention(): void {
-  // Not over an open menu, not on a dock that has stepped aside for a card,
-  // and not for somebody who has asked the system for less movement.
-  if (!regionMenu.hidden || regionEl.dataset.away === 'true') return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  regionButton.dataset.attention = 'true';
-  attentionTimers.push(window.setTimeout(stopRegionAttention, ATTENTION_LIFE));
-}
-
-attentionTimers.push(window.setTimeout(startRegionAttention, ATTENTION_AFTER));
 
 regionButton.addEventListener('click', () => setRegionMenuOpen(regionMenu.hidden));
 
@@ -980,7 +930,6 @@ function paintDockLift(): void {
     regionEl.dataset.away = String(away);
     if (away) {
       setRegionMenuOpen(false);
-      stopRegionAttention();
     }
   }
 
@@ -1420,7 +1369,6 @@ function setRailOffscreen(off: boolean): void {
   paintDockLift();
   if (off) {
     setRegionMenuOpen(false);
-    stopRegionAttention();
   }
   paintDockLift();
 }
