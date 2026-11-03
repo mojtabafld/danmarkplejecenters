@@ -1,0 +1,27 @@
+name: Oracle domain transition
+on:
+  push:
+    branches: [migration/oracle-ubuntu]
+    paths: [.github/workflows/oracle-domain.yml, scripts/oracle/domain.mjs]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: oracle-domain-transition
+  cancel-in-progress: false
+jobs:
+  domain:
+    if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read-only Cloudflare domain and tunnel preflight
+        run: node scripts/oracle/domain.mjs

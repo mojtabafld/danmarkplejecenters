@@ -2,6 +2,7 @@ name: Oracle Ubuntu server
 on:
   push:
     branches: [migration/oracle-ubuntu]
+    paths-ignore: [.github/workflows/oracle-domain.yml, scripts/oracle/domain.mjs, docs/**]
   workflow_dispatch:
 permissions:
   contents: read
