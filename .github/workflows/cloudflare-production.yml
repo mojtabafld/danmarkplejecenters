@@ -68,6 +68,7 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import { randomBytes } from 'node:crypto';
+          import { appendFileSync } from 'node:fs';
 
           const token = process.env.CLOUDFLARE_API_TOKEN;
           const accountId = process.env.CF_ACCOUNT_ID;
