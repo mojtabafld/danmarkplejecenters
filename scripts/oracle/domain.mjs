@@ -29,11 +29,22 @@ for (let i = 0; i < checks.length; i++) {
   }
   const data = result.value;
   if (i === 0) {
-    const tunnel = data.find(t => t.name === 'plejefinder-oracle');
-    if (!tunnel) throw new Error('Expected Oracle tunnel not found');
-    const config = await api(`/accounts/${account}/cfd_tunnel/${tunnel.id}/configurations`);
-    console.log('Oracle tunnel:', JSON.stringify({ id: tunnel.id, name: tunnel.name, status: tunnel.status,
-      routes: (config.config?.ingress || []).map(r => ({ hostname: r.hostname, service: r.service })) }));
+    console.log('Visible tunnel names:', JSON.stringify(data.map(t => ({id:t.id,name:t.name}))));
+    let matched = false;
+    for (const tunnel of data) {
+      try {
+        const config = await api(`/accounts/${account}/cfd_tunnel/${tunnel.id}/configurations`);
+        const routes = config.config?.ingress || [];
+        if (routes.some(r => r.hostname === 'oracle.plejefinder.online')) {
+          matched = true;
+          console.log('Oracle tunnel:', JSON.stringify({id:tunnel.id,name:tunnel.name,status:tunnel.status,
+            routes:routes.map(r => ({hostname:r.hostname,service:r.service}))}));
+        }
+      } catch (error) {
+        console.log('Tunnel config unavailable:', error.message);
+      }
+    }
+    if (!matched) console.log('No visible tunnel configuration matches the tested Oracle hostname.');
   } else if (i === 1) {
     if (data.length !== 1) throw new Error('Expected exactly one zone');
     const records = await api(`/zones/${data[0].id}/dns_records?name=${domain}`);
