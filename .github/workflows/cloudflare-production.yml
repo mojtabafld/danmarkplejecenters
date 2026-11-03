@@ -90,7 +90,8 @@ jobs:
           const required = ['PUBLIC_URL', 'ADMIN_EMAILS', 'TRAFFIC_HASH_SECRET'];
           const missing = required.filter(name => !Object.hasOwn(vars, name));
 
-          console.log('Cloudflare Production branch reported by API:', project.production_branch || '(unset)');
+          const reportedBranch = String(project.production_branch || '').replace(/[\\u200e\\u200f\\u202a-\\u202e]/g, '').trim();
+          console.log('Cloudflare Production branch reported by API:', JSON.stringify(project.production_branch || '(unset)'));
           console.log('Cloudflare Pages domains reported by API:', domains.join(', ') || '(none)');
           console.log('Production variable/secret names reported by API:', Object.keys(vars).sort().join(', ') || '(none)');
 
@@ -101,8 +102,8 @@ jobs:
             throw new Error('Missing required Production variable/secret names: ' + missing.join(', ') + '. No deployment was made.');
           }
 
-          if (project.production_branch !== process.env.CF_PRODUCTION_BRANCH) {
-            if (project.production_branch && project.production_branch !== 'main') {
+          if (reportedBranch !== process.env.CF_PRODUCTION_BRANCH) {
+            if (reportedBranch && reportedBranch !== 'main') {
               throw new Error('Unexpected Production branch value. Refusing to change it automatically.');
             }
             const response = await fetch(base + `/accounts/${accountId}/pages/projects/${process.env.CF_PAGES_PROJECT}`, {
