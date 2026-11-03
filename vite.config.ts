@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 
 /**
  * Tell the browser about the map chunk in the markup, not in the app's code.
@@ -37,15 +38,17 @@ function preloadMapChunk(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [preloadMapChunk()],
+  plugins: [tailwindcss(), preloadMapChunk()],
+  resolve: { alias: { '@': new URL('.', import.meta.url).pathname } },
   // Relative asset URLs, so `dist/index.html` also opens straight off the disk
   // (file://) — which is how the design-system gates render and measure it.
   base: './',
   build: {
     target: 'es2022',
-    cssCodeSplit: false,
+    cssCodeSplit: true,
     assetsInlineLimit: 0,
     rollupOptions: {
+      input: { main: 'index.html', buttons: 'buttons.html' },
       output: {
         /*
          * Split, so the map library is not compiled before the app can show
