@@ -1,0 +1,63 @@
+/* Flat controls confined to the care-centre details panel. */
+.panel :is(button, .qa__tile, .mapmenu__app, .mapmenu__mark, .fact__icon, .panel__eyebrow, .rv__pickMark) {
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  filter: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.panel :is(.panel__close, .panel__visit) {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.panel .panel__visit[aria-pressed='true'] {
+  background: var(--surface-brand-subtle);
+  color: var(--text-link);
+  box-shadow: none;
+}
+.panel .qa__tile {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-link);
+}
+.panel :is(.qa__tile, .panel__close, .panel__visit, .mapmenu__app):hover {
+  background-color: var(--interactive-hover-bg);
+}
+.panel :is(.qa__tile, .panel__close, .panel__visit, .mapmenu__app):active {
+  background-color: var(--interactive-active-bg);
+}
+.panel :is(.qa__tile, .panel__close, .panel__visit, .fact__icon) svg {
+  stroke-width: 1.75;
+}
+.panel .fact__icon {
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 0;
+}
+.panel :is(.facts, .mapmenu) {
+  box-shadow: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.panel .mapmenu {
+  background: var(--surface-raised);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.panel .mapmenu::after { background: var(--surface-raised); }
+.panel .mapmenu__mark--action { background: transparent; }
+.panel .panel__eyebrow { border-radius: 6px; }
+.panel .btn {
+  border-radius: 8px;
+  box-shadow: none;
+}
+/* Keep keyboard focus explicit after removing decorative control shadows. */
+.panel :is(button, a, input, textarea, [tabindex]):focus-visible,
+.panel .rv__radio:focus-visible + .rv__pickMark {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 3px;
+  box-shadow: none;
+}

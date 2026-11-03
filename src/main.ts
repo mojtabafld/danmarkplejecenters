@@ -1,6 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './styles/app.css';
 import './styles/liquid-controls.css';
+import './styles/detail-minimal.css';
 
 import { Account, type AuthError } from './account';
 import { DetailPanel } from './detail';
