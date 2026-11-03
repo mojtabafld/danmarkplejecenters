@@ -9,6 +9,17 @@ concurrency:
   group: oracle-ubuntu-server
   cancel-in-progress: false
 jobs:
+  diagnose:
+    if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Read service startup diagnostics without environment values
+        run: |
+          sudo -n systemctl show plejefinder -p ActiveState -p SubState -p Result -p ExecMainStatus
+          sudo -n journalctl -u plejefinder -n 35 --no-pager --output cat
+          namei -l /srv/plejefinder/current/server.mjs
+          free -m
   build:
     if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'
     runs-on: ubuntu-latest
@@ -35,7 +46,7 @@ jobs:
           retention-days: 3
           if-no-files-found: error
   deploy:
-    needs: build
+    needs: [build, diagnose]
     if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'
     runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
