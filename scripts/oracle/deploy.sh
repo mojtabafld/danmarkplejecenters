@@ -30,8 +30,8 @@ node_version=$(cat "$stage_dir/node.version")
 node_dir=/opt/plejefinder-node/$node_version
 if [[ ! -x $node_dir/bin/node ]]; then
   node_archive=node-$node_version-linux-x64.tar.xz
-  curl -fLsS --retry 3 "https://nodejs.org/dist/$node_version/$node_archive" -o "$stage_dir/$node_archive"
-  curl -fLsS --retry 3 "https://nodejs.org/dist/$node_version/SHASUMS256.txt" -o "$stage_dir/SHASUMS256.txt"
+  curl -fLsS --connect-timeout 10 --max-time 120 --retry 3 "https://nodejs.org/dist/$node_version/$node_archive" -o "$stage_dir/$node_archive"
+  curl -fLsS --connect-timeout 10 --max-time 120 --retry 3 "https://nodejs.org/dist/$node_version/SHASUMS256.txt" -o "$stage_dir/SHASUMS256.txt"
   (cd "$stage_dir"; grep "  $node_archive\$" SHASUMS256.txt | sha256sum -c -)
   sudo install -d "$node_dir"
   sudo tar -xJf "$stage_dir/$node_archive" -C "$node_dir" --strip-components=1
@@ -46,7 +46,7 @@ sudo install -d -m 755 "$app_root/releases"
 sudo install -d -m 750 -o root -g plejefinder /etc/plejefinder
 sudo systemctl enable --now postgresql
 # Values remain in the process environment and root-owned config, never logs.
-sudo -n --preserve-env=OCI_SMTP_HOST,OCI_SMTP_USER,OCI_SMTP_PASS,OCI_MAIL_FROM python3 "$stage_dir/scripts/oracle/configure.py"
+sudo -n --preserve-env=OCI_SMTP_HOST,OCI_SMTP_USER,OCI_SMTP_PASS,OCI_MAIL_FROM,ORACLE_PUBLIC_URL python3 "$stage_dir/scripts/oracle/configure.py"
 # The service owns this database only; tune its own connection usage via PGOPTIONS.
 release_dir=$app_root/releases/$RELEASE_SHA
 if [[ ! -d $release_dir ]]; then

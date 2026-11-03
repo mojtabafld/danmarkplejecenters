@@ -35,9 +35,9 @@ signup remain disabled until configured. No test mail is sent by deployment.
 
 Create a Published application route on the existing server Cloudflare Tunnel:
 HTTP -> `127.0.0.1:8080`. Test with a separate staging hostname before moving
-`plejefinder.online` away from Pages. PUBLIC_URL defaults to the production domain,
-so email links point there; before testing real signup on staging, use a matching
-PUBLIC_URL in the root-owned app environment and restart the service.
+`plejefinder.online` away from Pages. PUBLIC_URL defaults to `https://oracle.plejefinder.online` for staging.
+Set the repository Actions variable `ORACLE_PUBLIC_URL` to
+`https://plejefinder.online` at production cutover and redeploy.
 
 The website route is public. SSH Access policies remain scoped to the SSH host.
 The app trusts forwarded headers from the local tunnel; it must not listen on a
@@ -46,8 +46,8 @@ public network interface. No firewall or SSH configuration is changed by deploy.
 ## Backups and verification
 
 `plejefinder-backup.timer` runs daily. Custom-format pg_dump archives are retained
-for seven days under `/var/backups/plejefinder`, root-only. The archive table of
-contents is checked, but an actual off-server restore test is still required.
+for seven days under `/var/backups/plejefinder`, root-only. Each deployment also restores a backup into a disposable local database and
+checks all ten application tables. An off-server restore test is still required.
 **Local backups do not survive deletion of the server disk.** Configure a separate
 OCI Object Storage destination before treating the deployment as production.
 

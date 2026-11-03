@@ -33,6 +33,11 @@ def configure():
             'TRAFFIC_HASH_SECRET=' + secrets.token_hex(32),
             'PGOPTIONS="-c statement_timeout=15000 -c work_mem=2MB"',
         ]) + '\n'
+    public_url = os.environ.get('ORACLE_PUBLIC_URL', 'https://oracle.plejefinder.online')
+    if public_url not in ['https://oracle.plejefinder.online', 'https://plejefinder.online']:
+        raise RuntimeError('Unexpected application public URL')
+    existing = '\n'.join(line for line in existing.splitlines()
+                         if not line.startswith('PUBLIC_URL=')) + '\nPUBLIC_URL=' + public_url + '\n'
     mail = {key: os.environ.get('OCI_' + key, '') for key in ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS']}
     mail['MAIL_FROM'] = os.environ.get('OCI_MAIL_FROM', '')
     if any(mail.values()) and not all(mail.values()):
