@@ -114,12 +114,15 @@ jobs:
           function secretNames(output) {
             const first = output.indexOf('[');
             const last = output.lastIndexOf(']');
-            if (first < 0 || last < first) {
-              if (/no secrets/i.test(output)) return [];
-              throw new Error('Could not parse Wrangler Pages secret list.');
+            if (first >= 0 && last >= first) {
+              try {
+                const rows = JSON.parse(output.slice(first, last + 1));
+                if (Array.isArray(rows)) return rows.map(row => row.name).filter(Boolean);
+              } catch {}
             }
-            const rows = JSON.parse(output.slice(first, last + 1));
-            return rows.map(row => row.name);
+            console.log('Wrangler Pages secret list output:', JSON.stringify(output));
+            if (/no secrets/i.test(output)) return [];
+            return [...output.matchAll(/\\b[A-Z][A-Z0-9_]{2,}\\b/g)].map(match => match[0]);
           }
 
           const currentNames = secretNames(wrangler(['pages', 'secret', 'list', '--project-name', projectName]));
