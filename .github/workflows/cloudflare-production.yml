@@ -90,7 +90,7 @@ jobs:
           const required = ['PUBLIC_URL', 'ADMIN_EMAILS', 'TRAFFIC_HASH_SECRET'];
           const missing = required.filter(name => !Object.hasOwn(vars, name));
 
-          const reportedBranch = String(project.production_branch || '').replace(/[\\u200e\\u200f\\u202a-\\u202e]/g, '').trim();
+          const reportedBranch = [...String(project.production_branch || '')].filter(ch => ![0x200e, 0x200f, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e].includes(ch.codePointAt(0))).join('').trim();
           console.log('Cloudflare Production branch reported by API:', JSON.stringify(project.production_branch || '(unset)'));
           console.log('Cloudflare Pages domains reported by API:', domains.join(', ') || '(none)');
           console.log('Production variable/secret names reported by API:', Object.keys(vars).sort().join(', ') || '(none)');
