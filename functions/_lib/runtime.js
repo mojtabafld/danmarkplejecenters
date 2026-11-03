@@ -13,7 +13,7 @@ export function configureRuntime(env) {
   if (env.HYPERDRIVE?.connectionString) {
     process.env.DATABASE_URL ??= env.HYPERDRIVE.connectionString;
   }
-  for (const key of ['PUBLIC_URL', 'ADMIN_EMAILS', 'MAIL_FROM', 'RESEND_API_KEY', 'TRAFFIC_HASH_SECRET']) {
+  for (const key of ['PUBLIC_URL', 'ADMIN_EMAILS', 'MAIL_FROM', 'RESEND_API_KEY', 'TRAFFIC_HASH_SECRET', 'SCHEMA_AUDIT_TOKEN']) {
     if (typeof env[key] === 'string' && env[key]) process.env[key] = env[key];
   }
 

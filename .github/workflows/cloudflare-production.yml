@@ -116,13 +116,26 @@ jobs:
             });
           }
 
+          const auditToken = randomBytes(32).toString('base64url');
+          await request('PATCH', {
+            deployment_configs: {
+              production: {
+                env_vars: {
+                  SCHEMA_AUDIT_TOKEN: { type: 'secret_text', value: auditToken }
+                }
+              }
+            }
+          });
+
           const confirmedProject = await request('GET');
           const confirmed = confirmedProject.deployment_configs?.production?.env_vars || {};
-          if (!Object.hasOwn(confirmed, 'TRAFFIC_HASH_SECRET')) {
-            throw new Error('Cloudflare did not confirm the Production traffic secret.');
+          if (!Object.hasOwn(confirmed, 'TRAFFIC_HASH_SECRET') || !Object.hasOwn(confirmed, 'SCHEMA_AUDIT_TOKEN')) {
+            throw new Error('Cloudflare did not confirm the required Production secrets.');
           }
 
-          console.log('Production traffic secret is present in Cloudflare. Its value was not displayed or stored in GitHub.');
+          console.log('::add-mask::' + auditToken);
+          appendFileSync(process.env.GITHUB_OUTPUT, 'schema_audit_token=' + auditToken + String.fromCharCode(10));
+          console.log('Production traffic secret and temporary schema-audit secret are present in Cloudflare. Values were not displayed or stored in the repository.');
           NODE
 
       - name: Verify Cloudflare production target and required configuration
@@ -300,6 +313,20 @@ jobs:
 
           node --input-type=module <<'NODE'
           import { readFileSync, appendFileSync } from 'node:fs';
+          const schemaResponse = await fetch(process.env.PUBLIC_ORIGIN + '/api/health/schema', {
+            headers: { 'x-schema-audit-token': process.env.SCHEMA_AUDIT_TOKEN, 'cache-control': 'no-cache' }
+          });
+          if (!schemaResponse.ok) {
+            throw new Error('Read-only Production database schema audit endpoint failed with HTTP ' + schemaResponse.status);
+          }
+          const schema = await schemaResponse.json();
+          console.log('Read-only Production schema audit:', JSON.stringify(schema));
+          if (schema.ok !== true) {
+            throw new Error('Production database schema is incomplete. No database DDL was run. Missing tables: ' +
+              (schema.missingTables || []).join(', ') + '; missing columns: ' +
+              (schema.missingColumns || []).join(', '));
+          }
+
           const health = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/health.json', 'utf8'));
           console.log('Sanitized Production health:', JSON.stringify({
             database: health.database,
@@ -337,3 +364,4 @@ jobs:
           NODE
         env:
           PUBLIC_ORIGIN: https://plejefinder.online
+          SCHEMA_AUDIT_TOKEN: ${{ steps.configure_env.outputs.schema_audit_token }}
