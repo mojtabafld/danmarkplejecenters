@@ -493,7 +493,7 @@ a.btn { text-decoration: none; }
 
 .rail__lead {
   padding: var(--space-5) var(--space-5) var(--space-4);
-  border-block-end: var(--border-hairline) solid var(--border-subtle);
+  border-block-end: 0;
 }
 
 /* The operator filters now sit with the count rather than under the search
