@@ -37,8 +37,11 @@ if [[ ! -x $node_dir/bin/node ]]; then
   sudo tar -xJf "$stage_dir/$node_archive" -C "$node_dir" --strip-components=1
   rm "$stage_dir/$node_archive" "$stage_dir/SHASUMS256.txt"
 fi
+sudo chmod -R a+rX /opt/plejefinder-node
 export PATH="$node_dir/bin:$PATH"
-(cd "$stage_dir"; npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
+"$node_dir/bin/node" --version
+"$node_dir/bin/node" "$node_dir/lib/node_modules/npm/bin/npm-cli.js" --version
+(cd "$stage_dir"; "$node_dir/bin/node" "$node_dir/lib/node_modules/npm/bin/npm-cli.js" ci --omit=dev --ignore-scripts --no-audit --no-fund)
 if ! id plejefinder >/dev/null 2>&1; then
   sudo useradd --system --user-group --home-dir /var/lib/plejefinder --create-home --shell /usr/sbin/nologin plejefinder
 fi
