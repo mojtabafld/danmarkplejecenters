@@ -61,7 +61,7 @@ export class ThemeController {
     // Resolve the new theme synchronously. The page background also matters:
     // newer Safari versions can sample it for their browser chrome.
     const header = getComputedStyle(root).getPropertyValue('--header-bg').trim()
-      || (t === 'dark' ? '#000000' : '#FFFFFF');
+      || (t === 'dark' ? '#10131A' : '#FFFFFF');
     root.style.backgroundColor = header;
     if (document.body) document.body.style.backgroundColor = header;
     let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
