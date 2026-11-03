@@ -440,7 +440,7 @@ function renderAccount(): void {
   // The close button is part of the panel rather than of each state, so it is
   // there whichever state the panel is in.
   const head =
-    `<div class="account__head"><p class="account__heading">${esc(heading)}</p>` +
+    `<div class="account__head"><p class="account__heading${heading === t('account.why') ? ' account__heading--signin' : ''}">${esc(heading)}</p>` +
     `<button type="button" class="account__close" data-act="close" ` +
     `aria-label="${esc(t('account.close'))}">${icon('x')}</button></div>`;
 
