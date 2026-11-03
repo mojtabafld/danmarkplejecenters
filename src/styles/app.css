@@ -2439,25 +2439,14 @@ a.btn { text-decoration: none; }
   .tally__count { font-size: var(--text-2xl); }
 
   .panel {
-    /*
-     * Pinned top and bottom, by the same gutter.
-     *
-     * On a phone the card is what the reader asked for -- they tapped a
-     * plejecenter, not the map behind it -- so it takes the screen, with the
-     * same 12px of map showing above it as below. Pinning both edges rather
-     * than setting a height is what makes those two gaps equal by
-     * construction: they are the same token, and neither can drift when the
-     * header or the safe area changes.
-     *
-     * The desktop card above still sizes to its content and is anchored only
-     * at the top, for the reason recorded there -- a taller screen should make
-     * a column show more, not make a card taller. That reasoning is about a
-     * card beside a map. This one IS the screen.
-     */
-    inset-block: var(--space-3);
+    /* Fit the content, capped by the map viewport. The body scrolls when
+     * needed; a tall phone should not add empty space after the ratings. */
+    inset-block-start: var(--space-3);
+    inset-block-end: auto;
     inset-inline: var(--space-3);
     inline-size: auto;
-    max-block-size: none;
+    block-size: auto;
+    max-block-size: calc(100% - var(--space-6));
     /*
      * A sheet, not a card that lifts. It starts entirely below the screen and
      * slides up to its place, which is what "expand from the bottom" means and
