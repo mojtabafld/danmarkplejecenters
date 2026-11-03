@@ -18,7 +18,7 @@ jobs:
         run: |
           sudo -n systemctl show plejefinder -p ActiveState -p SubState -p Result -p ExecMainStatus
           sudo -n journalctl -u plejefinder -n 35 --no-pager --output cat
-          namei -l /srv/plejefinder/current/server.mjs
+          sudo -n namei -l /srv/plejefinder/current/server.mjs || true
           free -m
   build:
     if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/migration/oracle-ubuntu'

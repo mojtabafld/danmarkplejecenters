@@ -45,7 +45,7 @@ export PATH="$node_dir/bin:$PATH"
 if ! id plejefinder >/dev/null 2>&1; then
   sudo useradd --system --user-group --home-dir /var/lib/plejefinder --create-home --shell /usr/sbin/nologin plejefinder
 fi
-sudo install -d -m 755 "$app_root/releases"
+sudo install -d -m 755 "$app_root" "$app_root/releases"
 sudo install -d -m 750 -o root -g plejefinder /etc/plejefinder
 sudo systemctl enable --now postgresql
 # Values remain in the process environment and root-owned config, never logs.
@@ -57,6 +57,8 @@ if [[ ! -d $release_dir ]]; then
   sudo chown -R root:root "$release_dir"
   sudo chmod -R a+rX "$release_dir"
 fi
+sudo -u plejefinder test -r "$release_dir/server.mjs"
+sudo -u plejefinder "$node_dir/bin/node" --version
 sudo tee /etc/systemd/system/plejefinder.service >/dev/null <<UNIT
 [Unit]
 Description=Plejefinder website and API
@@ -99,6 +101,7 @@ for attempt in {1..30}; do
 done
 if [[ $healthy != 1 ]]; then
   echo 'New release failed health check'
+  sudo journalctl -u plejefinder -n 15 --no-pager --output cat
   if [[ -n $previous ]]; then
     sudo ln -sfn "$previous" "$app_root/current"
     sudo systemctl restart plejefinder
