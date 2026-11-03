@@ -122,7 +122,7 @@ jobs:
             }
             console.log('Wrangler Pages secret list output:', JSON.stringify(output));
             if (/no secrets/i.test(output)) return [];
-            return [...output.matchAll(/\\b[A-Z][A-Z0-9_]{2,}\\b/g)].map(match => match[0]);
+            return ['TRAFFIC_HASH_SECRET', 'SCHEMA_AUDIT_TOKEN'].filter(name => output.includes(name + ':'));
           }
 
           const currentNames = secretNames(wrangler(['pages', 'secret', 'list', '--project-name', projectName]));
