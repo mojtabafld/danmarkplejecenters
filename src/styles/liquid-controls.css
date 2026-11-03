@@ -3,3 +3,13 @@ html, body { background-color: var(--header-bg); }
 html { color-scheme: light; }
 html[data-theme='dark'] { color-scheme: dark; }
 .masthead { background-color: var(--header-bg); color: var(--text-primary); }
+
+/* Safari samples fixed viewport containers for toolbar tint. The app is
+ * fixed, while its header is a grid child: paint the container as well. */
+.app { background-color: var(--header-bg); }
+/* A filtered header surface can prevent WebKit from observing tint changes. */
+.masthead::before {
+  background: var(--header-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
