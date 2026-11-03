@@ -78,3 +78,14 @@
 .panel :is(button, .btn, .qa__tile, .facts, .rv, .note, .mapmenu, .mapmenu__app, .mapmenu__mark, .fact__icon, .panel__eyebrow, input, textarea, select, .rv__pick, .rv__item) {
   border-radius: var(--radius-group);
 }
+
+/* Blur only the basemap while centre details are visible. The sibling
+ * details panel and its controls remain sharp throughout opening/closing. */
+.stage > .map { transition: filter 180ms ease-out; }
+.stage:has(> .panel:not([hidden])) > .map {
+  filter: blur(6px);
+  clip-path: inset(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage > .map { transition: none; }
+}
