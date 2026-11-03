@@ -102,8 +102,8 @@ jobs:
             throw new Error('Missing required Production variable/secret names: ' + missing.join(', ') + '. No deployment was made.');
           }
 
-          if (reportedBranch !== process.env.CF_PRODUCTION_BRANCH) {
-            if (reportedBranch && reportedBranch !== 'main') {
+          if (String(project.production_branch || '') !== process.env.CF_PRODUCTION_BRANCH) {
+            if (reportedBranch !== process.env.CF_PRODUCTION_BRANCH && reportedBranch !== 'main' && reportedBranch !== '') {
               throw new Error('Unexpected Production branch value. Refusing to change it automatically.');
             }
             const response = await fetch(base + `/accounts/${accountId}/pages/projects/${process.env.CF_PAGES_PROJECT}`, {
@@ -116,10 +116,10 @@ jobs:
             });
             const body = await response.json();
             if (!response.ok || body.success === false || body.result?.production_branch !== process.env.CF_PRODUCTION_BRANCH) {
-              throw new Error('Cloudflare did not confirm the requested Production branch update. Refusing to deploy.');
+              throw new Error('Cloudflare did not confirm the exact Production branch name. Refusing to deploy.');
             }
             project = body.result;
-            console.log('Production branch was aligned with the user-selected branch and re-confirmed by Cloudflare.');
+            console.log('Production branch metadata was normalized to the exact branch name and confirmed by Cloudflare.');
           }
 
           const publicUrl = vars.PUBLIC_URL;
