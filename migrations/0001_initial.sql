@@ -1,6 +1,6 @@
--- Initial schema for an isolated Cloudflare migration/staging database.
+-- Initial schema for the Hyperdrive-backed Supabase database.
 -- This file is intentionally NOT executed by application startup.
--- Apply manually only to a new, disposable/staging PostgreSQL database after review.
+-- Apply explicitly through a reviewed migration; never from a Worker request.
 CREATE TABLE IF NOT EXISTS users (
   id            BIGSERIAL PRIMARY KEY,
   email         TEXT NOT NULL,
@@ -129,3 +129,26 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
 -- rather than a timestamp, because nobody wants to record the minute they
 -- walked in, and nullable, because a note without a date is still a note.
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS visited_on DATE;
+
+-- Custom sessions are enforced by the backend. No browser Data API access.
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.users FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.sessions FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.email_tokens ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.email_tokens FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.reset_tokens ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.reset_tokens FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.visits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.visits FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.notes FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.reviews FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.counters ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.counters FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.visitor_days ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.visitor_days FROM anon, authenticated, PUBLIC;
+ALTER TABLE public.place_days ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.place_days FROM anon, authenticated, PUBLIC;
+REVOKE ALL ON SEQUENCE public.users_id_seq, public.reviews_id_seq FROM anon, authenticated, PUBLIC;

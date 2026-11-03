@@ -7,8 +7,54 @@
  * is reported as a configuration mistake rather than a crash.
  */
 import pg from 'pg';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+const requestDatabase = new AsyncLocalStorage();
 
 const { Pool } = pg;
+
+/** Each Worker request owns its client; overlapping requests never share sockets. */
+export async function withRequestDatabase(connection, handler, { Client = pg.Client } = {}) {
+  const state = { client: null, ready: false, error: null, configured: Boolean(connection) };
+  return requestDatabase.run(state, async () => {
+    try {
+      if (connection) {
+        state.client = new Client({ connectionString: connection, connectionTimeoutMillis: 10_000 });
+        // Bound Hyperdrive URLs carry their own edge TLS settings. Do not apply
+        // the legacy DigitalOcean SSL override to this connection.
+        state.client.on('error', error => { state.ready = false; state.error = short(error); });
+        try {
+          await state.client.connect();
+          // Resolve every required column and check SELECT privileges without
+          // reading user rows or ever applying CREATE/ALTER from a request.
+          await state.client.query(SCHEMA_PROBE);
+          state.ready = true;
+        } catch (error) {
+          state.error = short(error);
+          console.error('Cloudflare database readiness failed:', state.error);
+        }
+      }
+      return await handler();
+    } finally {
+      await state.client?.end().catch(() => {});
+    }
+  });
+}
+
+const SCHEMA_PROBE = `SELECT
+  u.id, u.email, u.email_key, u.password_hash, u.created_at, u.verified_at,
+  s.token_hash, s.user_id, s.created_at, s.expires_at,
+  e.token_hash, e.user_id, e.created_at, e.expires_at,
+  t.token_hash, t.user_id, t.created_at, t.expires_at,
+  v.user_id, v.plejecenter_id, v.created_at,
+  n.user_id, n.plejecenter_id, n.body, n.updated_at, n.visited_on,
+  r.id, r.user_id, r.plejecenter_id, r.stars, r.body, r.status,
+  r.created_at, r.updated_at, r.decided_at, r.decided_by,
+  c.day, c.metric, c.n, d.day, d.visitor, p.day, p.place_id
+FROM users u LEFT JOIN sessions s ON false LEFT JOIN email_tokens e ON false
+LEFT JOIN reset_tokens t ON false LEFT JOIN visits v ON false LEFT JOIN notes n ON false
+LEFT JOIN reviews r ON false LEFT JOIN counters c ON false LEFT JOIN visitor_days d ON false
+LEFT JOIN place_days p ON false WHERE false`;
 
 /** Set by init(); a Pool, or the one a test injected. */
 let pool = null;
@@ -260,6 +306,8 @@ export async function init({ injectedPool, skipSchema = false } = {}) {
  * accounts broken until somebody deployed again.
  */
 export async function ensureSchema({ attempts = 3 } = {}) {
+  const request = requestDatabase.getStore();
+  if (request) return request.ready; // Never run DDL in the Worker runtime.
   if (schemaReady) return true;
   if (!pool) return false;
   for (let i = 0; i < attempts; i++) {
@@ -288,12 +336,18 @@ function short(err) {
   if (code === 'ENOTFOUND') return 'host_not_found';
   if (code === '28P01' || code === '28000') return 'credentials_rejected';
   if (code === '3D000') return 'database_does_not_exist';
+  if (code === '42P01' || code === '42703') return 'schema_mismatch';
   if (code === '42501') return 'permission_denied';
   if (/self.signed|certificate/i.test(err?.message ?? '')) return 'tls_rejected';
   return code ? `pg_${code}` : 'unknown';
 }
 
 export function query(text, params) {
+  const request = requestDatabase.getStore();
+  if (request) {
+    if (!request.ready) throw new Error('database_unavailable');
+    return request.client.query(text, params);
+  }
   if (!pool) throw new Error('db.init() has not run');
   return pool.query(text, params);
 }
@@ -310,11 +364,19 @@ export async function close() {
  * to every request that touched a table.
  */
 export function isReady() {
+  const request = requestDatabase.getStore();
+  if (request) return request.ready;
   return pool !== null && schemaReady;
 }
 
 /** For the health endpoint and the start-up log. */
 export function status() {
+  const request = requestDatabase.getStore();
+  if (request) {
+    if (!request.configured) return { database: 'not_configured' };
+    return request.ready ? { database: 'ready' }
+      : { database: 'unavailable', reason: request.error ?? 'unknown' };
+  }
   if (!connectionString() && !pool) return { database: 'not_configured' };
   if (isReady()) return { database: 'ready' };
   return { database: 'unavailable', reason: lastError ?? 'unknown' };

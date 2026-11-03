@@ -1,6 +1,18 @@
 # Cloudflare migration — implementation record
 
-Status: isolated migration branch; no production deployment, database connection, schema change, or DNS change has been made.
+Status (2026-11-03): Production runs from `migration/cloudflare-workers` on
+Cloudflare Pages at https://plejefinder.online, with Supabase through Hyperdrive.
+The application schema was applied explicitly to Supabase with RLS enabled and
+browser Data API privileges revoked. Authentication remains the existing custom
+session system. Email is not configured, so signup and password reset are disabled.
+
+The runtime uses a new pg Client per request, isolated through AsyncLocalStorage,
+and closes it in finally. It validates required tables/columns with a read-only
+zero-row query; it never runs schema DDL. Health reports schema/permission errors
+without exposing connection details. Hyperdrive handles origin connection pooling.
+
+The remaining sections are the historical migration plan; staging-only statements
+and unchecked acceptance items below are not a description of current production.
 
 Target branch: `migration/cloudflare-workers`
 Production branch: `main` (must remain unchanged until acceptance)

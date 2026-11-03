@@ -1,18 +1,13 @@
 import * as db from '../../server/db.mjs';
 import * as mail from '../../server/mail.mjs';
 
-let databaseInitialization;
 
 /**
  * Runtime configuration is read from Cloudflare bindings. process.env is
- * populated by nodejs_compat for configured vars/secrets; Hyperdrive exposes
- * its connection string through its own binding and is copied into the name
- * the existing PostgreSQL module already understands.
+ * populated by nodejs_compat for configured vars/secrets. The Hyperdrive
+ * connection string stays in its binding and is passed to a request-local client.
  */
 export function configureRuntime(env) {
-  if (env.HYPERDRIVE?.connectionString) {
-    process.env.DATABASE_URL ??= env.HYPERDRIVE.connectionString;
-  }
   for (const key of ['PUBLIC_URL', 'ADMIN_EMAILS', 'MAIL_FROM', 'RESEND_API_KEY', 'TRAFFIC_HASH_SECRET']) {
     if (typeof env[key] === 'string' && env[key]) process.env[key] = env[key];
   }
@@ -56,21 +51,7 @@ export function configureRuntime(env) {
   }
 }
 
-/** Initialize a Hyperdrive-backed pool once per isolate; never run schema DDL. */
-export async function ensureDatabase(env) {
-  if (!env.HYPERDRIVE?.connectionString) return false;
-  if (!databaseInitialization) {
-    databaseInitialization = (async () => {
-      process.env.DATABASE_URL = env.HYPERDRIVE.connectionString;
-      await db.init({ skipSchema: true });
-      await db.query('SELECT 1');
-      return true;
-    })().catch(async (error) => {
-      databaseInitialization = undefined;
-      await db.close().catch(() => {});
-      throw error;
-    });
-  }
-  await databaseInitialization;
-  return true;
+/** Hyperdrive pools origin connections; the driver client belongs to this request. */
+export function withDatabase(env, handler) {
+  return db.withRequestDatabase(env.HYPERDRIVE?.connectionString, handler);
 }

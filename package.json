@@ -19,7 +19,7 @@
     "build:harness": "node verification/build-harness.mjs",
     "verify": "./verify.sh",
     "build:admin": "vite build --config vite.admin.config.ts",
-    "test:migration": "node tests/db-skip-schema.test.mjs && node tests/cloudflare-adapter.test.mjs"
+    "test:migration": "node tests/db-skip-schema.test.mjs && node tests/db-request.test.mjs && node tests/cloudflare-adapter.test.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^5.6.0",
