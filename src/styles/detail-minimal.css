@@ -18,7 +18,7 @@
   box-shadow: none;
 }
 .panel .qa__tile {
-  background: var(--surface-sunken);
+  background: var(--detail-action-bg, var(--surface-sunken));
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   color: var(--text-link);
@@ -60,4 +60,9 @@
   outline: 2px solid var(--action-primary);
   outline-offset: 3px;
   box-shadow: none;
+}
+
+/* Match the light-theme information rows beneath the quick actions. */
+:root:not([data-theme='dark']) .panel {
+  --detail-action-bg: var(--group-bg);
 }
