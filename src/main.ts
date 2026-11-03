@@ -7,7 +7,6 @@ import { Account, type AuthError } from './account';
 import { DetailPanel } from './detail';
 import { ReviewSection } from './reviews';
 import { Geolocator, type GeoStatus } from './geolocate';
-import { Intro } from './intro';
 import { I18n, LOCALES, LOCALE_META, type Locale, type TranslationKey } from './i18n';
 import { icon, iconDataUri } from './icons';
 import { ResultList } from './list';
@@ -97,7 +96,6 @@ const dockMuni = $<HTMLSelectElement>('#dockMunicipality');
 const regionEl = $('#dockpick');
 const regionButton = $<HTMLButtonElement>('#dockRegion');
 const regionMenu = $('#regionMenu');
-const dockSplit = $('#dockSplit');
 const accountScrim = $('#accountScrim');
 const noteDialog = $('#noteDialog');
 const noteScrim = $('#noteScrim');
@@ -887,21 +885,8 @@ function setDockOpen(open: boolean): void {
 
 /** Icon only, so the label is the accessible name and the title on hover. */
 function paintDock(): void {
-  /*
-   * The saved segment is always there -- but only where an account is possible
-   * at all. Without a database the server disables accounts outright, and a
-   * button whose whole job is to reach them would be a dead end rather than an
-   * invitation. That is the one case it stays away for.
-   *
-   * There are two dividers now and they behave differently. The first sits
-   * between the search and the picker, both of which are always present, so it
-   * is always between two things and never hides. The second sits in front of
-   * the bookmark and hides with it.
-   */
+  // Saved places remain available whenever accounts are enabled.
   dockSavedBtn.hidden = !account.available;
-  // The divider in front of it goes with it: a dock that ends on a line with
-  // nothing after it looks like a control failed to load.
-  dockSplit.hidden = !account.available;
 
   /*
    * The search segment has three jobs, and wears a different face for each.
@@ -1017,7 +1002,7 @@ function paintDockLift(): void {
   const front = cardOpen ? panelEl : railEl;
   const grounded =
     away || !NARROW.matches || (front === railEl && railEl.dataset.offscreen === 'true');
-  const seen = grounded ? 0 : Math.max(0, window.innerHeight - front.getBoundingClientRect().top);
+  const seen = grounded ? 0 : Math.max(0, stageEl.getBoundingClientRect().bottom - front.getBoundingClientRect().top);
   stageEl.style.setProperty('--dock-lift', `${Math.round(seen)}px`);
 }
 
@@ -1044,6 +1029,12 @@ new ResizeObserver(() => paintDockLift()).observe(railEl);
 // the wrapping inside it.
 new ResizeObserver(() => paintDockHeight()).observe(dock);
 window.addEventListener('resize', paintDockLift);
+// Mobile browser toolbars can resize the visual viewport independently of
+// innerHeight. Measure in the same coordinate space as the dock's container.
+window.visualViewport?.addEventListener('resize', paintDockLift);
+window.visualViewport?.addEventListener('scroll', paintDockLift);
+new ResizeObserver(() => paintDockLift()).observe(stageEl);
+railEl.addEventListener('transitionend', paintDockLift);
 
 dockSearchBtn.addEventListener('click', () => {
   // Filtered and closed, the segment is the way out of the filter rather than
@@ -1776,21 +1767,6 @@ void (async () => {
   }
 })();
 void beacon({ event: 'view', locale: i18n.locale });
-
-/*
- * The tour, last of all, so it opens over a page that has already drawn. It
- * decides for itself whether anybody needs it.
- *
- * Nothing is focused on the way out, and that is the point. Handing focus to
- * the search box read well on a desktop -- the first step is about searching --
- * but on a phone focusing a text field summons the on-screen keyboard, so
- * pressing "start" traded the tour for a keyboard covering half the map. What
- * somebody wants at that moment is to see the thing they were just told about.
- * Focus falls back to the document, so a Tab from there starts at the skip
- * link, which is the top of the page.
- */
-const intro = new Intro($('#intro'), $('.app'), i18n);
-intro.openIfUnseen();
 
 /**
  * The return trip from the confirmation link. The server redirects to
