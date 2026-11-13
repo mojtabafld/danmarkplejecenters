@@ -709,17 +709,43 @@ const DICT: Record<Locale, Record<Key, Entry>> = { da: DA, en: EN, fa: FA };
 const STORAGE_KEY = 'plejekort.locale';
 
 /**
- * The language a first-time visitor gets, before they have chosen anything.
+ * Where a first-time visitor's language comes from, before they choose one.
  *
- * Deliberately NOT `navigator.language`: the audience this is built for is
- * fixed, and the browser's language is a poor proxy for it. An explicit choice
- * from the switcher always wins and is remembered.
+ * The device is asked first. This used to be a flat `fa` on the reasoning that
+ * the audience is fixed -- which is true of who the app is FOR and false of
+ * what any one reader's phone is set to. Somebody reading Danish on a Danish
+ * phone was being handed Persian and made to go and find the switcher.
+ *
+ * An explicit choice from the switcher still wins over both, and is remembered.
  *
  * Note what this does not change: plejecenter names, street addresses and
  * phone numbers stay Danish and left-to-right in every locale, because they are
  * postal addresses and dialled numbers rather than prose.
  */
-export const DEFAULT_LOCALE: Locale = 'fa';
+export const FALLBACK_LOCALE: Locale = 'en';
+
+/**
+ * The first of the device's languages this app actually speaks.
+ *
+ * `navigator.languages` is an ordered preference list, so a phone set to
+ * Persian with Danish second gives `fa` before `da` -- which is the order the
+ * reader themselves put them in. Matching is on the primary subtag alone:
+ * `da-DK`, `fa-IR` and `fa-AF` are all answered, and the region is not
+ * something this app varies anything by.
+ *
+ * Returns null when the device speaks none of the three, which is what the
+ * English fallback is for -- English is in this app precisely for the readers
+ * who have neither of the other two.
+ */
+function fromDevice(): Locale | null {
+  if (typeof navigator === 'undefined') return null;
+  const asked = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const tag of asked) {
+    const primary = tag?.toLowerCase().split('-')[0];
+    if (primary && (LOCALES as readonly string[]).includes(primary)) return primary as Locale;
+  }
+  return null;
+}
 
 function detect(): Locale {
   try {
@@ -728,7 +754,7 @@ function detect(): Locale {
   } catch {
     /* private mode: no stored choice to honour */
   }
-  return DEFAULT_LOCALE;
+  return fromDevice() ?? FALLBACK_LOCALE;
 }
 
 export class I18n {
