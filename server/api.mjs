@@ -232,6 +232,7 @@ export async function handle(req, res, { secure }) {
     if (path === '/api/auth/signin' && method === 'POST') return await signin(req, res, secure);
     if (path === '/api/auth/signout' && method === 'POST') return await signout(req, res, secure);
     if (path === '/api/auth/me' && method === 'GET') return await me(req, res);
+    if (path === '/api/auth/theme' && method === 'PUT') return await saveTheme(req, res);
     if (path === '/api/auth/account' && method === 'DELETE') return await removeAccount(req, res, secure);
     if (path === '/api/visits' && method === 'GET') return await listVisits(req, res);
     if (path === '/api/notes' && method === 'GET') return await listNotes(req, res);
@@ -432,7 +433,7 @@ async function signin(req, res, secure) {
   // to cap how often somebody may legitimately sign in.
   clearAttempts('signin', who);
   const { token, expires } = await auth.createSession(record.id);
-  send(res, 200, { user: { email: record.email } }, { 'set-cookie': sessionCookie(token, expires, secure) });
+  send(res, 200, { user: { email: record.email, theme: await themeOf(record.id) } }, { 'set-cookie': sessionCookie(token, expires, secure) });
   return true;
 }
 
@@ -449,8 +450,44 @@ async function me(req, res) {
   // /api/admin/ asks the same question again for itself, and the panel is
   // still refused to anybody who reaches it another way.
   send(res, 200, {
-    user: user ? { email: user.email, admin: await admin.isAdmin(user) } : null,
+    user: user ? { email: user.email, admin: await admin.isAdmin(user), theme: await themeOf(user.id) } : null,
   });
+  return true;
+}
+
+const THEMES = new Set(['light', 'dark']);
+
+/**
+ * The theme this account last chose, or null for "follow the device".
+ *
+ * Read on its own rather than joined into the session lookup: a database
+ * provisioned separately (the Cloudflare path skips schema creation) may not
+ * have the column yet, and a missing preference must never cost anybody their
+ * session.
+ */
+async function themeOf(userId) {
+  try {
+    const { rows } = await db.query('SELECT theme FROM users WHERE id = $1', [userId]);
+    const t = rows[0]?.theme;
+    return THEMES.has(t) ? t : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Remember the toggle for this account. null forgets it: back to the device. */
+async function saveTheme(req, res) {
+  const user = await currentUser(req);
+  if (!requireUser(res, user)) return true;
+  const { theme } = await readJson(req);
+  if (theme !== null && !THEMES.has(theme)) { send(res, 400, { error: 'bad_theme' }); return true; }
+  try {
+    await db.query('UPDATE users SET theme = $1 WHERE id = $2', [theme, user.id]);
+  } catch {
+    send(res, 409, { error: 'unsupported' });
+    return true;
+  }
+  send(res, 200, { theme });
   return true;
 }
 

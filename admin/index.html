@@ -23,8 +23,12 @@
           /* storage blocked */
         }
         try {
+          // A signed-in account's saved theme first (see ACCOUNT_KEY in
+          // src/theme.ts), then this tab's toggle, then the device.
+          var a = localStorage.getItem('plejekort.accountTheme');
+          if (a === 'dark' || a === 'light') t = a;
           var v = sessionStorage.getItem('plejekort.theme');
-          if (v === 'dark' || v === 'light') t = v;
+          if (!t && (v === 'dark' || v === 'light')) t = v;
         } catch (e) {
           /* private mode: the device decides */
         }

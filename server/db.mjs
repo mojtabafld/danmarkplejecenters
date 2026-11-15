@@ -246,6 +246,11 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
 -- rather than a timestamp, because nobody wants to record the minute they
 -- walked in, and nullable, because a note without a date is still a note.
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS visited_on DATE;
+
+-- The light/dark theme a signed-in reader last chose with the toggle, so it
+-- follows them to their next visit. NULL means they never chose, and the page
+-- goes by the device. The API accepts only 'light' and 'dark'.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT;
 `;
 
 /**
