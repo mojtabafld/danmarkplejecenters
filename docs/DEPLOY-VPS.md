@@ -167,56 +167,13 @@ the difference between guessing and knowing.
 
 ## Automatic deploys
 
-Every push to `main` deploys itself: `.github/workflows/deploy.yml` builds and
-tests on GitHub's runner, sends the 2.1 MB of `dist/` to the server, and runs
-`scripts/remote-deploy.sh` there. Nothing is built on the server, which is the
-point on a 1 GB machine.
+The production server (`eu-core`) is not set up by `deploy-vps.sh`. It runs the
+release-based layout in [`ORACLE_UBUNTU.md`](ORACLE_UBUNTU.md): every push to
+`main` is built and tested on GitHub, then installed by a self-hosted runner on
+the server itself into `/srv/plejefinder/releases/<commit>` and served by
+`plejefinder.service`, with automatic rollback when `/api/health` fails.
 
-`remote-deploy.sh` resets the server's checkout to the exact commit, installs
-the three runtime dependencies, swaps `dist.next` in for `dist`, restarts, and
-waits for `/api/health`. **If the new version does not answer, it puts the
-previous commit and build back, restarts again, and fails the workflow** —
-tested against a commit whose `server.mjs` throws on start. The failed build is
-left in `dist.failed` to look at.
-
-### One-time setup
-
-On your own computer, a key used for nothing but this:
-
-```bash
-ssh-keygen -t ed25519 -f ~/.ssh/plejekort_deploy -N "" -C "github-actions deploy"
-ssh-copy-id -i ~/.ssh/plejekort_deploy.pub ubuntu@<server-ip>
-ssh-keyscan -t ed25519 <server-ip>          # copy this whole line
-```
-
-In GitHub → Settings → Secrets and variables → Actions → **Secrets**:
-
-| Secret | Value |
-|---|---|
-| `DEPLOY_SSH_KEY` | the contents of `~/.ssh/plejekort_deploy` (the private file, not `.pub`) |
-| `DEPLOY_HOST` | the server's IP |
-| `DEPLOY_KNOWN_HOSTS` | the line `ssh-keyscan` printed |
-
-Optional **Variables** if yours differ: `DEPLOY_USER` (ubuntu), `DEPLOY_PATH`
-(/srv/plejekort), `DEPLOY_PORT` (8080).
-
-Until all three secrets exist the workflow still builds and tests, notes that
-it skipped the deploy, and stays green.
-
-The deploying user needs `sudo systemctl restart plejekort` without a password.
-Oracle's `ubuntu` user has that already. Otherwise, in `sudo visudo -f
-/etc/sudoers.d/plejekort`:
-
-```
-ubuntu ALL=(root) NOPASSWD: /usr/bin/systemctl restart plejekort, /usr/bin/journalctl -u plejekort *
-```
-
-The host key is pinned, not accepted on first sight. Skipping host-key checking
-would hand the build, and the server's trust, to whatever answers on that IP.
-If the server is rebuilt, its host key changes: run `ssh-keyscan` again and
-replace `DEPLOY_KNOWN_HOSTS`.
-
-To redeploy without a new commit: Actions → Deploy → **Run workflow**.
+What follows applies to a box installed with `deploy-vps.sh`.
 
 ## Keeping it updated by hand
 
