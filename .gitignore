@@ -11,10 +11,6 @@ verification/*.css
 *.png
 !public/**/*.png
 
-# What a server checkout holds beside the code. Never tracked: .env carries the
-# database and mail passwords, and the dist.* directories are the deploy's
-# staging, previous and failed builds (see scripts/remote-deploy.sh).
+
+# Server-side secrets file, if one is ever kept beside a checkout.
 .env
-dist.next/
-dist.prev/
-dist.failed/

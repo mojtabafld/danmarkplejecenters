@@ -1,0 +1,85 @@
+/* Safari may derive browser tint from page backgrounds rather than theme-color. */
+html, body { background-color: var(--header-bg); }
+html { color-scheme: light; }
+html[data-theme='dark'] { color-scheme: dark; }
+.masthead { background-color: var(--header-bg); color: var(--text-primary); }
+
+/* Safari samples fixed viewport containers for toolbar tint. The app is
+ * fixed, while its header is a grid child: paint the container as well. */
+.app { background-color: var(--header-bg); }
+/* A filtered header surface can prevent WebKit from observing tint changes. */
+.masthead::before {
+  background: var(--header-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* WebKit's direct edge-colour path requires both dimensions > 10px.
+ * Keep a real opaque computed colour, but clip painting to empty text so
+ * these sampling elements never cover the map or its controls. */
+.browser-tint-edge {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  background-color: var(--header-bg);
+  -webkit-background-clip: text;
+  background-clip: text;
+  border: 0;
+  box-shadow: none;
+  transition: none;
+}
+.browser-tint-edge--top { top: 0; }
+.browser-tint-edge--bottom { bottom: 0; }
+@supports (-webkit-touch-callout: none) {
+  .browser-tint-edge { height: 12px; }
+  html[data-browser-tint-refresh] .browser-tint-edge { height: 13px; }
+}
+
+/* Opaque dark chrome in dark mode, including browser tint sampling. */
+:root[data-theme='dark'] { --header-bg: #10131A; }
+:root[data-theme='dark'] :is(.masthead, .dock, .rail, .map__tools, .panel) {
+  background: #10131A;
+}
+
+/* Flat header controls and bottom-panel filter tags. */
+.masthead :is(.btn--icon, .langpick__button),
+.rail .chip {
+  background-image: none;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+  text-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.masthead :is(.btn--icon, .langpick__button) { background-color: transparent; }
+.rail .chip { background-color: var(--surface-sunken); }
+.rail .chip[aria-pressed='true'] {
+  background-color: var(--surface-brand-subtle);
+  color: var(--text-link);
+}
+.masthead :is(.btn--icon, .langpick__button):hover,
+.rail .chip:hover { background-color: var(--interactive-hover-bg); }
+.masthead :is(.btn--icon, .langpick__button):active,
+.rail .chip:active { background-color: var(--interactive-active-bg); }
+.masthead :is(.btn--icon, .langpick__button):focus-visible,
+.rail .chip:focus-visible {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/* Keep the account invitation on one line, sizing against its own panel
+ * rather than the viewport so the close button always retains its space. */
+.account__head:has(.account__heading--signin) {
+  container-type: inline-size;
+  gap: var(--space-2);
+}
+.account__heading--signin {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  font-size: clamp(0.75rem, 6cqi, var(--text-base));
+}

@@ -1,0 +1,98 @@
+name: Oracle Ubuntu server
+on:
+  push:
+    branches: [main]
+    paths-ignore: [.github/workflows/oracle-domain.yml, scripts/oracle/domain.mjs, docs/**]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: oracle-ubuntu-server
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Read service startup diagnostics without environment values
+        run: |
+          sudo -n systemctl show plejefinder -p ActiveState -p SubState -p Result -p ExecMainStatus
+          sudo -n journalctl -u plejefinder -n 35 --no-pager --output cat
+          sudo -n namei -l /srv/plejefinder/current/server.mjs || true
+          free -m
+  build:
+    if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Package runtime and deployment scripts
+        run: |
+          node -p process.version > node.version
+          tar -czf release.tar.gz dist server server.mjs package.json package-lock.json scripts/oracle node.version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oracle-release
+          path: release.tar.gz
+          retention-days: 3
+          if-no-files-found: error
+  deploy:
+    needs: [build, diagnose]
+    if: github.repository == 'mojtabafld/danmarkplejecenters' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 30
+    env:
+      RELEASE_SHA: ${{ github.sha }}
+      ORACLE_PUBLIC_URL: ${{ vars.ORACLE_PUBLIC_URL || 'https://plejefinder.online' }}
+      OCI_SMTP_HOST: ${{ secrets.OCI_SMTP_HOST }}
+      OCI_SMTP_USER: ${{ secrets.OCI_SMTP_USER }}
+      OCI_SMTP_PASS: ${{ secrets.OCI_SMTP_PASS }}
+      OCI_MAIL_FROM: ${{ secrets.OCI_MAIL_FROM }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          clean: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: oracle-release
+      - name: Deploy on the dedicated Ubuntu server
+        run: bash scripts/oracle/deploy.sh
+      - name: Verify application data writes in a rolled-back transaction
+        run: |
+          sudo -n -u postgres psql -X -v ON_ERROR_STOP=1 -d plejefinder <<'SQL'
+          BEGIN;
+          INSERT INTO users(email,email_key,password_hash) VALUES ('runner-smoke@example.invalid','runner-smoke@example.invalid','not-a-real-password');
+          INSERT INTO visits(user_id,plejecenter_id) SELECT id,'runner-smoke' FROM users WHERE email_key='runner-smoke@example.invalid';
+          INSERT INTO notes(user_id,plejecenter_id,body,visited_on) SELECT id,'runner-smoke','deployment smoke test',CURRENT_DATE FROM users WHERE email_key='runner-smoke@example.invalid';
+          INSERT INTO reviews(user_id,plejecenter_id,stars) SELECT id,'runner-smoke',5 FROM users WHERE email_key='runner-smoke@example.invalid';
+          DO $$ BEGIN
+            IF (SELECT count(*) FROM notes WHERE plejecenter_id='runner-smoke') <> 1 THEN RAISE EXCEPTION 'note round trip failed'; END IF;
+          END $$;
+          ROLLBACK;
+          SQL
+      - name: Verify backup restore in a disposable database
+        run: sudo -n bash scripts/oracle/restore-check.sh
+      - name: Summary
+        run: |
+          {
+            echo '## Oracle deployment verified'
+            echo '- Dedicated server: eu-core'
+            echo '- App address: 127.0.0.1:8080 (ready for a Cloudflare HTTP tunnel route)'
+            echo '- PostgreSQL: local application database; no Supabase/Hyperdrive runtime dependency'
+            echo '- Systemd: plejefinder.service'
+            echo '- Backups: daily local pg_dump archives; off-server destination still required'
+            echo '- Build and API tests passed; rolled-back data write smoke test passed'
+            echo '- Production domain routing is unchanged'
+            echo '- OCI SMTP activates when all four OCI mail repository secrets are supplied'
+          } >> "$GITHUB_STEP_SUMMARY"

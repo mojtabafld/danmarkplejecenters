@@ -13,20 +13,31 @@
     "start": "node server.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/regions.test.mjs && node tests/api.test.mjs",
+    "test": "node tests/regions.test.mjs && node tests/api.test.mjs && npm run test:migration && node tests/theme-sync.test.mjs",
     "serve:memdb": "node tests/serve-with-memdb.mjs",
     "build:data": "node scripts/build-data.mjs",
     "build:harness": "node verification/build-harness.mjs",
     "verify": "./verify.sh",
-    "build:admin": "vite build --config vite.admin.config.ts"
+    "build:admin": "vite build --config vite.admin.config.ts",
+    "test:migration": "node tests/db-skip-schema.test.mjs && node tests/db-request.test.mjs && node tests/cloudflare-adapter.test.mjs"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.5.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "maplibre-gl": "^5.6.0",
     "nodemailer": "^9.1.1",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "pg-mem": "^3.0.14",
+    "tailwindcss": "^4.3.4",
     "typescript": "^5.7.3",
     "vite": "^6.0.11"
   }

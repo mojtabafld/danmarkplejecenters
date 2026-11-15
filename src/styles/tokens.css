@@ -62,43 +62,19 @@
    * ideal; the saved dot also carries a ring no other dot has, and the legend
    * names it.
    */
-  /*
-   * iOS system blue -- the tint.
-   *
-   * This is what a link, a value and a filled button are coloured in on an
-   * iPhone, and it is what this app had in teal. The teal stays where it means
-   * something: Kommunal on the map and in the chips, beside ochre for
-   * Selvejende and plum for Privat. A legend is not a tint, and repainting it
-   * would have cost the map its key.
-   *
-   * Four of these are Apple's own, read off the HIG colour swatches:
-   *
-   *   500  #0088FF  systemBlue, light            \  the June 2025 values;
-   *   400  #0091FF  systemBlue, dark              |  the #007AFF and #0A84FF
-   *   600  #1E6EF4  Increase Contrast, light      |  most references still
-   *   300  #5CB8FF  Increase Contrast, dark      /   give are the old set
-   *
-   * 700 is the one that does the work in light mode, and it is not Apple's.
-   * systemBlue is 3.52:1 on white and 3.15:1 on the grey page -- iOS puts it
-   * on white at Body size and accepts that, and it also ships an Increase
-   * Contrast switch. Even that switch's #1E6EF4 only reaches 4.10:1 on the
-   * grey. So 700 is #1E6EF4 carried down until it clears 4.5 on the page AND
-   * through the card's glass over a dark map, which is the same reasoning, and
-   * the same conclusion, as --text-secondary further down.
-   *
-   * The rest are the tints and shades that hover, focus and fill need.
-   */
-  --p-blue-50:  #EAF2FE;
-  --p-blue-100: #D6E7FD;
-  --p-blue-200: #ADCFFB;
-  --p-blue-300: #5CB8FF;  /* Increase Contrast blue, dark  -- Apple */
-  --p-blue-400: #0091FF;  /* systemBlue, dark              -- Apple */
-  --p-blue-500: #0088FF;  /* systemBlue, light             -- Apple */
-  --p-blue-600: #1E6EF4;  /* Increase Contrast blue, light -- Apple */
-  --p-blue-700: #1C65E0;  /* the link colour; see above */
-  --p-blue-800: #1A57C0;
-  --p-blue-900: #16468F;
-  --p-blue-950: #0D2A55;
+  /* Muted slate-blue accent. Shared by links, controls and map markers.
+   * Light uses 700 for readable text; dark uses the softer 300 shade. */
+  --p-blue-50: #F0F5FA;
+  --p-blue-100: #E0EAF4;
+  --p-blue-200: #BBD0E5;
+  --p-blue-300: #94B6D8;
+  --p-blue-400: #739BC3;
+  --p-blue-500: #527FAB;
+  --p-blue-600: #416F9D;
+  --p-blue-700: #35628F;
+  --p-blue-800: #2B5178;
+  --p-blue-900: #213F60;
+  --p-blue-950: #132A42;
 
   --p-save-300: #C3D6F7;
   --p-save-700: #0D3B7A;
@@ -125,7 +101,7 @@
    * all twelve below were checked against it. Its change log says the system
    * colour values were updated on 9 June 2025, so the older set that is all
    * over the web is out of date -- the greys survived that revision unchanged,
-   * but the accents did not, and Blue is now #0088FF rather than #007AFF.
+   * while the accent uses the muted slate-blue palette above.
    *
    * Apple asks that these not be hard-coded, because "the actual color values
    * may fluctuate from release to release". That instruction is for an app
@@ -583,7 +559,7 @@
    */
   --tile-bg: var(--p-blue-100);
   --tile-fg: var(--p-blue-700);
-  --brand-ramp-glow: 0 6px 16px -8px rgb(28 101 224 / 0.7);
+  --brand-ramp-glow: 0 6px 16px -8px rgb(53 98 143 / 0.45);
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.06);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.05);
@@ -686,7 +662,7 @@
   --surface-inset: var(--p-neutral-900);
   --surface-overlay: var(--p-neutral-950);
   --surface-scrim: rgb(0 0 0 / 0.62);
-  --surface-brand-subtle: #0A2540;
+  --surface-brand-subtle: #172B3F;
   --surface-map-shade: rgb(0 0 0 / 0.86);
 
   /*
@@ -702,10 +678,7 @@
   --text-secondary: #ADADB4;
   --text-tertiary: var(--p-neutral-500);
   --text-on-brand: var(--p-blue-950);
-  /* Increase Contrast blue, dark -- Apple's own #5CB8FF, 7.90:1 on the
-     card and 6.47:1 on the grouped cell. systemBlue dark (#0091FF) would
-     have cleared the card at 5.26 but only reaches 4.31 on the cell, and
-     the cell is where most of the links in this app are. */
+  /* Pale slate blue keeps links clear against dark grouped surfaces. */
   --text-brand: var(--p-blue-300);
   --text-link: var(--p-blue-300);
   --text-link-hover: var(--p-blue-200);
@@ -725,7 +698,7 @@
 
   --interactive-hover-bg: var(--p-neutral-900);
   --interactive-active-bg: var(--p-neutral-800);
-  --interactive-selected-bg: #0A2540;
+  --interactive-selected-bg: #172B3F;
   --interactive-selected-border: var(--p-blue-400);
 
   --focus-ring: var(--p-blue-300);
@@ -805,7 +778,7 @@
   --brand-ramp: linear-gradient(180deg, var(--p-blue-300), var(--p-blue-500));
   /* The tint is the accent held back rather than a lighter grey, so the tile
      still reads as coloured against a near-black row. */
-  --tile-bg: rgb(92 184 255 / 0.16);
+  --tile-bg: rgb(148 182 216 / 0.16);
   --tile-fg: var(--p-blue-300);
   --brand-ramp-glow: 0 6px 16px -8px rgb(0 0 0 / 0.6);
 

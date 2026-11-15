@@ -14,7 +14,7 @@
  *
  * The two colours below are the only place in the project where the brand
  * appears as a literal: a PNG cannot read a CSS custom property. They are
- * --p-brand-700 and --p-neutral-0 from src/styles/tokens.css. Change them
+ * --p-blue-700 and --p-neutral-0 from src/styles/tokens.css. Change them
  * there first, then here, then re-run.
  */
 import { chromium } from 'playwright';
@@ -23,7 +23,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BRAND = '#006D63';
+const BRAND = '#35628F';
 const ON_BRAND = '#FFFFFF';
 
 /** The lucide "map-pin", the same path src/icons.ts draws in the masthead. */

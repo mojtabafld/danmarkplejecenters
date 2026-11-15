@@ -35,6 +35,8 @@
         }
         if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.style.colorScheme = t;
+        document.documentElement.style.backgroundColor = t === 'dark' ? '#10131A' : '#FFFFFF';
         document
           .querySelector('meta[name="color-scheme"]')
           .setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');
@@ -57,7 +59,7 @@
          */
         document
           .querySelector('meta[name="theme-color"]')
-          .setAttribute('content', t === 'dark' ? '#1C1C1E' : '#FFFFFF');
+          .setAttribute('content', t === 'dark' ? '#10131A' : '#FFFFFF');
       })();
     </script>
     <title>Plejecentre</title>
@@ -72,9 +74,9 @@
          at the moment it finally has code to ask with. -->
     <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
     <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest?v=slate-blue-1" />
+    <link rel="icon" href="./icon-192.png?v=slate-blue-1" sizes="192x192" type="image/png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=slate-blue-1" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Plejecentre" />
     <meta
@@ -83,6 +85,8 @@
     />
   </head>
   <body>
+    <div class="browser-tint-edge browser-tint-edge--top" aria-hidden="true"></div>
+    <div class="browser-tint-edge browser-tint-edge--bottom" aria-hidden="true"></div>
     <a class="skip-link" href="#results" data-i18n="app.skipToList"></a>
 
     <!--
@@ -260,8 +264,6 @@
                 <span class="dock__icon" id="dockSearchIcon"></span>
               </button>
 
-              <span class="dock__split" aria-hidden="true"></span>
-
               <!--
                 Which part of the country. In the dock rather than floating
                 over the map, next to the bookmark, because all three things
@@ -285,8 +287,6 @@
                 </button>
                 <div class="dockpick__menu" id="regionMenu" hidden></div>
               </div>
-
-              <span class="dock__split" id="dockSplit" aria-hidden="true" hidden></span>
 
               <button type="button" class="dock__seg" id="dockSaved" aria-pressed="false" hidden>
                 <span class="dock__icon" id="dockSavedIcon"></span>
@@ -411,24 +411,6 @@
             <div class="panel__body" id="panelBody"></div>
           </aside>
         </main>
-      </div>
-    </div>
-
-    <!-- The three-step tour. Shown once per person: on a first visit, and one
-         final time for anybody who was already using the site before it
-         existed. Its text is built in script, so it follows the language
-         switch the way the account panel does. -->
-    <div class="intro" id="intro" hidden>
-      <div class="intro__scrim"></div>
-      <div class="intro__card" role="dialog" aria-modal="true" tabindex="-1">
-        <div class="intro__art" id="introArt"></div>
-        <div class="intro__text" id="introText"></div>
-        <div class="intro__dots" id="introDots" aria-hidden="true"></div>
-        <p class="sr-only" id="introProgress" aria-live="polite"></p>
-        <div class="intro__actions">
-          <button type="button" class="btn btn--ghost" data-intro="skip"></button>
-          <button type="button" class="btn btn--primary" data-intro="next"></button>
-        </div>
       </div>
     </div>
 
