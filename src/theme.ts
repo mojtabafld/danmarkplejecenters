@@ -1,6 +1,13 @@
 export type Theme = 'light' | 'dark';
 
 const KEY = 'plejekort.theme';
+/**
+ * A copy of the signed-in account's saved theme, kept only so the next visit
+ * paints in it from the first frame instead of flashing the device's theme
+ * until /api/auth/me answers. The server holds the real value; this is
+ * written while signed in and removed at sign-out. index.html reads it too.
+ */
+const ACCOUNT_KEY = 'plejekort.accountTheme';
 
 /** Read a token off the live theme, so JS-drawn map layers stay themeable. */
 export function token(name: string): string {
@@ -30,6 +37,24 @@ try {
   /* storage blocked: nothing was kept there either */
 }
 
+function cachedAccountTheme(): Theme | null {
+  try {
+    const v = localStorage.getItem(ACCOUNT_KEY);
+    return v === 'dark' || v === 'light' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheAccountTheme(t: Theme | null): void {
+  try {
+    if (t) localStorage.setItem(ACCOUNT_KEY, t);
+    else localStorage.removeItem(ACCOUNT_KEY);
+  } catch {
+    /* storage blocked: the server still has it, at the cost of one flash */
+  }
+}
+
 function stored(): Theme | null {
   try {
     const v = sessionStorage.getItem(KEY);
@@ -50,11 +75,19 @@ function remember(t: Theme | null): void {
 
 export class ThemeController {
   current: Theme;
+  /**
+   * The signed-in account's saved choice. It outranks everything else, the
+   * device included: somebody who chose light on purpose, signed in, has said
+   * what they want on every device they use the site from.
+   */
+  private account: Theme | null = cachedAccountTheme();
+  /** Set while signed in: where a toggle is saved so it follows the account. */
+  private save: ((t: Theme) => void) | null = null;
   private tintFrame: number | null = null;
   private listeners = new Set<(t: Theme) => void>();
 
   constructor() {
-    this.current = stored() ?? deviceTheme();
+    this.current = this.account ?? stored() ?? deviceTheme();
     this.apply(this.current);
     window.addEventListener('pageshow', () => this.apply(this.current));
 
@@ -65,6 +98,7 @@ export class ThemeController {
      */
     DEVICE.addEventListener('change', () => {
       remember(null);
+      if (this.account) return;
       this.current = deviceTheme();
       this.apply(this.current);
       this.notify();
@@ -120,8 +154,35 @@ export class ThemeController {
   toggle(): void {
     this.current = this.current === 'dark' ? 'light' : 'dark';
     this.apply(this.current);
-    // Toggling back to what the device says is the same as no override.
-    remember(this.current === deviceTheme() ? null : this.current);
+    if (this.save) {
+      // Signed in: this is now the account's theme, here and next time.
+      this.account = this.current;
+      cacheAccountTheme(this.current);
+      remember(null);
+      this.save(this.current);
+    } else {
+      // Toggling back to what the device says is the same as no override.
+      remember(this.current === deviceTheme() ? null : this.current);
+    }
     this.notify();
+  }
+
+  /**
+   * Who is signed in, as far as the theme is concerned.
+   *
+   * `signedIn` with the account's saved theme (null if it never chose) and
+   * where to save a later toggle; or signed out, which forgets the account's
+   * theme on this device and hands the decision back to the device.
+   */
+  setAccount(signedIn: boolean, saved: Theme | null = null, save: ((t: Theme) => void) | null = null): void {
+    this.save = signedIn ? save : null;
+    this.account = signedIn ? saved : null;
+    cacheAccountTheme(this.account);
+    const next = this.account ?? stored() ?? deviceTheme();
+    if (next !== this.current) {
+      this.current = next;
+      this.apply(next);
+      this.notify();
+    }
   }
 }

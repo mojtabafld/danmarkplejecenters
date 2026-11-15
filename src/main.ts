@@ -1262,6 +1262,13 @@ panelEl.addEventListener('click', (e) => {
 });
 
 account.onChange(() => {
+  // Signed in, the account's theme decides and the toggle saves to it;
+  // signed out, the device decides again.
+  theme.setAccount(
+    Boolean(account.user),
+    account.user?.theme ?? null,
+    (t) => void account.saveTheme(t),
+  );
   renderAccount();
   // Recompute first. With "visited only" on, unmarking a place changes what
   // the filter selects, and everything below reads store.visible.

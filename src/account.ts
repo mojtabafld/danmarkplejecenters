@@ -17,6 +17,8 @@ export type AccountUser = {
    * lies about this reaches a page that refuses it.
    */
   admin?: boolean;
+  /** The theme this account last chose with the toggle; null or absent: none. */
+  theme?: 'light' | 'dark' | null;
 };
 
 export type AuthError =
@@ -318,6 +320,20 @@ export class Account {
   clearPending(): void {
     this.pendingEmail = null;
     this.emit();
+  }
+
+  /**
+   * Remember the theme for this account. Fire and forget: the page has already
+   * changed, and if the save is lost the next visit simply follows the device.
+   */
+  async saveTheme(theme: 'light' | 'dark'): Promise<void> {
+    if (!this.user) return;
+    this.user.theme = theme;
+    try {
+      await call('PUT', '/api/auth/theme', { theme });
+    } catch {
+      /* offline: applies here, and the cached copy carries it to next visit */
+    }
   }
 
   async signOut(): Promise<void> {

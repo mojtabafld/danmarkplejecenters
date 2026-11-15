@@ -456,6 +456,34 @@ check('the reset mail is in the page\'s language too',
 r = await call('POST', '/api/auth/forgot', { email: 'fa@example.dk', lang: 'da' });
 check('in Danish when asked from the Danish page', outbox.at(-1).subject === 'Vælg en ny adgangskode');
 
+/* --------------------------------------------------------- saved theme --- */
+client = '10.0.9.2';
+cookie = '';
+r = await call('PUT', '/api/auth/theme', { theme: 'light' });
+check('saving a theme needs an account', r.status === 401);
+await call('POST', '/api/auth/signup', { email: 'theme@example.dk', password: 'a-good-long-password' });
+await fetch(lastLink(), { redirect: 'manual' });
+r = await call('POST', '/api/auth/signin', { email: 'theme@example.dk', password: 'a-good-long-password' });
+check('a new account has no saved theme, so the device decides', r.status === 200 && r.body.user.theme === null);
+r = await call('PUT', '/api/auth/theme', { theme: 'light' });
+check('the toggle is saved for the account', r.status === 200 && r.body.theme === 'light');
+r = await call('GET', '/api/auth/me');
+check('and comes back with who you are', r.body.user.theme === 'light');
+r = await call('PUT', '/api/auth/theme', { theme: 'purple' });
+check('only light and dark are accepted', r.status === 400 && r.body.error === 'bad_theme');
+r = await call('GET', '/api/auth/me');
+check('and a refused value changes nothing', r.body.user.theme === 'light');
+r = await call('PUT', '/api/auth/theme', { theme: 'dark' });
+await call('POST', '/api/auth/signout');
+cookie = '';
+r = await call('POST', '/api/auth/signin', { email: 'theme@example.dk', password: 'a-good-long-password' });
+check('the last choice is there at the next sign-in', r.body.user.theme === 'dark');
+r = await call('PUT', '/api/auth/theme', { theme: null });
+r = await call('GET', '/api/auth/me');
+check('null forgets it, back to the device', r.body.user.theme === null);
+await call('POST', '/api/auth/signout');
+cookie = '';
+
 mail.setTransport(null);
 cookie = '';
 client = '10.0.0.5';
