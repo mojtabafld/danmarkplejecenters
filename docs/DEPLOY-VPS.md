@@ -165,7 +165,60 @@ variable names the process can see** — names only, never values — whether
 That turns "it does not work" into "the app cannot see `SMTP_PASS`", which is
 the difference between guessing and knowing.
 
-## Keeping it updated
+## Automatic deploys
+
+Every push to `main` deploys itself: `.github/workflows/deploy.yml` builds and
+tests on GitHub's runner, sends the 2.1 MB of `dist/` to the server, and runs
+`scripts/remote-deploy.sh` there. Nothing is built on the server, which is the
+point on a 1 GB machine.
+
+`remote-deploy.sh` resets the server's checkout to the exact commit, installs
+the three runtime dependencies, swaps `dist.next` in for `dist`, restarts, and
+waits for `/api/health`. **If the new version does not answer, it puts the
+previous commit and build back, restarts again, and fails the workflow** —
+tested against a commit whose `server.mjs` throws on start. The failed build is
+left in `dist.failed` to look at.
+
+### One-time setup
+
+On your own computer, a key used for nothing but this:
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/plejekort_deploy -N "" -C "github-actions deploy"
+ssh-copy-id -i ~/.ssh/plejekort_deploy.pub ubuntu@<server-ip>
+ssh-keyscan -t ed25519 <server-ip>          # copy this whole line
+```
+
+In GitHub → Settings → Secrets and variables → Actions → **Secrets**:
+
+| Secret | Value |
+|---|---|
+| `DEPLOY_SSH_KEY` | the contents of `~/.ssh/plejekort_deploy` (the private file, not `.pub`) |
+| `DEPLOY_HOST` | the server's IP |
+| `DEPLOY_KNOWN_HOSTS` | the line `ssh-keyscan` printed |
+
+Optional **Variables** if yours differ: `DEPLOY_USER` (ubuntu), `DEPLOY_PATH`
+(/srv/plejekort), `DEPLOY_PORT` (8080).
+
+Until all three secrets exist the workflow still builds and tests, notes that
+it skipped the deploy, and stays green.
+
+The deploying user needs `sudo systemctl restart plejekort` without a password.
+Oracle's `ubuntu` user has that already. Otherwise, in `sudo visudo -f
+/etc/sudoers.d/plejekort`:
+
+```
+ubuntu ALL=(root) NOPASSWD: /usr/bin/systemctl restart plejekort, /usr/bin/journalctl -u plejekort *
+```
+
+The host key is pinned, not accepted on first sight. Skipping host-key checking
+would hand the build, and the server's trust, to whatever answers on that IP.
+If the server is rebuilt, its host key changes: run `ssh-keyscan` again and
+replace `DEPLOY_KNOWN_HOSTS`.
+
+To redeploy without a new commit: Actions → Deploy → **Run workflow**.
+
+## Keeping it updated by hand
 
 App Platform rebuilt on every push to `main`. A VPS does not. Either:
 
