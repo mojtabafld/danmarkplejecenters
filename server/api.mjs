@@ -158,11 +158,11 @@ function publicOrigin(req) {
  * Mint a token and mail it. Returns false if the message could not be sent, so
  * the caller can tell the truth rather than claim a mail is on its way.
  */
-async function sendVerificationTo(req, user) {
+async function sendVerificationTo(req, user, lang) {
   const token = await auth.createEmailToken(user.id);
   const link = `${publicOrigin(req)}/verify?token=${encodeURIComponent(token)}`;
   try {
-    await mail.sendVerification(user.email, link);
+    await mail.sendVerification(user.email, link, mail.mailLocale(lang, req.headers['accept-language']));
     return true;
   } catch (err) {
     // The address is never logged with the link: the log would then be enough
@@ -279,7 +279,7 @@ async function signup(req, res, secure) {
   // valid one is as good a reason to slow down as an invalid one.
   if (overLimit('signup', who, 10)) { send(res, 429, { error: 'too_many' }); return true; }
   countAttempt('signup', who);
-  const { email, password } = await readJson(req);
+  const { email, password, lang } = await readJson(req);
 
   if (!auth.isPlausibleEmail(email ?? '')) { send(res, 400, { error: 'bad_email' }); return true; }
   const problem = auth.passwordProblem(password);
@@ -298,7 +298,7 @@ async function signup(req, res, secure) {
 
   // No session yet. The account exists but is not usable until the address is
   // confirmed, which is the whole point of confirming it.
-  const sent = await sendVerificationTo(req, user);
+  const sent = await sendVerificationTo(req, user, lang);
   // 424: the request failed because something it depended on did. 4xx for the
   // same reason as above.
   if (!sent) { send(res, 424, { error: 'mail_failed' }); return true; }
@@ -316,10 +316,10 @@ async function resend(req, res) {
   const who = clientKey(req);
   if (overLimit('resend', who, 6)) { send(res, 429, { error: 'too_many' }); return true; }
   countAttempt('resend', who);
-  const { email } = await readJson(req);
+  const { email, lang } = await readJson(req);
   const record = await auth.findUser(email ?? '');
   if (record && !record.verified_at && mail.isConfigured()) {
-    await sendVerificationTo(req, { id: record.id, email: record.email });
+    await sendVerificationTo(req, { id: record.id, email: record.email }, lang);
   }
   send(res, 200, { ok: true });
   return true;
@@ -357,7 +357,7 @@ async function forgot(req, res) {
   if (overLimit('forgot', who, 5)) { send(res, 429, { error: 'too_many' }); return true; }
   countAttempt('forgot', who);
 
-  const { email } = await readJson(req);
+  const { email, lang } = await readJson(req);
   if (!auth.isPlausibleEmail(email ?? '')) { send(res, 400, { error: 'bad_email' }); return true; }
   if (!mail.isConfigured()) { send(res, 409, { error: 'mail_unavailable' }); return true; }
 
@@ -366,7 +366,7 @@ async function forgot(req, res) {
     const token = await auth.createResetToken(record.id);
     const link = `${publicOrigin(req)}/?reset=${encodeURIComponent(token)}`;
     try {
-      await mail.sendReset(record.email, link);
+      await mail.sendReset(record.email, link, mail.mailLocale(lang, req.headers['accept-language']));
     } catch (err) {
       // Never logged with the address: the log would then be enough to take
       // over the account.

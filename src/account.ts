@@ -36,6 +36,15 @@ export type AuthError =
 
 type Listener = () => void;
 
+/**
+ * The language the page is showing right now, so a confirmation or reset mail
+ * arrives in the language the reader was using. i18n keeps <html lang> in step
+ * with the switcher, so this follows a change made a moment before.
+ */
+function pageLang(): string {
+  return typeof document === 'undefined' ? '' : document.documentElement.lang;
+}
+
 async function call(
   method: string,
   path: string,
@@ -228,7 +237,7 @@ export class Account {
     let status: number;
     let data: Record<string, unknown>;
     try {
-      ({ status, data } = await call('POST', '/api/auth/signup', { email, password }));
+      ({ status, data } = await call('POST', '/api/auth/signup', { email, password, lang: pageLang() }));
     } catch {
       return 'offline';
     }
@@ -243,7 +252,7 @@ export class Account {
   /** Ask for the confirmation link again. Always resolves; never reveals much. */
   async resend(email: string): Promise<boolean> {
     try {
-      const { status } = await call('POST', '/api/auth/resend', { email });
+      const { status } = await call('POST', '/api/auth/resend', { email, lang: pageLang() });
       return status === 200;
     } catch {
       return false;
@@ -261,7 +270,7 @@ export class Account {
     let status: number;
     let data: Record<string, unknown>;
     try {
-      ({ status, data } = await call('POST', '/api/auth/forgot', { email }));
+      ({ status, data } = await call('POST', '/api/auth/forgot', { email, lang: pageLang() }));
     } catch {
       return 'offline';
     }

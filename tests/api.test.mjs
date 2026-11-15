@@ -31,13 +31,14 @@ let cookie = '';
 // Each phase pretends to be a different client, the way real traffic is, so the
 // per-address throttle does not turn a long test into a lockout.
 let client = '10.0.0.1';
-async function call(method, path, body) {
+async function call(method, path, body, extra = {}) {
   const res = await fetch(base + path, {
     method,
     headers: {
       'content-type': 'application/json',
       'x-forwarded-for': client,
       ...(cookie ? { cookie } : {}),
+      ...extra,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -69,8 +70,9 @@ check('sign-up reports the address is pending', r.status === 201 && r.body.pendi
 check('sign-up does NOT sign you in', !r.setCookie);
 check('a verification mail was sent to that address', outbox.at(-1)?.to === 'Anna@Example.DK');
 check('the mail carries a link with a token', /\/verify\?token=/.test(lastLink() ?? ''));
-check('the message says its piece in all three languages',
-  /Bekræft/.test(outbox.at(-1).text) && /Confirm/.test(outbox.at(-1).text) && /تأیید/.test(outbox.at(-1).text));
+check('with no language asked for, the message is in English alone',
+  /Confirm/.test(outbox.at(-1).text) && !/Bekræft/.test(outbox.at(-1).text) && !/تأیید/.test(outbox.at(-1).text));
+
 
 /* ------------------------------------------------- verification gating --- */
 r = await call('POST', '/api/auth/signin', { email: 'anna@example.dk', password: 'a-good-long-password' });
@@ -422,6 +424,38 @@ check('and nothing in the visitor table resembles an address',
   !JSON.stringify(cols.rows).includes('10.0.0.8'));
 
 /* --------------------------------------------------- mail not configured -- */
+/* ------------------------------------------------------ mail language --- */
+client = '10.0.9.1';
+r = await call('POST', '/api/auth/signup', { email: 'fa@example.dk', password: 'a-good-long-password', lang: 'fa' });
+check('a reader on the Persian page gets the mail in Persian',
+  r.status === 201 && outbox.at(-1).subject === 'تأیید نشانی ایمیل' && /تأیید/.test(outbox.at(-1).text)
+  && !/Confirm/.test(outbox.at(-1).text) && !/Bekræft/.test(outbox.at(-1).text));
+check('laid out right to left', /dir="rtl"/.test(outbox.at(-1).html) && /lang="fa"/.test(outbox.at(-1).html));
+check('with the link itself kept left to right', /<p dir="ltr"[^>]*>https?:\/\//.test(outbox.at(-1).html));
+check('and the same token link as any other language', /\/verify\?token=/.test(lastLink() ?? ''));
+
+r = await call('POST', '/api/auth/signup', { email: 'da@example.dk', password: 'a-good-long-password', lang: 'da' });
+check('a reader on the Danish page gets it in Danish',
+  outbox.at(-1).subject === 'Bekræft din e-mailadresse' && /dir="ltr"/.test(outbox.at(-1).html) && !/Confirm/.test(outbox.at(-1).text));
+
+r = await call('POST', '/api/auth/resend', { email: 'da@example.dk', lang: 'fa' });
+check('resend follows the language the page is in now, not the one at sign-up',
+  outbox.at(-1).to === 'da@example.dk' && outbox.at(-1).subject === 'تأیید نشانی ایمیل');
+
+r = await call('POST', '/api/auth/signup', { email: 'al@example.dk', password: 'a-good-long-password' },
+  { 'accept-language': 'sv-SE,da;q=0.8,en;q=0.5' });
+check('without a page language, the browser\'s list decides', outbox.at(-1).subject === 'Bekræft din e-mailadresse');
+
+r = await call('POST', '/api/auth/signup', { email: 'xx@example.dk', password: 'a-good-long-password', lang: 'de<script>' },
+  { 'accept-language': 'de-DE' });
+check('a language the site does not have falls back to English', outbox.at(-1).subject === 'Confirm your email address');
+
+r = await call('POST', '/api/auth/forgot', { email: 'fa@example.dk', lang: 'fa' });
+check('the reset mail is in the page\'s language too',
+  outbox.at(-1).subject === 'انتخاب گذرواژهٔ تازه' && /\?reset=/.test(lastLink() ?? '') && !/Choose/.test(outbox.at(-1).text));
+r = await call('POST', '/api/auth/forgot', { email: 'fa@example.dk', lang: 'da' });
+check('in Danish when asked from the Danish page', outbox.at(-1).subject === 'Vælg en ny adgangskode');
+
 mail.setTransport(null);
 cookie = '';
 client = '10.0.0.5';

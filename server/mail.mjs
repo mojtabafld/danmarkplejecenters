@@ -89,99 +89,118 @@ async function mailer() {
 // an address the account does not own, so that is the safest default.
 const FROM = () => process.env.MAIL_FROM ?? process.env.SMTP_USER ?? 'no-reply@localhost';
 
+export const MAIL_LOCALES = ['da', 'en', 'fa'];
+export const MAIL_FALLBACK = 'en';
+
 /**
- * One message, in all three languages, because the server does not know which
- * one the reader was using and guessing wrong is worse than showing all three.
- * Plain text alongside HTML so it stays readable in any client.
+ * The language a message is written in.
+ *
+ * The page sends the language it is showing, which is what the reader chose or
+ * what their device asked for. A request without one -- an older page still
+ * open in a tab, or a client that is not this site -- falls back to the
+ * browser's Accept-Language, and then to English, the language this app keeps
+ * for readers who have neither Danish nor Persian.
  */
-function body(url) {
-  const text = [
-    'Bekræft din e-mailadresse for at fuldføre oprettelsen:',
-    'Confirm your email address to finish creating your account:',
-    'برای کامل شدن ساخت حساب، نشانی ایمیل خود را تأیید کنید:',
-    '',
-    url,
-    '',
-    'Linket udløber om 24 timer. / The link expires in 24 hours. / این پیوند تا ۲۴ ساعت معتبر است.',
-    'Hvis du ikke har oprettet en konto, kan du se bort fra denne mail.',
-    'If you did not create an account, you can ignore this message.',
-    'اگر شما حساب نساخته‌اید، این پیام را نادیده بگیرید.',
-  ].join('\n');
+export function mailLocale(asked, acceptLanguage = '') {
+  const pick = (tag) => {
+    const primary = String(tag ?? '').trim().toLowerCase().split(/[-_;]/)[0];
+    return MAIL_LOCALES.includes(primary) ? primary : null;
+  };
+  if (pick(asked)) return pick(asked);
+  for (const part of String(acceptLanguage).split(',')) {
+    const found = pick(part);
+    if (found) return found;
+  }
+  return MAIL_FALLBACK;
+}
 
-  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const TEXT = {
+  verify: {
+    da: {
+      subject: 'Bekræft din e-mailadresse',
+      lead: 'Bekræft din e-mailadresse for at fuldføre oprettelsen af din konto:',
+      button: 'Bekræft e-mail',
+      expiry: 'Linket udløber om 24 timer.',
+      ignore: 'Hvis du ikke har oprettet en konto, kan du se bort fra denne mail.',
+    },
+    en: {
+      subject: 'Confirm your email address',
+      lead: 'Confirm your email address to finish creating your account:',
+      button: 'Confirm email',
+      expiry: 'The link expires in 24 hours.',
+      ignore: 'If you did not create an account, you can ignore this message.',
+    },
+    fa: {
+      subject: 'تأیید نشانی ایمیل',
+      lead: 'برای کامل شدن ساخت حساب، نشانی ایمیل خود را تأیید کنید:',
+      button: 'تأیید ایمیل',
+      expiry: 'این پیوند تا ۲۴ ساعت معتبر است.',
+      ignore: 'اگر شما حسابی نساخته‌اید، این پیام را نادیده بگیرید.',
+    },
+  },
+  reset: {
+    da: {
+      subject: 'Vælg en ny adgangskode',
+      lead: 'Vælg en ny adgangskode til din konto:',
+      button: 'Vælg ny adgangskode',
+      expiry: 'Linket udløber om en time.',
+      ignore: 'Hvis du ikke har bedt om en ny adgangskode, kan du se bort fra denne mail; din nuværende adgangskode virker stadig.',
+    },
+    en: {
+      subject: 'Choose a new password',
+      lead: 'Choose a new password for your account:',
+      button: 'Choose new password',
+      expiry: 'The link expires in one hour.',
+      ignore: 'If you did not ask for a new password, you can ignore this message; your current password still works.',
+    },
+    fa: {
+      subject: 'انتخاب گذرواژهٔ تازه',
+      lead: 'یک گذرواژهٔ تازه برای حساب خود انتخاب کنید:',
+      button: 'انتخاب گذرواژهٔ تازه',
+      expiry: 'این پیوند تا یک ساعت معتبر است.',
+      ignore: 'اگر شما درخواست گذرواژهٔ تازه نداده‌اید، این پیام را نادیده بگیرید؛ گذرواژهٔ کنونی شما همچنان کار می‌کند.',
+    },
+  },
+};
+
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+/**
+ * One message in one language: the one the reader had the site in when they
+ * asked for it. Plain text alongside HTML so it stays readable in any client.
+ * Persian is laid out right-to-left as a whole, not paragraph by paragraph; the
+ * link itself stays left-to-right so it is not visually scrambled.
+ */
+export function compose(kind, url, locale) {
+  const lang = MAIL_LOCALES.includes(locale) ? locale : MAIL_FALLBACK;
+  const t = TEXT[kind][lang];
+  const dir = lang === 'fa' ? 'rtl' : 'ltr';
+  const text = [t.lead, '', url, '', t.expiry, t.ignore].join('\n');
   const html =
-    `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:16px;line-height:1.5;color:#1E2121">` +
-    `<p>Bekræft din e-mailadresse for at fuldføre oprettelsen:</p>` +
-    `<p>Confirm your email address to finish creating your account:</p>` +
-    `<p dir="rtl">برای کامل شدن ساخت حساب، نشانی ایمیل خود را تأیید کنید:</p>` +
+    `<div lang="${lang}" dir="${dir}" style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Tahoma,sans-serif;` +
+    `font-size:16px;line-height:1.6;color:#1E2121;text-align:${dir === 'rtl' ? 'right' : 'left'}">` +
+    `<p>${esc(t.lead)}</p>` +
     `<p style="margin:24px 0"><a href="${esc(url)}" ` +
     `style="display:inline-block;padding:12px 20px;background:#006D63;color:#fff;` +
-    `text-decoration:none;border-radius:10px">Bekræft / Confirm / تأیید</a></p>` +
-    `<p style="font-size:13px;color:#575F5F">${esc(url)}</p>` +
-    `<p style="font-size:13px;color:#575F5F">Linket udløber om 24 timer. ` +
-    `The link expires in 24 hours. <span dir="rtl">این پیوند تا ۲۴ ساعت معتبر است.</span></p>` +
-    `<p style="font-size:13px;color:#575F5F">Hvis du ikke har oprettet en konto, kan du se bort fra denne mail. ` +
-    `If you did not create an account, you can ignore this message.</p>` +
+    `text-decoration:none;border-radius:10px">${esc(t.button)}</a></p>` +
+    `<p dir="ltr" style="font-size:13px;color:#575F5F;text-align:left;word-break:break-all">${esc(url)}</p>` +
+    `<p style="font-size:13px;color:#575F5F">${esc(t.expiry)}</p>` +
+    `<p style="font-size:13px;color:#575F5F">${esc(t.ignore)}</p>` +
     `</div>`;
-  return { text, html };
+  return { subject: t.subject, text, html, lang };
 }
 
-export async function sendVerification(to, url) {
-  const { text, html } = body(url);
-  await (await mailer()).sendMail({
-    from: FROM(),
-    to,
-    subject: 'Bekræft din e-mail / Confirm your email / تأیید ایمیل',
-    text,
-    html,
-  });
+async function deliver(kind, to, url, locale) {
+  const { subject, text, html } = compose(kind, url, locale);
+  await (await mailer()).sendMail({ from: FROM(), to, subject, text, html });
 }
 
-/** The reset message, in all three languages for the same reason as above. */
-function resetBody(url) {
-  const text = [
-    'Vælg en ny adgangskode til din konto:',
-    'Choose a new password for your account:',
-    'یک گذرواژهٔ تازه برای حساب خود انتخاب کنید:',
-    '',
-    url,
-    '',
-    'Linket udløber om en time. / The link expires in one hour. / این پیوند تا یک ساعت معتبر است.',
-    'Hvis du ikke har bedt om en ny adgangskode, kan du se bort fra denne mail;',
-    'din nuværende adgangskode virker stadig.',
-    'If you did not ask for a new password, you can ignore this message;',
-    'your current password still works.',
-    'اگر شما درخواست گذرواژهٔ تازه نداده‌اید، این پیام را نادیده بگیرید؛',
-    'گذرواژهٔ کنونی شما همچنان کار می‌کند.',
-  ].join('\n');
-
-  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const html =
-    `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:16px;line-height:1.5;color:#1E2121">` +
-    `<p>Vælg en ny adgangskode til din konto:</p>` +
-    `<p>Choose a new password for your account:</p>` +
-    `<p dir="rtl">یک گذرواژهٔ تازه برای حساب خود انتخاب کنید:</p>` +
-    `<p style="margin:24px 0"><a href="${esc(url)}" ` +
-    `style="display:inline-block;padding:12px 20px;background:#006D63;color:#fff;` +
-    `text-decoration:none;border-radius:10px">Vælg ny / Choose new / انتخاب</a></p>` +
-    `<p style="font-size:13px;color:#575F5F">${esc(url)}</p>` +
-    `<p style="font-size:13px;color:#575F5F">Linket udløber om en time. ` +
-    `The link expires in one hour. <span dir="rtl">این پیوند تا یک ساعت معتبر است.</span></p>` +
-    `<p style="font-size:13px;color:#575F5F">Hvis du ikke har bedt om det, kan du se bort fra denne mail. ` +
-    `If you did not ask for this, you can ignore this message.</p>` +
-    `</div>`;
-  return { text, html };
+export function sendVerification(to, url, locale = MAIL_FALLBACK) {
+  return deliver('verify', to, url, locale);
 }
 
-export async function sendReset(to, url) {
-  const { text, html } = resetBody(url);
-  await (await mailer()).sendMail({
-    from: FROM(),
-    to,
-    subject: 'Ny adgangskode / New password / گذرواژهٔ تازه',
-    text,
-    html,
-  });
+export function sendReset(to, url, locale = MAIL_FALLBACK) {
+  return deliver('reset', to, url, locale);
 }
 
 /**
