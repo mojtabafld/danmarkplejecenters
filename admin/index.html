@@ -18,7 +18,12 @@
       (function () {
         var t = null;
         try {
-          var v = localStorage.getItem('plejekort.theme');
+          localStorage.removeItem('plejekort.theme');
+        } catch (e) {
+          /* storage blocked */
+        }
+        try {
+          var v = sessionStorage.getItem('plejekort.theme');
           if (v === 'dark' || v === 'light') t = v;
         } catch (e) {
           /* private mode: the device decides */
