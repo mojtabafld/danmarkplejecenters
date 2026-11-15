@@ -8,21 +8,43 @@ export function token(name: string): string {
 }
 
 /**
- * The device's own setting, which is what a visitor who has never touched the
- * toggle gets. Somebody who keeps their phone dark has said what they want
- * once, to the phone; asking them to say it again to every site is asking
- * twice. The toggle still wins where it has been used -- see `stored()` -- and
- * a choice made there is remembered.
+ * The device decides. Somebody who keeps their phone dark has said what they
+ * want once, to the phone; this page follows it on every visit, and follows it
+ * again mid-visit when the phone switches at sunset.
+ *
+ * The toggle is a moment's override, not a setting: it lasts for this tab
+ * (sessionStorage) and is dropped as soon as the device changes its mind or the
+ * page is opened fresh. It used to be kept in localStorage and outrank the
+ * device for good, which meant one tap -- often an accidental one -- left
+ * somebody on a light page under a dark phone with no way to see why.
  */
 const DEVICE = window.matchMedia('(prefers-color-scheme: dark)');
 const deviceTheme = (): Theme => (DEVICE.matches ? 'dark' : 'light');
 
+// Retire the old permanent choice, so readers who once tapped the toggle get
+// their device's theme back. The inline script in index.html does the same
+// before first paint; this covers a page restored from the back/forward cache.
+try {
+  localStorage.removeItem(KEY);
+} catch {
+  /* storage blocked: nothing was kept there either */
+}
+
 function stored(): Theme | null {
   try {
-    const v = localStorage.getItem(KEY);
+    const v = sessionStorage.getItem(KEY);
     return v === 'dark' || v === 'light' ? v : null;
   } catch {
     return null;
+  }
+}
+
+function remember(t: Theme | null): void {
+  try {
+    if (t) sessionStorage.setItem(KEY, t);
+    else sessionStorage.removeItem(KEY);
+  } catch {
+    /* private mode — the theme still applies for this page */
   }
 }
 
@@ -37,15 +59,12 @@ export class ThemeController {
     window.addEventListener('pageshow', () => this.apply(this.current));
 
     /*
-     * Follow the device while it is still the one deciding.
-     *
-     * A phone that turns itself dark at sunset should take this page with it,
-     * mid-visit, without a reload. Once somebody has used the toggle their
-     * choice is stored, and a stored choice outranks the device -- otherwise
-     * the next sunset would quietly undo it.
+     * A phone that turns itself dark at sunset takes this page with it,
+     * mid-visit, without a reload -- and the device changing is the reader
+     * changing their mind, so it also ends any override from the toggle.
      */
     DEVICE.addEventListener('change', () => {
-      if (stored()) return;
+      remember(null);
       this.current = deviceTheme();
       this.apply(this.current);
       this.notify();
@@ -101,11 +120,8 @@ export class ThemeController {
   toggle(): void {
     this.current = this.current === 'dark' ? 'light' : 'dark';
     this.apply(this.current);
-    try {
-      localStorage.setItem(KEY, this.current);
-    } catch {
-      /* private mode — the theme still applies for this session */
-    }
+    // Toggling back to what the device says is the same as no override.
+    remember(this.current === deviceTheme() ? null : this.current);
     this.notify();
   }
 }

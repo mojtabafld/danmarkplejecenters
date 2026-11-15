@@ -19,16 +19,22 @@
        * been parsed and --header-bg actually resolves.
        *
        * It has to reach the same answer as ThemeController's constructor, by
-       * the same two steps -- a stored choice first, the device's setting when
-       * there is none -- or the frame this paints is the wrong one and the
-       * flash it exists to prevent is the flash it causes.
+       * the same two steps -- this tab's override from the toggle first, the
+       * device's setting when there is none -- or the frame this paints is the
+       * wrong one and the flash it exists to prevent is the flash it causes.
+       * The old permanent choice in localStorage is removed, as there.
        *
        * The key matches KEY in src/theme.ts.
        */
       (function () {
         var t = null;
         try {
-          var v = localStorage.getItem('plejekort.theme');
+          localStorage.removeItem('plejekort.theme');
+        } catch (e) {
+          /* storage blocked */
+        }
+        try {
+          var v = sessionStorage.getItem('plejekort.theme');
           if (v === 'dark' || v === 'light') t = v;
         } catch (e) {
           /* private mode: nothing stored, so the device decides */
